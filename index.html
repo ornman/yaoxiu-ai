@@ -1720,6 +1720,8 @@
         }
 
         // ========== 知识图谱 ==========
+        let selectedNode = null;
+        
         function renderKnowledgeGraph() {
             const svg = document.getElementById('knowledgeGraph');
             const container = document.getElementById('kgContainer');
@@ -1736,8 +1738,8 @@
                 py: n.y * height
             }));
             
-            // 绘制连线
-            kgData.edges.forEach(edge => {
+            // 绘制连线（带绘制动画）
+            kgData.edges.forEach((edge, index) => {
                 const source = nodes.find(n => n.id === edge.source);
                 const target = nodes.find(n => n.id === edge.target);
                 if (source && target) {
@@ -1747,25 +1749,91 @@
                     line.setAttribute('x2', target.px);
                     line.setAttribute('y2', target.py);
                     line.setAttribute('class', 'kg-line');
+                    line.style.strokeDasharray = '1000';
+                    line.style.strokeDashoffset = '1000';
+                    line.style.animation = `kgLineDraw 0.8s ease forwards ${index * 0.1}s`;
                     svg.appendChild(line);
                 }
             });
             
-            // 绘制节点
-            nodes.forEach(node => {
+            // 添加连线绘制动画样式
+            if (!document.getElementById('kgAnimStyle')) {
+                const style = document.createElement('style');
+                style.id = 'kgAnimStyle';
+                style.textContent = `
+                    @keyframes kgLineDraw {
+                        to { stroke-dashoffset: 0; }
+                    }
+                    @keyframes kgNodeAppear {
+                        0% { transform: scale(0); opacity: 0; }
+                        50% { transform: scale(1.2); }
+                        100% { transform: scale(1); opacity: 1; }
+                    }
+                    @keyframes kgPulse {
+                        0%, 100% { transform: scale(1); }
+                        50% { transform: scale(1.15); }
+                    }
+                    .kg-node {
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        transform-box: fill-box;
+                        transform-origin: center;
+                    }
+                    .kg-node:hover {
+                        filter: drop-shadow(0 0 12px var(--accent));
+                    }
+                    .kg-node:hover circle {
+                        stroke: var(--accent);
+                        stroke-width: 3;
+                    }
+                    .kg-node.selected {
+                        animation: kgPulse 0.6s ease;
+                    }
+                    .kg-node.selected circle {
+                        stroke: var(--gold);
+                        stroke-width: 4;
+                        filter: drop-shadow(0 0 20px var(--gold));
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            // 绘制节点（带入场动画）
+            nodes.forEach((node, index) => {
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 g.setAttribute('class', 'kg-node');
-                g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
-                g.onclick = () => {
-                    quickAsk(node.label + '是什么？');
-                    closeAllPanels();
-                };
+                g.setAttribute('transform', `translate(${node.px}, ${node.py}) scale(0)`);
+                g.style.animation = `kgNodeAppear 0.5s ease forwards ${0.3 + index * 0.08}s`;
+                
+                // 点击事件
+                g.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    // 防止重复点击
+                    if (selectedNode === node.id) return;
+                    selectedNode = node.id;
+                    
+                    // 视觉反馈
+                    document.querySelectorAll('.kg-node').forEach(n => n.classList.remove('selected'));
+                    g.classList.add('selected');
+                    
+                    // 生成涟漪效果
+                    createRipple(node.px, node.py);
+                    
+                    // 延迟执行，让动画完成
+                    setTimeout(() => {
+                        quickAsk(node.label + '是什么？');
+                        closeAllPanels();
+                        selectedNode = null;
+                    }, 600);
+                });
                 
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('r', node.category === 'root' ? 35 : node.category === 'branch' ? 25 : 18);
                 circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
                 circle.setAttribute('stroke', 'var(--border-color)');
                 circle.setAttribute('stroke-width', '2');
+                circle.style.transition = 'all 0.3s ease';
                 
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('text-anchor', 'middle');
@@ -1773,12 +1841,36 @@
                 text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
                 text.setAttribute('font-size', node.category === 'root' ? '14' : node.category === 'branch' ? '12' : '10');
                 text.setAttribute('font-weight', '500');
+                text.style.pointerEvents = 'none';
                 text.textContent = node.label;
                 
                 g.appendChild(circle);
                 g.appendChild(text);
                 svg.appendChild(g);
             });
+        }
+        
+        // 节点点击涟漪效果
+        function createRipple(x, y) {
+            const svg = document.getElementById('knowledgeGraph');
+            const ripple = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            ripple.setAttribute('cx', x);
+            ripple.setAttribute('cy', y);
+            ripple.setAttribute('r', '10');
+            ripple.setAttribute('fill', 'none');
+            ripple.setAttribute('stroke', 'var(--gold)');
+            ripple.setAttribute('stroke-width', '2');
+            ripple.style.opacity = '1';
+            ripple.style.transition = 'all 0.6s ease';
+            svg.appendChild(ripple);
+            
+            // 触发动画
+            requestAnimationFrame(() => {
+                ripple.setAttribute('r', '80');
+                ripple.style.opacity = '0';
+            });
+            
+            setTimeout(() => ripple.remove(), 600);
         }
 
         // ========== 聊天功能 ==========
@@ -1987,8 +2079,11 @@
 
                 streamingDiv.classList.remove('cursor-blink');
                 
-                // 添加操作按钮
-                addMessageActions(streamingDiv.parentElement, content, fullText);
+                // 添加操作按钮 - 找到 message-bubble 元素
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addMessageActions(messageBubble, content, fullText);
+                }
 
             } catch (err) {
                 if (err.name === 'AbortError') {
@@ -2048,7 +2143,8 @@
         }
 
         function addMessageActions(container, question, answer) {
-            const bubble = container.querySelector('.chat-content');
+            // container 是 message-bubble 元素
+            const bubble = container.querySelector('.chat-content') || container;
             if (!bubble) return;
             
             // 创建固定在消息右上角的按钮组
@@ -2082,19 +2178,19 @@
             bubble.style.position = 'relative';
             bubble.appendChild(actions);
             
-            // 延迟显示按钮（避免闪烁）
-            setTimeout(() => {
+            // 立即显示按钮
+            requestAnimationFrame(() => {
                 actions.style.opacity = '1';
                 actions.style.transform = 'translateY(0)';
-            }, 100);
+            });
             
-            // 鼠标悬停整个消息时显示按钮
-            container.parentElement.addEventListener('mouseenter', () => {
-                actions.style.opacity = '1';
-            });
-            container.parentElement.addEventListener('mouseleave', () => {
-                // 保持显示，不隐藏
-            });
+            // 鼠标悬停整个消息时保持按钮显示
+            const messageWrapper = bubble.closest('.flex.gap-2, .flex.gap-4');
+            if (messageWrapper) {
+                messageWrapper.addEventListener('mouseenter', () => {
+                    actions.style.opacity = '1';
+                });
+            }
         }
 
         // 窗口大小改变时重绘知识图谱
