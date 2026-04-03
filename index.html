@@ -523,8 +523,7 @@
             stroke: var(--accent);
             stroke-width: 3;
         }
-        /* ========== DeepSeek 风格深度思考样式 ========== */
-        /* 思考状态脉冲动画 */
+        /* DeepSeek 风格深度思考 */
         .thinking-pulse {
             animation: thinkingPulse 1.5s ease-in-out infinite;
         }
@@ -539,7 +538,6 @@
             0%, 100% { background: var(--gold); box-shadow: 0 0 0 0 rgba(212, 165, 116, 0.4); }
             50% { background: var(--accent); box-shadow: 0 0 0 4px rgba(196, 30, 58, 0.2); }
         }
-        /* 思考完成状态 */
         .thinking-done {
             animation: none;
             opacity: 1;
@@ -547,10 +545,6 @@
         .thinking-done > div {
             background: #22c55e;
             box-shadow: 0 0 0 0;
-        }
-        /* 思考中文字动画 */
-        .thinking-dots {
-            position: relative;
         }
         .thinking-dots::after {
             content: '';
@@ -562,38 +556,6 @@
             50% { content: '..'; }
             75% { content: '...'; }
             100% { content: ''; }
-        }
-        /* 思考内容区域滚动条 */
-        .deep-think-content::-webkit-scrollbar {
-            width: 4px;
-        }
-        .deep-think-content::-webkit-scrollbar-thumb {
-            background: var(--gold);
-            border-radius: 2px;
-        }
-        /* 分隔线动画 */
-        .think-divider {
-            position: relative;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
-        }
-        .think-divider::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-            width: 30px;
-            height: 3px;
-            background: var(--bg-secondary);
-            border-radius: 2px;
-        }
-        /* 折叠按钮样式 */
-        .think-toggle-btn {
-            transition: all 0.2s ease;
-        }
-        .think-toggle-btn:hover {
-            background: rgba(196, 30, 58, 0.1);
         }
     </style>
 </head>
@@ -2007,379 +1969,372 @@
             document.head.appendChild(style);
         }
         
-        // ========== 知识图谱 Class 封装 ==========
-        class KnowledgeGraph {
-            constructor(containerId, data) {
-                this.svg = document.getElementById('knowledgeGraph');
-                this.container = document.getElementById(containerId);
-                this.data = data;
-                this.transform = { x: 0, y: 0, scale: 1 };
-                this.isDragging = false;
-                this.isAnimating = false;
-                this.dragStart = { x: 0, y: 0 };
-                this.initialTransform = { x: 0, y: 0 };
-                this.rendered = false;
-                this.mainGroup = null;
-                this.nodes = [];
-                this.edges = [];
-                
-                this.addStyles();
-                this.bindEvents();
+        function renderKnowledgeGraph() {
+            addKgAnimationStyles();
+            
+            const svg = document.getElementById('knowledgeGraph');
+            const container = document.getElementById('kgContainer');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // 如果已经渲染过，只需要更新位置
+            if (kgRendered && svg.querySelector('#kgMainGroup')) {
+                return;
             }
             
-            addStyles() {
-                if (document.getElementById('kg-class-styles')) return;
-                const style = document.createElement('style');
-                style.id = 'kg-class-styles';
-                style.textContent = `
-                    .kg-node-group { cursor: pointer; transition: none; }
-                    .kg-node-group:hover { animation: kgHover 0.15s ease forwards; }
-                    .kg-node-group.clicking { animation: kgClick 0.1s ease forwards; }
-                    .kg-node-group.animating { pointer-events: none; }
-                    .kg-node-circle { transition: stroke 0.15s ease, stroke-width 0.15s ease; }
-                    @keyframes kgHover { from { transform: scale(1); } to { transform: scale(1.12); } }
-                    @keyframes kgClick { to { transform: scale(0.9); } }
-                    @keyframes kgScatter { to { transform: translate(var(--sx), var(--sy)) scale(0.8); opacity: 0.2; } }
-                    .kg-flying { position: fixed; z-index: 9999; pointer-events: none; }
+            svg.innerHTML = '';
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.style.cursor = 'grab';
+            
+            const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            mainGroup.id = 'kgMainGroup';
+            svg.appendChild(mainGroup);
+            
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = Math.min(width, height) / 800;
+            
+            const nodes = kgData.nodes.map(n => ({
+                ...n,
+                px: centerX + (n.x - 0.5) * 600 * scale,
+                py: centerY + (n.y - 0.5) * 500 * scale,
+            }));
+            
+            // 绘制连线
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            linesGroup.id = 'kgLines';
+            kgData.edges.forEach((edge) => {
+                const source = nodes.find(n => n.id === edge.source);
+                const target = nodes.find(n => n.id === edge.target);
+                if (source && target) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', source.px);
+                    line.setAttribute('y1', source.py);
+                    line.setAttribute('x2', target.px);
+                    line.setAttribute('y2', target.py);
+                    line.setAttribute('stroke', 'var(--border-color)');
+                    line.setAttribute('stroke-width', '2');
+                    line.style.opacity = '0.5';
+                    line.dataset.source = edge.source;
+                    line.dataset.target = edge.target;
+                    linesGroup.appendChild(line);
+                }
+            });
+            mainGroup.appendChild(linesGroup);
+            
+            // 绘制节点
+            const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            nodesGroup.id = 'kgNodes';
+            
+            nodes.forEach((node) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'kg-node');
+                g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
+                g.dataset.nodeId = node.id;
+                
+                const radius = node.category === 'root' ? 36 : node.category === 'branch' ? 26 : 18;
+                
+                // 外圈（用于hover效果）
+                const hoverRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hoverRing.setAttribute('r', radius + 4);
+                hoverRing.setAttribute('fill', 'transparent');
+                hoverRing.style.pointerEvents = 'all';
+                hoverRing.style.cursor = 'pointer';
+                
+                // 主圆圈
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'kg-node-circle');
+                circle.setAttribute('r', radius);
+                circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
+                circle.setAttribute('stroke', 'var(--border-color)');
+                circle.setAttribute('stroke-width', '2');
+                
+                // 文字
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dy', '0.35em');
+                text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
+                text.setAttribute('font-size', node.category === 'root' ? '12' : node.category === 'branch' ? '11' : '10');
+                text.setAttribute('font-weight', '500');
+                text.setAttribute('font-family', 'Noto Sans SC, sans-serif');
+                text.style.pointerEvents = 'none';
+                text.textContent = node.label;
+                
+                // 点击事件 - 优化版
+                const handleClick = async (e) => {
+                    if (isDragging || isAnimating) return;
+                    e.stopPropagation();
+                    
+                    isAnimating = true;
+                    g.classList.add('clicking');
+                    
+                    // 1. 快速蓄力 (80ms)
+                    circle.setAttribute('stroke', 'white');
+                    circle.setAttribute('stroke-width', '3');
+                    await new Promise(r => setTimeout(r, 80));
+                    
+                    // 2. 白色波纹 (快速)
+                    createWhiteRipples(node.px, node.py, kgTransform.scale);
+                    
+                    // 3. 其他节点快速退避
+                    scatterOtherNodes(node.id, mainGroup);
+                    fadeLines(linesGroup);
+                    
+                    await new Promise(r => setTimeout(r, 100));
+                    
+                    // 4. 创建飞行节点
+                    const rect = svg.getBoundingClientRect();
+                    const startX = rect.left + node.px * kgTransform.scale + kgTransform.x;
+                    const startY = rect.top + node.py * kgTransform.scale + kgTransform.y;
+                    
+                    const chatContainer = document.getElementById('chatContainer');
+                    const chatRect = chatContainer.getBoundingClientRect();
+                    const endX = chatRect.left + chatRect.width - 120;
+                    const endY = chatRect.top + chatRect.height - 80;
+                    
+                    await flyNodeToChat(node, startX, startY, endX, endY);
+                    
+                    // 5. 关闭面板
+                    closeAllPanels();
+                    await new Promise(r => setTimeout(r, 150));
+                    
+                    // 6. 添加消息并触发回复
+                    appendUserMessage(node.label + '是什么？');
+                    await new Promise(r => setTimeout(r, 200));
+                    sendMessage();
+                    
+                    isAnimating = false;
+                };
+                
+                hoverRing.addEventListener('click', handleClick);
+                // 阻止默认的拖拽开始
+                hoverRing.addEventListener('mousedown', (e) => e.stopPropagation());
+                
+                g.appendChild(hoverRing);
+                g.appendChild(circle);
+                g.appendChild(text);
+                nodesGroup.appendChild(g);
+            });
+            
+            mainGroup.appendChild(nodesGroup);
+            setupKgInteractions(svg, mainGroup);
+            kgRendered = true;
+        }
+        
+        // 白色波纹效果 - 快速版
+        function createWhiteRipples(x, y, scale) {
+            const svg = document.getElementById('knowledgeGraph');
+            const adjustedX = x * scale + kgTransform.x;
+            const adjustedY = y * scale + kgTransform.y;
+            
+            // 只创建2层波纹，加快速度
+            for (let i = 0; i < 2; i++) {
+                setTimeout(() => {
+                    const ripple = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    ripple.setAttribute('cx', adjustedX);
+                    ripple.setAttribute('cy', adjustedY);
+                    ripple.setAttribute('r', '15');
+                    ripple.setAttribute('class', 'kg-ripple');
+                    ripple.style.animation = 'whiteRipple 0.5s ease-out forwards';
+                    svg.appendChild(ripple);
+                    setTimeout(() => ripple.remove(), 500);
+                }, i * 60);
+            }
+        }
+        
+        // 其他节点退避 - 快速版
+        function scatterOtherNodes(clickedId, mainGroup) {
+            const clicked = mainGroup.querySelector(`[data-node-id="${clickedId}"]`);
+            if (!clicked) return;
+            
+            const clickedRect = clicked.getBoundingClientRect();
+            const clickedX = clickedRect.left + clickedRect.width / 2;
+            const clickedY = clickedRect.top + clickedRect.height / 2;
+            
+            const allNodes = mainGroup.querySelectorAll('.kg-node');
+            allNodes.forEach(g => {
+                if (g.dataset.nodeId === clickedId) return;
+                
+                const rect = g.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
+                
+                const angle = Math.atan2(y - clickedY, x - clickedX);
+                const distance = 60;
+                const scatterX = Math.cos(angle) * distance;
+                const scatterY = Math.sin(angle) * distance;
+                
+                g.style.setProperty('--scatterX', `${scatterX}px`);
+                g.style.setProperty('--scatterY', `${scatterY}px`);
+                g.style.animation = 'nodeScatter 0.3s ease forwards';
+            });
+        }
+        
+        // 连线淡化 - 快速版
+        function fadeLines(linesGroup) {
+            linesGroup.style.transition = 'opacity 0.2s';
+            linesGroup.style.opacity = '0';
+        }
+        
+        // 节点飞向主界面 - 快速丝滑版
+        function flyNodeToChat(node, startX, startY, endX, endY) {
+            return new Promise(resolve => {
+                const flyingNode = document.createElement('div');
+                flyingNode.className = 'flying-node';
+                
+                const startSize = node.category === 'root' ? 72 : node.category === 'branch' ? 52 : 36;
+                
+                flyingNode.innerHTML = `
+                    <div id="flyInner" style="
+                        width: ${startSize}px;
+                        height: ${startSize}px;
+                        border-radius: 50%;
+                        background: var(--accent);
+                        border: 2px solid white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 12px;
+                        font-weight: 500;
+                        color: white;
+                        box-shadow: 0 0 20px rgba(196, 30, 58, 0.6), 0 0 40px rgba(196, 30, 58, 0.3);
+                        will-change: transform, width, height, border-radius;
+                    ">${node.label}</div>
                 `;
-                document.head.appendChild(style);
-            }
-            
-            render() {
-                if (this.rendered && this.mainGroup) return;
+                flyingNode.style.left = `${startX}px`;
+                flyingNode.style.top = `${startY}px`;
+                flyingNode.style.transform = 'translate(-50%, -50%)';
+                document.body.appendChild(flyingNode);
                 
-                const width = this.container.clientWidth;
-                const height = this.container.clientHeight;
-                const centerX = width / 2;
-                const centerY = height / 2;
-                const scale = Math.min(width, height) / 800;
+                const inner = flyingNode.querySelector('#flyInner');
                 
-                this.svg.innerHTML = '';
-                this.svg.style.cursor = 'grab';
+                // 使用 Web Animations API 实现丝滑动画
+                const duration = 500; // 缩短到500ms
+                const startTime = performance.now();
                 
-                this.mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                this.svg.appendChild(this.mainGroup);
-                
-                // 计算节点位置
-                this.nodes = this.data.nodes.map(n => ({
-                    ...n,
-                    px: centerX + (n.x - 0.5) * 600 * scale,
-                    py: centerY + (n.y - 0.5) * 500 * scale
-                }));
-                
-                this.renderLines();
-                this.renderNodes();
-                this.updateTransform();
-                this.rendered = true;
-            }
-            
-            renderLines() {
-                const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                linesGroup.id = 'kgLinesGroup';
-                
-                this.data.edges.forEach(edge => {
-                    const source = this.nodes.find(n => n.id === edge.source);
-                    const target = this.nodes.find(n => n.id === edge.target);
-                    if (source && target) {
-                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                        line.setAttribute('x1', source.px);
-                        line.setAttribute('y1', source.py);
-                        line.setAttribute('x2', target.px);
-                        line.setAttribute('y2', target.py);
-                        line.setAttribute('stroke', 'var(--border-color)');
-                        line.setAttribute('stroke-width', '2');
-                        line.style.opacity = '0.5';
-                        linesGroup.appendChild(line);
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const t = Math.min(elapsed / duration, 1);
+                    
+                    // easeOutCubic 缓动
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    
+                    // 贝塞尔曲线控制点（制造弧线）
+                    const cpX = startX + (endX - startX) * 0.6;
+                    const cpY = startY - 100;
+                    
+                    // 二次贝塞尔曲线
+                    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*cpX + t*t*endX;
+                    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*cpY + t*t*endY;
+                    
+                    flyingNode.style.left = `${x}px`;
+                    flyingNode.style.top = `${y}px`;
+                    
+                    // 变形：圆形 → 气泡
+                    const targetSize = 200; // 消息气泡宽度
+                    const currentSize = startSize + (targetSize - startSize) * ease;
+                    const borderRadius = 50 * (1 - ease) + 20 * ease; // 50% -> 20px
+                    
+                    inner.style.width = `${currentSize}px`;
+                    inner.style.height = `${40 + (1-ease) * 20}px`; // 高度减小
+                    inner.style.borderRadius = `${borderRadius}px`;
+                    
+                    if (t < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        // 到达终点的弹跳效果
+                        inner.style.transition = 'transform 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+                        inner.style.transform = 'scale(1.05)';
+                        setTimeout(() => {
+                            inner.style.transform = 'scale(1)';
+                        }, 75);
+                        
+                        setTimeout(() => {
+                            flyingNode.remove();
+                            resolve();
+                        }, 200);
                     }
-                });
-                
-                this.mainGroup.appendChild(linesGroup);
-            }
-            
-            renderNodes() {
-                const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                nodesGroup.id = 'kgNodesGroup';
-                
-                this.nodes.forEach(node => {
-                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    g.classList.add('kg-node-group');
-                    g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
-                    g.dataset.nodeId = node.id;
-                    
-                    const radius = node.category === 'root' ? 36 : node.category === 'branch' ? 26 : 18;
-                    
-                    // Hover ring
-                    const hoverRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    hoverRing.setAttribute('r', radius + 4);
-                    hoverRing.setAttribute('fill', 'transparent');
-                    hoverRing.style.pointerEvents = 'all';
-                    
-                    // Main circle
-                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    circle.classList.add('kg-node-circle');
-                    circle.setAttribute('r', radius);
-                    circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
-                    circle.setAttribute('stroke', 'var(--border-color)');
-                    circle.setAttribute('stroke-width', '2');
-                    
-                    // Text
-                    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                    text.setAttribute('text-anchor', 'middle');
-                    text.setAttribute('dy', '0.35em');
-                    text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
-                    text.setAttribute('font-size', node.category === 'root' ? '12' : '11');
-                    text.setAttribute('font-weight', '500');
-                    text.style.pointerEvents = 'none';
-                    text.textContent = node.label;
-                    
-                    // Events
-                    hoverRing.addEventListener('click', (e) => this.onNodeClick(node, e));
-                    hoverRing.addEventListener('mousedown', (e) => { 
-                        e.stopPropagation(); 
-                        this.onNodeMouseDown(e);
-                    });
-                    hoverRing.addEventListener('mouseenter', () => {
-                        circle.setAttribute('stroke', 'var(--gold)');
-                        circle.setAttribute('stroke-width', '3');
-                    });
-                    hoverRing.addEventListener('mouseleave', () => {
-                        circle.setAttribute('stroke', 'var(--border-color)');
-                        circle.setAttribute('stroke-width', '2');
-                    });
-                    
-                    g.appendChild(hoverRing);
-                    g.appendChild(circle);
-                    g.appendChild(text);
-                    nodesGroup.appendChild(g);
-                });
-                
-                this.mainGroup.appendChild(nodesGroup);
-            }
-            
-            async onNodeClick(node, e) {
-                if (this.isDragging || this.isAnimating) return;
-                e.stopPropagation();
-                
-                this.isAnimating = true;
-                const nodeEl = this.mainGroup.querySelector(`[data-node-id="${node.id}"]`);
-                nodeEl.classList.add('clicking');
-                
-                // 1. 蓄力
-                const circle = nodeEl.querySelector('.kg-node-circle');
-                circle.setAttribute('stroke', 'white');
-                circle.setAttribute('stroke-width', '3');
-                await this.sleep(80);
-                
-                // 2. 波纹
-                this.createRipple(node.px, node.py);
-                
-                // 3. 退避和淡化
-                this.scatterNodes(node.id);
-                this.fadeLines();
-                await this.sleep(100);
-                
-                // 4. 飞行
-                const svgRect = this.svg.getBoundingClientRect();
-                const startX = svgRect.left + node.px * this.transform.scale + this.transform.x;
-                const startY = svgRect.top + node.py * this.transform.scale + this.transform.y;
-                
-                const chatRect = document.getElementById('chatContainer').getBoundingClientRect();
-                const endX = chatRect.left + chatRect.width - 120;
-                const endY = chatRect.top + chatRect.height - 80;
-                
-                await this.flyNodeToChat(node, startX, startY, endX, endY);
-                
-                // 5. 关闭和发送
-                closeAllPanels();
-                await this.sleep(150);
-                appendUserMessage(node.label + '是什么？');
-                await this.sleep(200);
-                sendMessage();
-                
-                this.isAnimating = false;
-            }
-            
-            createRipple(x, y) {
-                const adjustedX = x * this.transform.scale + this.transform.x;
-                const adjustedY = y * this.transform.scale + this.transform.y;
-                
-                for (let i = 0; i < 2; i++) {
-                    setTimeout(() => {
-                        const ripple = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                        ripple.setAttribute('cx', adjustedX);
-                        ripple.setAttribute('cy', adjustedY);
-                        ripple.setAttribute('r', '15');
-                        ripple.setAttribute('fill', 'none');
-                        ripple.setAttribute('stroke', 'white');
-                        ripple.setAttribute('stroke-width', '2');
-                        ripple.style.opacity = '0.8';
-                        ripple.style.animation = 'whiteRipple 0.5s ease-out forwards';
-                        this.svg.appendChild(ripple);
-                        setTimeout(() => ripple.remove(), 500);
-                    }, i * 60);
                 }
-            }
-            
-            scatterNodes(clickedId) {
-                const clicked = this.mainGroup.querySelector(`[data-node-id="${clickedId}"]`);
-                const clickedRect = clicked.getBoundingClientRect();
-                const cx = clickedRect.left + clickedRect.width / 2;
-                const cy = clickedRect.top + clickedRect.height / 2;
                 
-                this.mainGroup.querySelectorAll('.kg-node-group').forEach(g => {
-                    if (g.dataset.nodeId === clickedId) return;
-                    const rect = g.getBoundingClientRect();
-                    const angle = Math.atan2(rect.top + rect.height/2 - cy, rect.left + rect.width/2 - cx);
-                    g.style.setProperty('--sx', `${Math.cos(angle) * 60}px`);
-                    g.style.setProperty('--sy', `${Math.sin(angle) * 60}px`);
-                    g.style.animation = 'kgScatter 0.3s ease forwards';
-                });
-            }
+                requestAnimationFrame(animate);
+            });
+        }
+        
+        // 设置拖拽和缩放 - 优化版
+        function setupKgInteractions(svg, mainGroup) {
+            let startX, startY;
+            let initialTransform = { ...kgTransform };
             
-            fadeLines() {
-                const lines = this.mainGroup.querySelector('#kgLinesGroup');
-                if (lines) {
-                    lines.style.transition = 'opacity 0.2s';
-                    lines.style.opacity = '0';
-                }
-            }
+            svg.addEventListener('mousedown', (e) => {
+                if (isAnimating || e.button !== 0) return;
+                isDragging = false;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialTransform = { ...kgTransform };
+                svg.style.cursor = 'grabbing';
+            });
             
-            flyNodeToChat(node, startX, startY, endX, endY) {
-                return new Promise(resolve => {
-                    const div = document.createElement('div');
-                    div.className = 'kg-flying';
-                    const size = node.category === 'root' ? 72 : 52;
-                    div.innerHTML = `<div id="flyInner" style="width:${size}px;height:${size}px;border-radius:50%;background:var(--accent);border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;color:white;box-shadow:0 0 20px rgba(196,30,58,0.6);will-change:transform,width,height,border-radius;">${node.label}</div>`;
-                    div.style.left = `${startX}px`;
-                    div.style.top = `${startY}px`;
-                    div.style.transform = 'translate(-50%, -50%)';
-                    document.body.appendChild(div);
-                    
-                    const inner = div.querySelector('#flyInner');
-                    const startTime = performance.now();
-                    const duration = 500;
-                    
-                    const animate = (now) => {
-                        const t = Math.min((now - startTime) / duration, 1);
-                        const ease = 1 - Math.pow(1 - t, 3);
-                        
-                        const cpX = startX + (endX - startX) * 0.6;
-                        const cpY = startY - 100;
-                        const x = (1-t)*(1-t)*startX + 2*(1-t)*t*cpX + t*t*endX;
-                        const y = (1-t)*(1-t)*startY + 2*(1-t)*t*cpY + t*t*endY;
-                        
-                        div.style.left = `${x}px`;
-                        div.style.top = `${y}px`;
-                        
-                        const currentSize = size + (200 - size) * ease;
-                        inner.style.width = `${currentSize}px`;
-                        inner.style.height = `${40 + (1-ease) * 20}px`;
-                        inner.style.borderRadius = `${50 * (1 - ease) + 20 * ease}px`;
-                        
-                        if (t < 1) {
-                            requestAnimationFrame(animate);
-                        } else {
-                            inner.style.transition = 'transform 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-                            inner.style.transform = 'scale(1.05)';
-                            setTimeout(() => {
-                                inner.style.transform = 'scale(1)';
-                                setTimeout(() => {
-                                    div.remove();
-                                    resolve();
-                                }, 200);
-                            }, 75);
-                        }
-                    };
-                    
-                    requestAnimationFrame(animate);
-                });
-            }
-            
-            onNodeMouseDown(e) {
-                if (e.button !== 0) return;
-                this.isDragging = false;
-                this.dragStart = { x: e.clientX, y: e.clientY };
-                this.initialTransform = { ...this.transform };
-                this.svg.style.cursor = 'grabbing';
-            }
-            
-            bindEvents() {
-                this.svg.addEventListener('mousemove', (e) => {
-                    if (!this.dragStart.x || this.isAnimating) return;
-                    const dx = e.clientX - this.dragStart.x;
-                    const dy = e.clientY - this.dragStart.y;
-                    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this.isDragging = true;
-                    this.transform.x = this.initialTransform.x + dx;
-                    this.transform.y = this.initialTransform.y + dy;
-                    this.updateTransform();
-                });
+            svg.addEventListener('mousemove', (e) => {
+                if (startX === undefined || isAnimating) return;
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) isDragging = true;
                 
-                this.svg.addEventListener('mouseup', () => {
-                    this.dragStart = { x: 0, y: 0 };
-                    this.svg.style.cursor = 'grab';
-                    setTimeout(() => this.isDragging = false, 30);
-                });
+                kgTransform.x = initialTransform.x + dx;
+                kgTransform.y = initialTransform.y + dy;
                 
-                this.svg.addEventListener('mouseleave', () => {
-                    this.dragStart = { x: 0, y: 0 };
-                    this.svg.style.cursor = 'grab';
-                });
-                
-                this.svg.addEventListener('wheel', (e) => {
-                    if (this.isAnimating) return;
-                    e.preventDefault();
-                    const rect = this.svg.getBoundingClientRect();
-                    const mx = e.clientX - rect.left;
-                    const my = e.clientY - rect.top;
-                    const factor = e.deltaY > 0 ? 0.9 : 1.1;
-                    const newScale = Math.max(0.3, Math.min(3, this.transform.scale * factor));
-                    const ratio = newScale / this.transform.scale;
-                    this.transform.x = mx - (mx - this.transform.x) * ratio;
-                    this.transform.y = my - (my - this.transform.y) * ratio;
-                    this.transform.scale = newScale;
-                    this.updateTransform();
-                }, { passive: false });
-            }
+                // 使用 style.transform 提高性能
+                mainGroup.style.transform = `translate(${kgTransform.x}px, ${kgTransform.y}px) scale(${kgTransform.scale})`;
+            });
             
-            updateTransform() {
-                if (this.mainGroup) {
-                    this.mainGroup.style.transform = `translate(${this.transform.x}px, ${this.transform.y}px) scale(${this.transform.scale})`;
-                }
-            }
+            svg.addEventListener('mouseup', () => {
+                startX = undefined;
+                svg.style.cursor = 'grab';
+                setTimeout(() => isDragging = false, 30);
+            });
             
-            reset() {
-                this.transform = { x: 0, y: 0, scale: 1 };
-                this.updateTransform();
-                this.mainGroup.querySelectorAll('.kg-node-group').forEach(n => {
+            svg.addEventListener('mouseleave', () => {
+                startX = undefined;
+                svg.style.cursor = 'grab';
+            });
+            
+            // 滚轮缩放
+            svg.addEventListener('wheel', (e) => {
+                if (isAnimating) return;
+                e.preventDefault();
+                const rect = svg.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.max(0.3, Math.min(3, kgTransform.scale * scaleFactor));
+                const scaleRatio = newScale / kgTransform.scale;
+                kgTransform.x = mouseX - (mouseX - kgTransform.x) * scaleRatio;
+                kgTransform.y = mouseY - (mouseY - kgTransform.y) * scaleRatio;
+                kgTransform.scale = newScale;
+                mainGroup.style.transform = `translate(${kgTransform.x}px, ${kgTransform.y}px) scale(${kgTransform.scale})`;
+            }, { passive: false });
+        }
+        
+        // 重置视图 - 修复版
+        function resetKgView() {
+            kgTransform = { x: 0, y: 0, scale: 1 };
+            const mainGroup = document.getElementById('kgMainGroup');
+            if (mainGroup) {
+                mainGroup.style.transform = 'translate(0px, 0px) scale(1)';
+                // 恢复所有节点
+                const nodes = mainGroup.querySelectorAll('.kg-node');
+                nodes.forEach(n => {
                     n.style.animation = '';
                     n.style.opacity = '1';
+                    n.style.transform = '';
                 });
-                const lines = this.mainGroup.querySelector('#kgLinesGroup');
-                if (lines) {
-                    lines.style.opacity = '0.5';
+                // 恢复连线
+                const linesGroup = document.getElementById('kgLines');
+                if (linesGroup) {
+                    linesGroup.style.opacity = '0.5';
                 }
-                this.rendered = false;
-                this.render();
-            }
-            
-            sleep(ms) {
-                return new Promise(r => setTimeout(r, ms));
-            }
-        }
-        
-        // 全局知识图谱实例
-        let kgInstance = null;
-        
-        function renderKnowledgeGraph() {
-            if (!kgInstance) {
-                kgInstance = new KnowledgeGraph('kgContainer', kgData);
-            }
-            kgInstance.render();
-        }
-        
-        function resetKgView() {
-            if (kgInstance) {
-                kgInstance.reset();
+                kgRendered = false;
+                setTimeout(() => renderKnowledgeGraph(), 50);
             }
         }
 
@@ -2471,45 +2426,27 @@
             isGenerating = true;
             document.getElementById('sendBtn').disabled = true;
 
-            const { reasoningId, contentId, wrapper } = createAssistantMessage();
-            const reasoningDiv = document.getElementById(reasoningId);
-            const reasoningContainer = document.getElementById(reasoningId + '_container');
-            const reasoningTime = document.getElementById(reasoningId + '_time');
+            const { reasoningId, contentId, wrapper, manager } = createAssistantMessage();
             const contentDiv = document.getElementById(contentId);
             
             let fullText = '';
-            let reasoningText = '';
             let hasReasoning = false;
             let hasContent = false;
-            let startTime = Date.now();
-            let timeUpdateInterval;
-            
-            // 启动深度思考状态更新
-            const thinkManager = deepThinkManagers.get(reasoningId);
-            timeUpdateInterval = setInterval(() => {
-                if (thinkManager) thinkManager.updateThinkingStatus();
+            let timeUpdateInterval = setInterval(() => {
+                if (manager) manager.updateThinkingStatus();
             }, 100);
 
             controller = new AbortController();
 
             try {
                 let response;
-                const model = document.getElementById('modelSelect').value;
-                
-                // 增强系统提示词
-                const systemPrompt = `你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。
-
-【回答要求】
-1. 只回答瑶族刺绣、瑶族文化相关问题
-2. 对于无关问题，礼貌拒绝
-3. 语言专业且通俗易懂
-4. 适当提及瑶族支系差异（盘瑶、布努瑶、茶山瑶等）`;
                 
                 if (USE_DIRECT_API) {
                     if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
                         throw new Error('请先在代码中填写 DIRECT_API_KEY');
                     }
                     
+                    const model = document.getElementById('modelSelect').value;
                     response = await fetch(DIRECT_API_URL, {
                         method: 'POST',
                         headers: {
@@ -2519,7 +2456,10 @@
                         body: JSON.stringify({
                             model: model,
                             messages: [
-                                { role: 'system', content: systemPrompt },
+                                { 
+                                    role: 'system', 
+                                    content: '你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。只回答瑶族刺绣相关问题。'
+                                },
                                 { role: 'user', content: content }
                             ],
                             stream: true
@@ -2536,7 +2476,7 @@
                         },
                         body: JSON.stringify({
                             message: content,
-                            model: model
+                            model: document.getElementById('modelSelect').value
                         }),
                         signal: controller.signal
                     });
@@ -2566,29 +2506,21 @@
                             const json = JSON.parse(data);
                             const delta = json.choices?.[0]?.delta;
                             
-                            // 处理思考过程（DeepSeek风格）
                             if (delta?.reasoning_content) {
                                 hasReasoning = true;
-                                const manager = deepThinkManagers.get(reasoningId);
-                                if (manager) {
-                                    manager.appendReasoning(delta.reasoning_content);
-                                }
+                                if (manager) manager.appendReasoning(delta.reasoning_content);
                             }
                             
-                            // 处理正式回答
                             if (delta?.content) {
                                 if (!hasContent && hasReasoning) {
-                                    // 第一次收到正式回答，添加分隔
                                     contentDiv.style.borderTop = '1px dashed var(--border-color)';
                                     contentDiv.style.marginTop = '0.5rem';
                                     contentDiv.style.paddingTop = '0.75rem';
                                 }
-                                
                                 fullText += delta.content;
                                 hasContent = true;
                                 contentDiv.innerHTML = marked.parse(fullText);
                                 contentDiv.classList.remove('cursor-blink');
-                                
                                 contentDiv.querySelectorAll('pre code').forEach((block) => {
                                     hljs.highlightElement(block);
                                 });
@@ -2599,10 +2531,8 @@
                 }
 
                 clearInterval(timeUpdateInterval);
-                const manager = deepThinkManagers.get(reasoningId);
                 if (manager) manager.finish();
-
-                // 添加操作按钮
+                
                 const messageBubble = contentDiv.closest('.message-bubble');
                 if (messageBubble) {
                     addMessageActions(messageBubble, content, fullText);
@@ -2620,8 +2550,8 @@
                 isGenerating = false;
                 document.getElementById('sendBtn').disabled = false;
                 controller = null;
-                clearInterval(timeUpdateInterval);
             }
+        }
 
         function appendUserMessage(content) {
             const container = document.getElementById('chatContainer');
@@ -2652,7 +2582,7 @@
                 this.isThinking = true;
                 this.startTime = Date.now();
                 this.reasoningText = '';
-                this.typeSpeed = 30; // 打字速度(ms)
+                this.typeSpeed = 30;
                 this.typedLength = 0;
                 this.typeTimer = null;
             }
@@ -2669,14 +2599,12 @@
                 };
             }
             
-            // 显示思考容器（首次有思考内容时调用）
             show() {
                 const { container, header } = this.elements;
                 if (container) container.classList.remove('hidden');
                 if (header) header.classList.remove('hidden');
             }
             
-            // 更新思考中状态（带动画）
             updateThinkingStatus() {
                 const { time, status } = this.elements;
                 if (!time) return;
@@ -2684,30 +2612,22 @@
                 const elapsed = ((Date.now() - this.startTime) / 1000).toFixed(1);
                 
                 if (this.isThinking) {
-                    // 思考中：显示闪烁点和时间
-                    const dots = ['', '.', '..', '...'];
-                    const dotIndex = Math.floor(Date.now() / 500) % 4;
-                    time.innerHTML = `<span class="thinking-dots">正在思考${dots[dotIndex]}</span> <span class="text-xs opacity-60">(${elapsed}s)</span>`;
-                    if (status) status.className = 'thinking-pulse';
+                    time.innerHTML = `<span class="thinking-dots">正在思考</span> <span class="text-xs opacity-60">(${elapsed}s)</span>`;
+                    if (status) status.className = 'thinking-pulse flex-shrink-0 w-4 h-4 rounded-full bg-yao-gold/30 flex items-center justify-center';
                 } else {
-                    // 思考完成：显示总时间
                     time.innerHTML = `已深度思考 <span class="font-semibold">${elapsed}</span> 秒`;
-                    if (status) status.className = 'thinking-done';
+                    if (status) status.className = 'thinking-done flex-shrink-0 w-4 h-4 rounded-full bg-yao-gold/30 flex items-center justify-center';
                 }
             }
             
-            // 流式添加思考内容（打字机效果）
             appendReasoning(text) {
                 this.reasoningText += text;
                 this.show();
-                
-                // 如果还没有开始打字，启动打字机
                 if (this.typedLength >= this.reasoningText.length - text.length) {
                     this.startTyping();
                 }
             }
             
-            // 打字机效果
             startTyping() {
                 if (this.typeTimer) return;
                 
@@ -2716,7 +2636,6 @@
                     if (!content) return;
                     
                     if (this.typedLength < this.reasoningText.length) {
-                        // 每次打1-3个字符，加快显示
                         const chunkSize = Math.min(3, this.reasoningText.length - this.typedLength);
                         this.typedLength += chunkSize;
                         
@@ -2733,23 +2652,19 @@
                 typeNext();
             }
             
-            // 完成思考
             finish() {
                 this.isThinking = false;
                 this.updateThinkingStatus();
                 
-                // 确保所有文字都显示
                 const { content } = this.elements;
                 if (content && this.reasoningText) {
                     content.innerHTML = escapeHtml(this.reasoningText).replace(/\n/g, '<br>');
                 }
                 
-                // 显示分隔线
                 const { divider } = this.elements;
                 if (divider) divider.classList.remove('hidden');
             }
             
-            // 切换展开/折叠
             toggle() {
                 const { content, arrow } = this.elements;
                 if (!content) return;
@@ -2765,7 +2680,6 @@
                 }
             }
             
-            // 清除定时器
             destroy() {
                 if (this.typeTimer) {
                     clearTimeout(this.typeTimer);
@@ -2774,7 +2688,6 @@
             }
         }
         
-        // 全局管理器映射
         const deepThinkManagers = new Map();
         
         function createAssistantMessage() {
@@ -2793,32 +2706,22 @@
                 </div>
                 <div class="message-bubble" style="max-width: 85%;">
                     <div class="rounded-2xl rounded-tl-sm border overflow-hidden" style="background: var(--bg-secondary); border-color: var(--border-color);">
-                        <!-- 深度思考区域 (DeepSeek风格) -->
+                        <!-- 深度思考区域 -->
                         <div id="${reasoningId}_container" class="hidden">
-                            <!-- 头部：可点击折叠 -->
                             <div id="${reasoningId}_header" class="px-3 sm:px-4 py-2.5 flex items-center gap-3 cursor-pointer select-none transition-colors hover:bg-white/5"
                                  style="background: linear-gradient(90deg, rgba(196,30,58,0.08) 0%, transparent 100%);"
                                  onclick="toggleDeepThink('${reasoningId}')">
-                                <!-- 状态图标 -->
                                 <div id="${reasoningId}_status" class="thinking-pulse flex-shrink-0 w-4 h-4 rounded-full bg-yao-gold/30 flex items-center justify-center">
                                     <div class="w-2 h-2 rounded-full bg-yao-gold"></div>
                                 </div>
-                                <!-- 标题和时间 -->
-                                <span id="${reasoningId}_time" class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">
-                                    正在思考...
-                                </span>
-                                <!-- 展开箭头 -->
+                                <span id="${reasoningId}_time" class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">正在思考...</span>
                                 <svg id="${reasoningId}_arrow" class="w-4 h-4 ml-auto transition-transform duration-200" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </div>
-                            <!-- 思考内容区域 -->
-                            <div id="${reasoningId}" class="px-3 sm:px-5 py-3 text-xs sm:text-sm" style="background: rgba(212, 165, 116, 0.03); color: var(--text-secondary); line-height: 1.7; max-height: 300px; overflow-y: auto;">
-                            </div>
+                            <div id="${reasoningId}" class="px-3 sm:px-5 py-3 text-xs sm:text-sm" style="background: rgba(212, 165, 116, 0.03); color: var(--text-secondary); line-height: 1.7; max-height: 300px; overflow-y: auto;"></div>
                         </div>
-                        <!-- 分隔线 (思考完成后显示) -->
                         <div id="${reasoningId}_divider" class="hidden mx-4 sm:mx-5 my-1 border-t border-dashed" style="border-color: var(--border-color);"></div>
-                        <!-- 正式回答区域 -->
                         <div id="${contentId}" class="px-3 sm:px-5 py-3 sm:py-4 chat-content cursor-blink">
                             <span class="text-sm" style="color: var(--text-tertiary);">正在准备回答...</span>
                         </div>
@@ -2828,22 +2731,17 @@
             container.appendChild(wrapper);
             scrollToBottom();
             
-            // 创建管理器实例
             const manager = new DeepThinkManager(reasoningId, contentId);
             deepThinkManagers.set(reasoningId, manager);
             
             return { reasoningId, contentId, wrapper, manager };
         }
         
-        // 切换深度思考显示/隐藏
         function toggleDeepThink(reasoningId) {
             const manager = deepThinkManagers.get(reasoningId);
-            if (manager) {
-                manager.toggle();
-            }
+            if (manager) manager.toggle();
         }
         
-        // 清理管理器
         function removeDeepThinkManager(reasoningId) {
             const manager = deepThinkManagers.get(reasoningId);
             if (manager) {
@@ -3072,151 +2970,128 @@
         // 发送带图片的消息
         async function sendMessageWithImage() {
             const userInput = document.getElementById('userInput');
-            const textContent = userInput.value.trim();
+            const content = userInput.value.trim();
             
-            if (!textContent && !selectedImageBase64) {
+            if (!content && !selectedImageBase64) {
                 showToast('请输入文字或选择图片');
                 return;
             }
             
             if (!USE_DIRECT_API) {
-                showToast('图片识别需要直连模式，请配置 USE_DIRECT_API = true');
-                return;
-            }
-            
-            if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
-                showToast('请先在代码中填写 DIRECT_API_KEY');
-                return;
+                const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                if (apiUrl.includes('your-worker-name')) {
+                    showToast('请先配置 API 地址');
+                    openSettings();
+                    return;
+                }
             }
             
             messageCount++;
             document.getElementById('msgCount').textContent = messageCount;
             
+            // 构建消息内容
+            let messageContent;
+            if (selectedImageBase64) {
+                // 多模态消息格式
+                messageContent = [
+                    {
+                        type: 'text',
+                        text: content || '这是什么瑶绣纹样？'
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: `data:image/jpeg;base64,${selectedImageBase64}`
+                        }
+                    }
+                ];
+            } else {
+                messageContent = content;
+            }
+            
             // 添加用户消息到界面
-            appendUserMessage(textContent || '[图片]');
+            appendUserMessage(content || '[图片]');
             if (selectedImageBase64) {
                 appendImageMessage(selectedImageBase64);
             }
             
             userInput.value = '';
             userInput.style.height = 'auto';
+            clearSelectedImage();
             
             isGenerating = true;
             document.getElementById('sendBtn').disabled = true;
             
-            // 第一步：获取结构化识别结果（非流式）
-            let recognitionResult = null;
-            try {
-                const visionPrompt = `请分析这张瑶绣图片，输出JSON格式结果：
-{
-  "is_embroidery": true/false,
-  "pattern_type": "纹样类型（八角花/十字挑花/回纹/水波纹等）",
-  "confidence": 0.95,
-  "color_scheme": "配色方案",
-  "technique": "针法（十字挑花/平绣/锁边等）",
-  "position": "服饰部位（头巾/腰带/袖口/裤脚/背篓带等）",
-  "description": "一句话描述",
-  "ocr_text": ["识别到的文字1", "文字2"]
-}
-
-如果不是瑶绣图片，is_embroidery设为false，其他字段为空字符串。`;
-
-                const visionResponse = await fetch(DIRECT_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DIRECT_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: 'deepseek-chat',
-                        messages: [
-                            {
-                                role: 'user',
-                                content: [
-                                    { type: 'text', text: visionPrompt },
-                                    {
-                                        type: 'image_url',
-                                        image_url: { url: `data:image/jpeg;base64,${selectedImageBase64}` }
-                                    }
-                                ]
-                            }
-                        ],
-                        stream: false
-                    })
-                });
-                
-                if (visionResponse.ok) {
-                    const visionData = await visionResponse.json();
-                    const responseText = visionData.choices?.[0]?.message?.content || '';
-                    
-                    // 提取JSON
-                    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                        try {
-                            recognitionResult = JSON.parse(jsonMatch[0]);
-                        } catch (e) {
-                            console.error('JSON解析失败:', e);
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error('识别失败:', err);
-            }
-            
-            // 显示结构化结果卡片
-            if (recognitionResult && recognitionResult.is_embroidery) {
-                appendRecognitionResult(recognitionResult);
-            }
-            
-            clearSelectedImage();
-            
-            // 第二步：流式对话获取详细解释
-            const { reasoningId, contentId, wrapper } = createAssistantMessage();
+            const { reasoningId, contentId, wrapper, manager } = createAssistantMessage();
             const contentDiv = document.getElementById(contentId);
             
             let fullText = '';
             let hasReasoning = false;
             let hasContent = false;
             let timeUpdateInterval = setInterval(() => {
-                const manager = deepThinkManagers.get(reasoningId);
                 if (manager) manager.updateThinkingStatus();
             }, 100);
             
             controller = new AbortController();
             
             try {
-                const chatPrompt = textContent || '请详细介绍这个瑶绣纹样的文化背景、象征意义和制作工艺。';
+                let response;
+                const model = document.getElementById('modelSelect').value;
                 
-                const response = await fetch(DIRECT_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${DIRECT_API_KEY}`
-                    },
-                    body: JSON.stringify({
-                        model: document.getElementById('modelSelect').value,
-                        messages: [
-                            {
-                                role: 'system',
-                                content: '你是瑶族刺绣知识专家，根据图片识别结果，详细解答用户问题。'
-                            },
-                            {
-                                role: 'user',
-                                content: [
-                                    { type: 'text', text: chatPrompt },
-                                    {
-                                        type: 'image_url',
-                                        image_url: { url: `data:image/jpeg;base64,${selectedImageBase64}` }
-                                    }
-                                ]
-                            }
-                        ],
-                        stream: true
-                    }),
-                    signal: controller.signal
-                });
+                const systemPrompt = `你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。
+
+【图片识别能力】
+当用户上传图片时：
+1. 识别是否为瑶族刺绣相关图像
+2. 分析纹样类型（八角花、十字挑花、回纹、水波纹等）
+3. 描述配色方案（黑底红彩为主）
+4. 指出针法特征（十字挑花、平绣、锁边等）
+5. 如果是服饰，说明是哪个部位（头巾、腰带、袖口、绑腿、背篓带等）
+6. 如果是非瑶绣图片，礼貌说明"这张图片似乎不是瑶族刺绣，我无法准确识别。"
+
+只回答与瑶族刺绣、瑶族文化相关的问题。`;
                 
-                if (!response.ok) throw new Error('HTTP ' + response.status);
+                if (USE_DIRECT_API) {
+                    if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
+                        throw new Error('请先在代码中填写 DIRECT_API_KEY');
+                    }
+                    
+                    response = await fetch(DIRECT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DIRECT_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { role: 'user', content: messageContent }
+                            ],
+                            stream: true
+                        }),
+                        signal: controller.signal
+                    });
+                } else {
+                    const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                        },
+                        body: JSON.stringify({
+                            message: content,
+                            image: selectedImageBase64,
+                            model: model
+                        }),
+                        signal: controller.signal
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -3240,10 +3115,7 @@
                             
                             if (delta?.reasoning_content) {
                                 hasReasoning = true;
-                                const manager = deepThinkManagers.get(reasoningId);
-                                if (manager) {
-                                    manager.appendReasoning(delta.reasoning_content);
-                                }
+                                if (manager) manager.appendReasoning(delta.reasoning_content);
                             }
                             
                             if (delta?.content) {
@@ -3256,7 +3128,7 @@
                                 hasContent = true;
                                 contentDiv.innerHTML = marked.parse(fullText);
                                 contentDiv.classList.remove('cursor-blink');
-                                contentDiv.querySelectorAll('pre code').forEach(block => {
+                                contentDiv.querySelectorAll('pre code').forEach((block) => {
                                     hljs.highlightElement(block);
                                 });
                             }
@@ -3266,12 +3138,11 @@
                 }
                 
                 clearInterval(timeUpdateInterval);
-                const manager = deepThinkManagers.get(reasoningId);
                 if (manager) manager.finish();
                 
                 const messageBubble = contentDiv.closest('.message-bubble');
                 if (messageBubble) {
-                    addMessageActions(messageBubble, textContent || '图片识别', fullText);
+                    addMessageActions(messageBubble, content || '图片识别', fullText);
                 }
                 
             } catch (err) {
@@ -3287,88 +3158,6 @@
                 document.getElementById('sendBtn').disabled = false;
                 controller = null;
             }
-        }
-        
-        // 添加结构化识别结果卡片
-        function appendRecognitionResult(result) {
-            const container = document.getElementById('chatContainer');
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex gap-2 sm:gap-4 animate-slide-up mb-4';
-            
-            // 置信度颜色
-            const confidenceColor = result.confidence > 0.8 ? 'var(--gold)' : result.confidence > 0.5 ? 'orange' : 'var(--text-tertiary)';
-            
-            // OCR文字显示
-            let ocrHtml = '';
-            if (result.ocr_text && result.ocr_text.length > 0) {
-                ocrHtml = `
-                    <div class="mt-2 pt-2 border-t" style="border-color: var(--border-color);">
-                        <span class="text-xs" style="color: var(--text-tertiary);">识别文字：</span>
-                        <div class="flex flex-wrap gap-1 mt-1">
-                            ${result.ocr_text.map(t => `<span class="px-2 py-0.5 rounded text-xs" style="background: var(--bg-secondary); color: var(--text-primary);">${t}</span>`).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // 快捷提问按钮
-            const quickQuestions = [
-                { text: '纹样寓意', query: `${result.pattern_type}有什么寓意？` },
-                { text: '针法步骤', query: `${result.technique}的具体步骤？` },
-                { text: '配色原理', query: `为什么使用${result.color_scheme}这种配色？` }
-            ];
-            
-            wrapper.innerHTML = `
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
-                        <span class="text-sm sm:text-lg font-serif font-bold text-white">识</span>
-                    </div>
-                </div>
-                <div class="message-bubble" style="max-width: 90%;">
-                    <div class="rounded-2xl rounded-tl-sm p-4 border" style="background: var(--bg-secondary); border-color: var(--border-color);">
-                        <div class="flex items-center gap-2 mb-3">
-                            <span class="text-lg">📋</span>
-                            <span class="font-bold text-sm sm:text-base" style="color: var(--text-primary);">识别结果</span>
-                            <span class="ml-auto text-xs px-2 py-0.5 rounded-full" style="background: ${confidenceColor}20; color: ${confidenceColor};">
-                                置信度 ${Math.round((result.confidence || 0) * 100)}%
-                            </span>
-                        </div>
-                        
-                        <div class="space-y-2 text-sm">
-                            <div class="flex items-start gap-2">
-                                <span class="text-xs" style="color: var(--text-tertiary); min-width: 70px;">纹样类型</span>
-                                <span style="color: var(--text-primary); font-weight: 500;">${result.pattern_type || '未知'}</span>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <span class="text-xs" style="color: var(--text-tertiary); min-width: 70px;">配色方案</span>
-                                <span style="color: var(--text-primary);">${result.color_scheme || '未知'}</span>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <span class="text-xs" style="color: var(--text-tertiary); min-width: 70px;">针法</span>
-                                <span style="color: var(--text-primary);">${result.technique || '未知'}</span>
-                            </div>
-                            <div class="flex items-start gap-2">
-                                <span class="text-xs" style="color: var(--text-tertiary); min-width: 70px;">服饰部位</span>
-                                <span style="color: var(--text-primary);">${result.position || '未知'}</span>
-                            </div>
-                        </div>
-                        
-                        ${ocrHtml}
-                        
-                        <div class="mt-3 pt-3 border-t flex flex-wrap gap-2" style="border-color: var(--border-color);">
-                            <span class="text-xs w-full mb-1" style="color: var(--text-tertiary);">💬 您想进一步了解什么？</span>
-                            ${quickQuestions.map(q => `
-                                <button onclick="quickAsk('${q.query}')" class="px-3 py-1.5 rounded-lg text-xs border transition-all hover:scale-105" style="background: var(--bg-tertiary); border-color: var(--border-color); color: var(--text-secondary);">
-                                    ${q.text}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            container.appendChild(wrapper);
-            scrollToBottom();
         }
         
         // 添加图片消息到界面
