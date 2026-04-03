@@ -675,18 +675,45 @@
         <!-- Input Area -->
         <div class="glass border-t px-3 sm:px-6 py-3 sm:py-4" style="border-color: var(--border-color);">
             <div class="max-w-4xl mx-auto">
+                <!-- 图片预览区域 -->
+                <div id="imagePreviewArea" class="hidden mb-2">
+                    <div class="inline-flex items-center gap-2 p-2 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                        <img id="previewImage" src="" alt="预览" class="w-16 h-16 object-cover rounded-lg">
+                        <div class="flex flex-col">
+                            <span class="text-xs" style="color: var(--text-secondary);">已选择图片</span>
+                            <button onclick="clearSelectedImage()" class="text-xs mt-1 flex items-center gap-1" style="color: var(--accent);">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="relative rounded-2xl border transition-all duration-300 focus-within:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color);" id="inputWrapper">
+                    <!-- 相机按钮 -->
+                    <button 
+                        onclick="openImagePicker()" 
+                        class="absolute left-2 bottom-2 p-1.5 sm:p-2 rounded-xl transition-all duration-200 hover:scale-110"
+                        style="color: var(--text-tertiary);"
+                        title="拍照或上传图片"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
+                    
                     <textarea 
                         id="userInput" 
                         rows="1"
                         placeholder="询问瑶绣知识..."
-                        class="w-full bg-transparent px-4 sm:px-5 py-3 pr-11 sm:pr-14 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
+                        class="w-full bg-transparent pl-10 sm:pl-12 pr-11 sm:pr-14 py-3 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
                         style="color: var(--text-primary);"
                         onkeydown="handleKeyDown(event)"
                         oninput="autoResize(this)"
                     ></textarea>
                     <button 
-                        onclick="sendMessageWithAnimation(event)" 
+                        onclick="sendMessageWithImage()" 
                         id="sendBtn"
                         class="absolute right-2 bottom-2 p-1.5 sm:p-2.5 rounded-xl transition-all duration-200 btn-glow btn-stitch disabled:opacity-40 disabled:cursor-not-allowed breathe"
                         style="background: var(--accent); color: white;"
@@ -893,6 +920,83 @@
         </div>
     </div>
 
+    <!-- Image Picker Modal -->
+    <div id="imagePickerModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);">
+        <div class="w-full max-w-sm rounded-2xl border p-6" style="background: var(--bg-secondary); border-color: var(--border-color);">
+            <h3 class="text-lg font-bold mb-6 text-center" style="color: var(--text-primary);">选择图片来源</h3>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <!-- 拍照 -->
+                <button onclick="takePhoto()" class="flex flex-col items-center gap-3 p-6 rounded-xl border transition-all hover:scale-105" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                    <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background: var(--accent);">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium" style="color: var(--text-primary);">拍照</span>
+                </button>
+                
+                <!-- 相册 -->
+                <button onclick="selectFromAlbum()" class="flex flex-col items-center gap-3 p-6 rounded-xl border transition-all hover:scale-105" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                    <div class="w-14 h-14 rounded-full flex items-center justify-center" style="background: var(--gold);">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium" style="color: var(--text-primary);">相册</span>
+                </button>
+            </div>
+            
+            <button onclick="closeImagePicker()" class="w-full mt-6 py-3 rounded-xl border text-sm font-medium transition-all" style="background: transparent; border-color: var(--border-color); color: var(--text-secondary);">
+                取消
+            </button>
+        </div>
+    </div>
+    
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="fixed inset-0 z-[70] hidden flex flex-col" style="background: var(--bg-primary);">
+        <div class="flex items-center justify-between p-4 border-b" style="border-color: var(--border-color);">
+            <button onclick="closeCamera()" class="p-2" style="color: var(--text-secondary);">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <span class="font-medium" style="color: var(--text-primary);">拍摄瑶绣</span>
+            <div class="w-10"></div>
+        </div>
+        
+        <div class="flex-1 relative overflow-hidden" id="cameraContainer">
+            <video id="cameraVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="cameraCanvas" class="hidden"></canvas>
+            
+            <!-- 对焦框 -->
+            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div class="w-48 h-48 border-2 border-white/50 rounded-lg">
+                    <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white"></div>
+                    <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white"></div>
+                    <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white"></div>
+                    <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6 flex items-center justify-center gap-8" style="background: var(--bg-secondary);">
+            <button onclick="switchCamera()" class="p-3 rounded-full" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+            </button>
+            
+            <button onclick="capturePhoto()" class="w-16 h-16 rounded-full border-4 flex items-center justify-center" style="border-color: white; background: var(--accent);">
+                <div class="w-12 h-12 rounded-full bg-white"></div>
+            </button>
+            
+            <div class="w-12"></div>
+        </div>
+    </div>
+    
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+    
     <!-- Share Card Modal -->
     <div id="shareModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);">
         <div class="relative w-full max-w-md">
@@ -1050,6 +1154,11 @@
         let favorites = [];
         let currentFilterTag = 'all';
         let shareData = null;
+        
+        // 图片相关状态
+        let selectedImageBase64 = null;
+        let currentStream = null;
+        let isUsingFrontCamera = false;
 
         // 知识图谱数据
         const kgData = {
@@ -2509,6 +2618,390 @@
                 renderKnowledgeGraph();
             }
         });
+        
+        // ========== 图片上传功能 ==========
+        
+        // 打开图片选择器
+        function openImagePicker() {
+            document.getElementById('imagePickerModal').classList.remove('hidden');
+        }
+        
+        // 关闭图片选择器
+        function closeImagePicker() {
+            document.getElementById('imagePickerModal').classList.add('hidden');
+        }
+        
+        // 拍照
+        async function takePhoto() {
+            closeImagePicker();
+            
+            const video = document.getElementById('cameraVideo');
+            const modal = document.getElementById('cameraModal');
+            
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: isUsingFrontCamera ? 'user' : 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                
+                video.srcObject = currentStream;
+                modal.classList.remove('hidden');
+            } catch (err) {
+                showToast('无法访问摄像头：' + err.message);
+                // 降级到文件选择
+                selectFromAlbum();
+            }
+        }
+        
+        // 关闭相机
+        function closeCamera() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            video.srcObject = null;
+            modal.classList.add('hidden');
+        }
+        
+        // 切换摄像头
+        async function switchCamera() {
+            isUsingFrontCamera = !isUsingFrontCamera;
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+            
+            const video = document.getElementById('cameraVideo');
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: isUsingFrontCamera ? 'user' : 'environment'
+                    },
+                    audio: false
+                });
+                video.srcObject = currentStream;
+            } catch (err) {
+                showToast('切换摄像头失败');
+            }
+        }
+        
+        // 拍摄照片
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // 压缩图片
+            canvas.toBlob((blob) => {
+                processImageBlob(blob);
+                closeCamera();
+            }, 'image/jpeg', 0.8);
+        }
+        
+        // 从相册选择
+        function selectFromAlbum() {
+            closeImagePicker();
+            document.getElementById('fileInput').click();
+        }
+        
+        // 处理文件选择
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showToast('请选择图片文件');
+                return;
+            }
+            
+            // 压缩图片
+            const compressedBlob = await compressImage(file);
+            processImageBlob(compressedBlob);
+            
+            // 清空 input 以便重复选择同一文件
+            event.target.value = '';
+        }
+        
+        // 压缩图片
+        function compressImage(file, maxWidth = 1024, maxHeight = 1024, quality = 0.8) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+                    
+                    // 等比例缩放
+                    if (width > maxWidth || height > maxHeight) {
+                        const ratio = Math.min(maxWidth / width, maxHeight / height);
+                        width *= ratio;
+                        height *= ratio;
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob((blob) => {
+                        resolve(blob);
+                    }, 'image/jpeg', quality);
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        }
+        
+        // 处理图片 Blob
+        function processImageBlob(blob) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                selectedImageBase64 = e.target.result.split(',')[1]; // 去掉 data:image/jpeg;base64, 前缀
+                showImagePreview(e.target.result);
+            };
+            reader.readAsDataURL(blob);
+        }
+        
+        // 显示图片预览
+        function showImagePreview(dataUrl) {
+            const previewArea = document.getElementById('imagePreviewArea');
+            const previewImage = document.getElementById('previewImage');
+            
+            previewImage.src = dataUrl;
+            previewArea.classList.remove('hidden');
+            
+            // 自动聚焦输入框
+            document.getElementById('userInput').focus();
+        }
+        
+        // 清除已选图片
+        function clearSelectedImage() {
+            selectedImageBase64 = null;
+            document.getElementById('imagePreviewArea').classList.add('hidden');
+            document.getElementById('previewImage').src = '';
+        }
+        
+        // 发送带图片的消息
+        async function sendMessageWithImage() {
+            const userInput = document.getElementById('userInput');
+            const content = userInput.value.trim();
+            
+            if (!content && !selectedImageBase64) {
+                showToast('请输入文字或选择图片');
+                return;
+            }
+            
+            if (!USE_DIRECT_API) {
+                const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                if (apiUrl.includes('your-worker-name')) {
+                    showToast('请先配置 API 地址');
+                    openSettings();
+                    return;
+                }
+            }
+            
+            messageCount++;
+            document.getElementById('msgCount').textContent = messageCount;
+            
+            // 构建消息内容
+            let messageContent;
+            if (selectedImageBase64) {
+                // 多模态消息格式
+                messageContent = [
+                    {
+                        type: 'text',
+                        text: content || '这是什么瑶绣纹样？'
+                    },
+                    {
+                        type: 'image_url',
+                        image_url: {
+                            url: `data:image/jpeg;base64,${selectedImageBase64}`
+                        }
+                    }
+                ];
+            } else {
+                messageContent = content;
+            }
+            
+            // 添加用户消息到界面
+            appendUserMessage(content || '[图片]');
+            if (selectedImageBase64) {
+                appendImageMessage(selectedImageBase64);
+            }
+            
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            clearSelectedImage();
+            
+            isGenerating = true;
+            document.getElementById('sendBtn').disabled = true;
+            
+            const streamingDiv = createAssistantMessage();
+            let fullText = '';
+            let reasoningText = '';
+            let hasReceivedContent = false;
+            
+            controller = new AbortController();
+            
+            try {
+                let response;
+                const model = document.getElementById('modelSelect').value;
+                
+                // 增强系统提示词，添加图片识别能力
+                const systemPrompt = `你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。
+
+【图片识别能力】
+当用户上传图片时：
+1. 识别是否为瑶族刺绣相关图像
+2. 分析纹样类型（八角花、十字挑花、回纹、水波纹等）
+3. 描述配色方案（黑底红彩为主）
+4. 指出针法特征（十字挑花、平绣、锁边等）
+5. 如果是服饰，说明是哪个部位（头巾、腰带、袖口、绑腿、背篓带等）
+6. 如果是非瑶绣图片，礼貌说明"这张图片似乎不是瑶族刺绣，我无法准确识别。请上传瑶绣相关图片，或描述您想了解的瑶绣知识。"
+
+【识别要点】
+- 八角花：几何对称、八边形、中心向外辐射状、常用于头巾和背带
+- 十字挑花：网格状底布、X形交叉针脚、反面挑花正面看
+- 黑底红彩：靛蓝/黑色底布、大红主色、黄白绿点缀
+- 盘瑶服饰：头巾有流苏、腰带宽大、裤脚绑腿
+
+只回答与瑶族刺绣、瑶族文化相关的问题。`;
+                
+                if (USE_DIRECT_API) {
+                    if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
+                        throw new Error('请先在代码中填写 DIRECT_API_KEY');
+                    }
+                    
+                    response = await fetch(DIRECT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DIRECT_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { role: 'system', content: systemPrompt },
+                                { 
+                                    role: 'user', 
+                                    content: messageContent
+                                }
+                            ],
+                            stream: true
+                        }),
+                        signal: controller.signal
+                    });
+                } else {
+                    const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                        },
+                        body: JSON.stringify({
+                            message: content,
+                            image: selectedImageBase64,
+                            model: model
+                        }),
+                        signal: controller.signal
+                    });
+                }
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        
+                        const data = line.slice(5).trim();
+                        if (data === '[DONE]') continue;
+                        
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            
+                            if (!hasReceivedContent) {
+                                streamingDiv.innerHTML = '';
+                                hasReceivedContent = true;
+                            }
+                            
+                            if (delta?.reasoning_content) {
+                                reasoningText += delta.reasoning_content;
+                            }
+                            
+                            if (delta?.content) {
+                                fullText += delta.content;
+                                let displayText = fullText;
+                                if (reasoningText) {
+                                    displayText = '<div style="background: var(--bg-tertiary); border-left: 2px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.25rem;">思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5;">' + escapeHtml(reasoningText) + '</div></div>\n\n' + fullText;
+                                }
+                                streamingDiv.innerHTML = marked.parse(displayText);
+                                streamingDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                            scrollToBottom();
+                        } catch (e) {}
+                    }
+                }
+                
+                streamingDiv.classList.remove('cursor-blink');
+                
+                // 添加操作按钮
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addMessageActions(messageBubble, content || '图片识别', fullText);
+                }
+                
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                } else {
+                    streamingDiv.innerHTML = `<div style="color: #ef4444;">出错了：${escapeHtml(err.message)}</div>`;
+                }
+            } finally {
+                isGenerating = false;
+                document.getElementById('sendBtn').disabled = false;
+                controller = null;
+            }
+        }
+        
+        // 添加图片消息到界面
+        function appendImageMessage(base64Data) {
+            const container = document.getElementById('chatContainer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up mt-2';
+            wrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border overflow-hidden" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
+                        <img src="data:image/jpeg;base64,${base64Data}" alt="上传的图片" class="max-w-[200px] max-h-[200px] rounded-lg object-cover">
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            scrollToBottom();
+        }
     </script>
 </body>
 </html>
