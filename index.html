@@ -1741,32 +1741,57 @@
         let isDragging = false;
         let dragStart = { x: 0, y: 0 };
         let isAnimating = false;
+        let kgRendered = false;
         
-        // 添加动画样式
+        // 添加动画样式 - 只执行一次
         function addKgAnimationStyles() {
             if (document.getElementById('kgAnimStyles')) return;
             const style = document.createElement('style');
             style.id = 'kgAnimStyles';
             style.textContent = `
+                /* 节点基础样式 - 无动画避免抽搐 */
                 .kg-node {
                     cursor: pointer;
-                    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+                    will-change: transform;
+                }
+                
+                /* 圆圈样式 */
+                .kg-node-circle {
+                    transition: stroke 0.15s ease, stroke-width 0.15s ease, fill 0.15s ease;
+                }
+                
+                /* 悬停效果 - 只改变圆圈，不改变组 */
+                .kg-node:hover .kg-node-circle {
+                    stroke: var(--gold) !important;
+                    stroke-width: 3px !important;
+                    filter: drop-shadow(0 0 8px var(--gold));
+                }
+                
+                /* 悬停时轻微放大 - 使用 CSS 动画 */
+                .kg-node {
+                    animation: none;
                 }
                 .kg-node:hover {
-                    transform: scale(1.15);
+                    animation: nodeHover 0.15s ease forwards;
                 }
+                @keyframes nodeHover {
+                    from { transform: scale(1); }
+                    to { transform: scale(1.12); }
+                }
+                
+                /* 点击缩小效果 */
+                .kg-node.clicking {
+                    animation: nodeClick 0.1s ease forwards;
+                }
+                @keyframes nodeClick {
+                    to { transform: scale(0.9); }
+                }
+                
                 .kg-node.animating {
                     pointer-events: none;
-                    z-index: 1000;
                 }
-                .kg-node circle {
-                    transition: all 0.2s ease;
-                }
-                .kg-node:hover circle {
-                    stroke: var(--gold);
-                    stroke-width: 3;
-                    filter: drop-shadow(0 0 10px var(--gold));
-                }
+                
+                /* 波纹 */
                 .kg-ripple {
                     fill: none;
                     stroke: white;
@@ -1774,27 +1799,28 @@
                     opacity: 0;
                     pointer-events: none;
                 }
+                
+                /* 飞行节点 */
                 .flying-node {
                     position: fixed;
                     z-index: 9999;
                     pointer-events: none;
-                    transition: none;
                 }
+                
                 @keyframes whiteRipple {
-                    0% { transform: scale(0); opacity: 0.8; stroke-width: 3; }
-                    100% { transform: scale(4); opacity: 0; stroke-width: 0; }
+                    0% { transform: scale(0); opacity: 0.8; stroke-width: 2; }
+                    100% { transform: scale(3); opacity: 0; stroke-width: 0; }
                 }
-                @keyframes flyToChat {
-                    0% { transform: translate(0, 0) scale(1) rotate(0deg); border-radius: 50%; }
-                    20% { transform: translate(0, 0) scale(0.85) rotate(0deg); border-radius: 50%; }
-                    40% { transform: translate(100px, -50px) scale(0.9, 1.3) rotate(5deg); border-radius: 40%; }
-                    100% { transform: translate(var(--flyX), var(--flyY)) scale(1) rotate(0deg); border-radius: 20px 20px 20px 4px; }
-                }
+                
                 @keyframes nodeScatter {
-                    to { transform: translate(var(--scatterX), var(--scatterY)); opacity: 0.3; }
+                    to { 
+                        transform: translate(var(--scatterX), var(--scatterY)) scale(0.8); 
+                        opacity: 0.2; 
+                    }
                 }
+                
                 @keyframes lineFade {
-                    to { opacity: 0; stroke-dasharray: 5, 5; }
+                    to { opacity: 0; }
                 }
             `;
             document.head.appendChild(style);
@@ -1807,6 +1833,11 @@
             const container = document.getElementById('kgContainer');
             const width = container.clientWidth;
             const height = container.clientHeight;
+            
+            // 如果已经渲染过，只需要更新位置
+            if (kgRendered && svg.querySelector('#kgMainGroup')) {
+                return;
+            }
             
             svg.innerHTML = '';
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
@@ -1824,8 +1855,6 @@
                 ...n,
                 px: centerX + (n.x - 0.5) * 600 * scale,
                 py: centerY + (n.y - 0.5) * 500 * scale,
-                originalX: centerX + (n.x - 0.5) * 600 * scale,
-                originalY: centerY + (n.y - 0.5) * 500 * scale
             }));
             
             // 绘制连线
@@ -1842,7 +1871,7 @@
                     line.setAttribute('y2', target.py);
                     line.setAttribute('stroke', 'var(--border-color)');
                     line.setAttribute('stroke-width', '2');
-                    line.style.opacity = '0.6';
+                    line.style.opacity = '0.5';
                     line.dataset.source = edge.source;
                     line.dataset.target = edge.target;
                     linesGroup.appendChild(line);
@@ -1859,210 +1888,228 @@
                 g.setAttribute('class', 'kg-node');
                 g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
                 g.dataset.nodeId = node.id;
-                g.style.cursor = 'pointer';
                 
-                const radius = node.category === 'root' ? 40 : node.category === 'branch' ? 28 : 20;
+                const radius = node.category === 'root' ? 36 : node.category === 'branch' ? 26 : 18;
+                
+                // 外圈（用于hover效果）
+                const hoverRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hoverRing.setAttribute('r', radius + 4);
+                hoverRing.setAttribute('fill', 'transparent');
+                hoverRing.style.pointerEvents = 'all';
+                hoverRing.style.cursor = 'pointer';
+                
+                // 主圆圈
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'kg-node-circle');
                 circle.setAttribute('r', radius);
                 circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
                 circle.setAttribute('stroke', 'var(--border-color)');
                 circle.setAttribute('stroke-width', '2');
-                circle.style.filter = 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
                 
+                // 文字
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('text-anchor', 'middle');
                 text.setAttribute('dy', '0.35em');
                 text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
-                text.setAttribute('font-size', node.category === 'root' ? '13' : node.category === 'branch' ? '11' : '10');
+                text.setAttribute('font-size', node.category === 'root' ? '12' : node.category === 'branch' ? '11' : '10');
                 text.setAttribute('font-weight', '500');
+                text.setAttribute('font-family', 'Noto Sans SC, sans-serif');
                 text.style.pointerEvents = 'none';
-                text.style.userSelect = 'none';
                 text.textContent = node.label;
                 
-                // 点击事件 - 绣线入画效果
-                g.addEventListener('click', async function(e) {
+                // 点击事件 - 优化版
+                const handleClick = async (e) => {
                     if (isDragging || isAnimating) return;
                     e.stopPropagation();
                     
                     isAnimating = true;
+                    g.classList.add('clicking');
                     
-                    // 1. 缩小蓄力
-                    g.style.transform = 'scale(0.85)';
+                    // 1. 快速蓄力 (80ms)
                     circle.setAttribute('stroke', 'white');
-                    circle.setAttribute('stroke-width', '4');
+                    circle.setAttribute('stroke-width', '3');
+                    await new Promise(r => setTimeout(r, 80));
                     
-                    await new Promise(r => setTimeout(r, 150));
-                    
-                    // 2. 白色波纹扩散
+                    // 2. 白色波纹 (快速)
                     createWhiteRipples(node.px, node.py, kgTransform.scale);
                     
-                    // 3. 其他节点退避
-                    scatterOtherNodes(node.id, nodes, mainGroup);
-                    
-                    // 4. 连线淡化
+                    // 3. 其他节点快速退避
+                    scatterOtherNodes(node.id, mainGroup);
                     fadeLines(linesGroup);
                     
-                    await new Promise(r => setTimeout(r, 200));
+                    await new Promise(r => setTimeout(r, 100));
                     
-                    // 5. 创建飞行节点
+                    // 4. 创建飞行节点
                     const rect = svg.getBoundingClientRect();
                     const startX = rect.left + node.px * kgTransform.scale + kgTransform.x;
                     const startY = rect.top + node.py * kgTransform.scale + kgTransform.y;
                     
-                    // 目标位置：主界面输入框附近
                     const chatContainer = document.getElementById('chatContainer');
                     const chatRect = chatContainer.getBoundingClientRect();
-                    const endX = chatRect.left + chatRect.width - 150;
-                    const endY = chatRect.top + chatRect.height - 100;
+                    const endX = chatRect.left + chatRect.width - 120;
+                    const endY = chatRect.top + chatRect.height - 80;
                     
                     await flyNodeToChat(node, startX, startY, endX, endY);
                     
-                    // 6. 关闭面板，在主界面生成消息
+                    // 5. 关闭面板
                     closeAllPanels();
-                    await new Promise(r => setTimeout(r, 300));
+                    await new Promise(r => setTimeout(r, 150));
                     
-                    // 7. 添加用户消息
+                    // 6. 添加消息并触发回复
                     appendUserMessage(node.label + '是什么？');
-                    
-                    // 8. 触发 AI 回复
-                    await new Promise(r => setTimeout(r, 400));
+                    await new Promise(r => setTimeout(r, 200));
                     sendMessage();
                     
                     isAnimating = false;
-                });
+                };
                 
+                hoverRing.addEventListener('click', handleClick);
+                // 阻止默认的拖拽开始
+                hoverRing.addEventListener('mousedown', (e) => e.stopPropagation());
+                
+                g.appendChild(hoverRing);
                 g.appendChild(circle);
                 g.appendChild(text);
                 nodesGroup.appendChild(g);
             });
-            mainGroup.appendChild(nodesGroup);
             
+            mainGroup.appendChild(nodesGroup);
             setupKgInteractions(svg, mainGroup);
+            kgRendered = true;
         }
         
-        // 白色波纹效果
+        // 白色波纹效果 - 快速版
         function createWhiteRipples(x, y, scale) {
             const svg = document.getElementById('knowledgeGraph');
             const adjustedX = x * scale + kgTransform.x;
             const adjustedY = y * scale + kgTransform.y;
             
-            for (let i = 0; i < 3; i++) {
+            // 只创建2层波纹，加快速度
+            for (let i = 0; i < 2; i++) {
                 setTimeout(() => {
                     const ripple = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     ripple.setAttribute('cx', adjustedX);
                     ripple.setAttribute('cy', adjustedY);
-                    ripple.setAttribute('r', '20');
+                    ripple.setAttribute('r', '15');
                     ripple.setAttribute('class', 'kg-ripple');
-                    ripple.style.animation = 'whiteRipple 0.8s ease-out forwards';
+                    ripple.style.animation = 'whiteRipple 0.5s ease-out forwards';
                     svg.appendChild(ripple);
-                    setTimeout(() => ripple.remove(), 800);
-                }, i * 100);
+                    setTimeout(() => ripple.remove(), 500);
+                }, i * 60);
             }
         }
         
-        // 其他节点退避
-        function scatterOtherNodes(clickedId, nodes, mainGroup) {
-            const clicked = nodes.find(n => n.id === clickedId);
-            nodes.forEach(node => {
-                if (node.id === clickedId) return;
+        // 其他节点退避 - 快速版
+        function scatterOtherNodes(clickedId, mainGroup) {
+            const clicked = mainGroup.querySelector(`[data-node-id="${clickedId}"]`);
+            if (!clicked) return;
+            
+            const clickedRect = clicked.getBoundingClientRect();
+            const clickedX = clickedRect.left + clickedRect.width / 2;
+            const clickedY = clickedRect.top + clickedRect.height / 2;
+            
+            const allNodes = mainGroup.querySelectorAll('.kg-node');
+            allNodes.forEach(g => {
+                if (g.dataset.nodeId === clickedId) return;
                 
-                const g = mainGroup.querySelector(`[data-node-id="${node.id}"]`);
-                if (!g) return;
+                const rect = g.getBoundingClientRect();
+                const x = rect.left + rect.width / 2;
+                const y = rect.top + rect.height / 2;
                 
-                const angle = Math.atan2(node.py - clicked.py, node.px - clicked.px);
-                const distance = 80 + Math.random() * 40;
+                const angle = Math.atan2(y - clickedY, x - clickedX);
+                const distance = 60;
                 const scatterX = Math.cos(angle) * distance;
                 const scatterY = Math.sin(angle) * distance;
                 
                 g.style.setProperty('--scatterX', `${scatterX}px`);
                 g.style.setProperty('--scatterY', `${scatterY}px`);
-                g.style.animation = 'nodeScatter 0.5s ease forwards';
+                g.style.animation = 'nodeScatter 0.3s ease forwards';
             });
         }
         
-        // 连线淡化
+        // 连线淡化 - 快速版
         function fadeLines(linesGroup) {
-            const lines = linesGroup.querySelectorAll('line');
-            lines.forEach((line, i) => {
-                setTimeout(() => {
-                    line.style.animation = 'lineFade 0.4s ease forwards';
-                }, i * 30);
-            });
+            linesGroup.style.transition = 'opacity 0.2s';
+            linesGroup.style.opacity = '0';
         }
         
-        // 节点飞向主界面
+        // 节点飞向主界面 - 快速丝滑版
         function flyNodeToChat(node, startX, startY, endX, endY) {
             return new Promise(resolve => {
                 const flyingNode = document.createElement('div');
                 flyingNode.className = 'flying-node';
+                
+                const startSize = node.category === 'root' ? 72 : node.category === 'branch' ? 52 : 36;
+                
                 flyingNode.innerHTML = `
-                    <div style="
-                        width: ${node.category === 'root' ? 80 : node.category === 'branch' ? 56 : 40}px;
-                        height: ${node.category === 'root' ? 80 : node.category === 'branch' ? 56 : 40}px;
+                    <div id="flyInner" style="
+                        width: ${startSize}px;
+                        height: ${startSize}px;
                         border-radius: 50%;
-                        background: ${node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)'};
+                        background: var(--accent);
                         border: 2px solid white;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        font-size: ${node.category === 'root' ? 13 : node.category === 'branch' ? 11 : 10}px;
+                        font-size: 12px;
                         font-weight: 500;
-                        color: ${node.category === 'leaf' ? 'var(--text-primary)' : 'white'};
-                        box-shadow: 0 0 30px rgba(196, 30, 58, 0.5);
+                        color: white;
+                        box-shadow: 0 0 20px rgba(196, 30, 58, 0.6), 0 0 40px rgba(196, 30, 58, 0.3);
+                        will-change: transform, width, height, border-radius;
                     ">${node.label}</div>
                 `;
                 flyingNode.style.left = `${startX}px`;
                 flyingNode.style.top = `${startY}px`;
+                flyingNode.style.transform = 'translate(-50%, -50%)';
                 document.body.appendChild(flyingNode);
                 
-                // 计算飞行轨迹（贝塞尔曲线）
-                const deltaX = endX - startX;
-                const deltaY = endY - startY;
-                const controlX = startX + deltaX * 0.5 + 100;
-                const controlY = startY - 150;
+                const inner = flyingNode.querySelector('#flyInner');
                 
-                // 创建飞行动画
-                const duration = 800;
+                // 使用 Web Animations API 实现丝滑动画
+                const duration = 500; // 缩短到500ms
                 const startTime = performance.now();
                 
                 function animate(currentTime) {
                     const elapsed = currentTime - startTime;
-                    const progress = Math.min(elapsed / duration, 1);
-                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    const t = Math.min(elapsed / duration, 1);
+                    
+                    // easeOutCubic 缓动
+                    const ease = 1 - Math.pow(1 - t, 3);
+                    
+                    // 贝塞尔曲线控制点（制造弧线）
+                    const cpX = startX + (endX - startX) * 0.6;
+                    const cpY = startY - 100;
                     
                     // 二次贝塞尔曲线
-                    const t = easeProgress;
-                    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*controlX + t*t*endX;
-                    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*controlY + t*t*endY;
-                    
-                    // 变形：圆形 → 气泡
-                    const scale = 1 + t * 0.2;
-                    const borderRadius = 50 - t * 46; // 50% -> 4px
-                    
-                    const inner = flyingNode.querySelector('div');
-                    inner.style.width = `${(node.category === 'root' ? 80 : node.category === 'branch' ? 56 : 40) * scale}px`;
-                    inner.style.borderRadius = `${borderRadius}%`;
+                    const x = (1-t)*(1-t)*startX + 2*(1-t)*t*cpX + t*t*endX;
+                    const y = (1-t)*(1-t)*startY + 2*(1-t)*t*cpY + t*t*endY;
                     
                     flyingNode.style.left = `${x}px`;
                     flyingNode.style.top = `${y}px`;
-                    flyingNode.style.transform = 'translate(-50%, -50%)';
                     
-                    if (progress < 1) {
+                    // 变形：圆形 → 气泡
+                    const targetSize = 200; // 消息气泡宽度
+                    const currentSize = startSize + (targetSize - startSize) * ease;
+                    const borderRadius = 50 * (1 - ease) + 20 * ease; // 50% -> 20px
+                    
+                    inner.style.width = `${currentSize}px`;
+                    inner.style.height = `${40 + (1-ease) * 20}px`; // 高度减小
+                    inner.style.borderRadius = `${borderRadius}px`;
+                    
+                    if (t < 1) {
                         requestAnimationFrame(animate);
                     } else {
-                        // 到达终点，弹跳效果
-                        inner.style.animation = 'none';
-                        inner.offsetHeight; // 触发重排
-                        inner.style.transition = 'all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
-                        inner.style.transform = 'scale(1.1)';
+                        // 到达终点的弹跳效果
+                        inner.style.transition = 'transform 0.15s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+                        inner.style.transform = 'scale(1.05)';
                         setTimeout(() => {
                             inner.style.transform = 'scale(1)';
-                        }, 100);
+                        }, 75);
                         
                         setTimeout(() => {
                             flyingNode.remove();
                             resolve();
-                        }, 300);
+                        }, 200);
                     }
                 }
                 
@@ -2070,7 +2117,7 @@
             });
         }
         
-        // 设置拖拽和缩放（简化版）
+        // 设置拖拽和缩放 - 优化版
         function setupKgInteractions(svg, mainGroup) {
             let startX, startY;
             let initialTransform = { ...kgTransform };
@@ -2088,18 +2135,19 @@
                 if (startX === undefined || isAnimating) return;
                 const dx = e.clientX - startX;
                 const dy = e.clientY - startY;
-                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging = true;
+                if (Math.abs(dx) > 2 || Math.abs(dy) > 2) isDragging = true;
+                
                 kgTransform.x = initialTransform.x + dx;
                 kgTransform.y = initialTransform.y + dy;
-                mainGroup.setAttribute('transform', 
-                    `translate(${kgTransform.x}, ${kgTransform.y}) scale(${kgTransform.scale})`
-                );
+                
+                // 使用 style.transform 提高性能
+                mainGroup.style.transform = `translate(${kgTransform.x}px, ${kgTransform.y}px) scale(${kgTransform.scale})`;
             });
             
             svg.addEventListener('mouseup', () => {
                 startX = undefined;
                 svg.style.cursor = 'grab';
-                setTimeout(() => isDragging = false, 50);
+                setTimeout(() => isDragging = false, 30);
             });
             
             svg.addEventListener('mouseleave', () => {
@@ -2120,20 +2168,30 @@
                 kgTransform.x = mouseX - (mouseX - kgTransform.x) * scaleRatio;
                 kgTransform.y = mouseY - (mouseY - kgTransform.y) * scaleRatio;
                 kgTransform.scale = newScale;
-                mainGroup.setAttribute('transform', 
-                    `translate(${kgTransform.x}, ${kgTransform.y}) scale(${kgTransform.scale})`
-                );
+                mainGroup.style.transform = `translate(${kgTransform.x}px, ${kgTransform.y}px) scale(${kgTransform.scale})`;
             }, { passive: false });
         }
         
-        // 重置视图
+        // 重置视图 - 修复版
         function resetKgView() {
             kgTransform = { x: 0, y: 0, scale: 1 };
             const mainGroup = document.getElementById('kgMainGroup');
             if (mainGroup) {
-                mainGroup.setAttribute('transform', 'translate(0, 0) scale(1)');
-                // 重新渲染恢复节点位置
-                renderKnowledgeGraph();
+                mainGroup.style.transform = 'translate(0px, 0px) scale(1)';
+                // 恢复所有节点
+                const nodes = mainGroup.querySelectorAll('.kg-node');
+                nodes.forEach(n => {
+                    n.style.animation = '';
+                    n.style.opacity = '1';
+                    n.style.transform = '';
+                });
+                // 恢复连线
+                const linesGroup = document.getElementById('kgLines');
+                if (linesGroup) {
+                    linesGroup.style.opacity = '0.5';
+                }
+                kgRendered = false;
+                setTimeout(() => renderKnowledgeGraph(), 50);
             }
         }
 
