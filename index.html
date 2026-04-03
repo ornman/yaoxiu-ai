@@ -2520,6 +2520,13 @@
                 return;
             }
             
+            // R1 模型不支持图片，自动切换到 V3
+            const modelSelect = document.getElementById('modelSelect');
+            if (selectedImageBase64 && modelSelect.value === 'deepseek-reasoner') {
+                modelSelect.value = 'deepseek-chat';
+                showToast('图片识别已自动切换至 V3 模型（R1 不支持图片）');
+            }
+            
             if (!USE_DIRECT_API) {
                 const apiUrl = config.apiUrl || DEFAULT_API_URL;
                 if (apiUrl.includes('your-worker-name')) {
@@ -2535,7 +2542,7 @@
             // 构建消息内容
             let messageContent;
             if (selectedImageBase64) {
-                // 多模态消息格式
+                // 多模态消息格式（仅 V3 支持）
                 messageContent = [
                     {
                         type: 'text',
