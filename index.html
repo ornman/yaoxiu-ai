@@ -997,6 +997,23 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Controls -->
+                <div class="absolute bottom-4 right-4 flex flex-col gap-2">
+                    <button onclick="resetKgView()" class="p-2.5 rounded-xl border shadow-lg transition-all hover:scale-110" 
+                            style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-secondary);"
+                            title="重置视图">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Usage Hint -->
+                <div class="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 rounded-full border text-xs" 
+                     style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-tertiary);">
+                    🖱️ 拖拽移动 · 滚轮缩放 · 点击查看详情
+                </div>
             </div>
         </div>
     </div>
@@ -1721,6 +1738,9 @@
 
         // ========== 知识图谱 ==========
         let selectedNode = null;
+        let kgTransform = { x: 0, y: 0, scale: 1 };
+        let isDragging = false;
+        let dragStart = { x: 0, y: 0 };
         
         function renderKnowledgeGraph() {
             const svg = document.getElementById('knowledgeGraph');
@@ -1730,15 +1750,27 @@
             
             svg.innerHTML = '';
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.style.cursor = 'grab';
             
-            // 计算节点位置
+            // 创建主变换组
+            const mainGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            mainGroup.id = 'kgMainGroup';
+            svg.appendChild(mainGroup);
+            
+            // 计算初始节点位置（居中）
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const scale = Math.min(width, height) / 800;
+            
             const nodes = kgData.nodes.map(n => ({
                 ...n,
-                px: n.x * width,
-                py: n.y * height
+                px: centerX + (n.x - 0.5) * 600 * scale,
+                py: centerY + (n.y - 0.5) * 500 * scale
             }));
             
-            // 绘制连线（带绘制动画）
+            // 绘制连线
+            const linesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            linesGroup.id = 'kgLines';
             kgData.edges.forEach((edge, index) => {
                 const source = nodes.find(n => n.id === edge.source);
                 const target = nodes.find(n => n.id === edge.target);
@@ -1748,129 +1780,236 @@
                     line.setAttribute('y1', source.py);
                     line.setAttribute('x2', target.px);
                     line.setAttribute('y2', target.py);
-                    line.setAttribute('class', 'kg-line');
-                    line.style.strokeDasharray = '1000';
-                    line.style.strokeDashoffset = '1000';
-                    line.style.animation = `kgLineDraw 0.8s ease forwards ${index * 0.1}s`;
-                    svg.appendChild(line);
+                    line.setAttribute('stroke', 'var(--border-color)');
+                    line.setAttribute('stroke-width', '2');
+                    line.style.opacity = '0.6';
+                    linesGroup.appendChild(line);
                 }
             });
+            mainGroup.appendChild(linesGroup);
             
-            // 添加连线绘制动画样式
-            if (!document.getElementById('kgAnimStyle')) {
-                const style = document.createElement('style');
-                style.id = 'kgAnimStyle';
-                style.textContent = `
-                    @keyframes kgLineDraw {
-                        to { stroke-dashoffset: 0; }
-                    }
-                    @keyframes kgNodeAppear {
-                        0% { transform: scale(0); opacity: 0; }
-                        50% { transform: scale(1.2); }
-                        100% { transform: scale(1); opacity: 1; }
-                    }
-                    @keyframes kgPulse {
-                        0%, 100% { transform: scale(1); }
-                        50% { transform: scale(1.15); }
-                    }
-                    .kg-node {
-                        cursor: pointer;
-                        transition: all 0.3s ease;
-                        transform-box: fill-box;
-                        transform-origin: center;
-                    }
-                    .kg-node:hover {
-                        filter: drop-shadow(0 0 12px var(--accent));
-                    }
-                    .kg-node:hover circle {
-                        stroke: var(--accent);
-                        stroke-width: 3;
-                    }
-                    .kg-node.selected {
-                        animation: kgPulse 0.6s ease;
-                    }
-                    .kg-node.selected circle {
-                        stroke: var(--gold);
-                        stroke-width: 4;
-                        filter: drop-shadow(0 0 20px var(--gold));
-                    }
-                `;
-                document.head.appendChild(style);
-            }
+            // 绘制节点
+            const nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            nodesGroup.id = 'kgNodes';
             
-            // 绘制节点（带入场动画）
             nodes.forEach((node, index) => {
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 g.setAttribute('class', 'kg-node');
-                g.setAttribute('transform', `translate(${node.px}, ${node.py}) scale(0)`);
-                g.style.animation = `kgNodeAppear 0.5s ease forwards ${0.3 + index * 0.08}s`;
+                g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
+                g.style.cursor = 'pointer';
                 
-                // 点击事件
-                g.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    
-                    // 防止重复点击
-                    if (selectedNode === node.id) return;
-                    selectedNode = node.id;
-                    
-                    // 视觉反馈
-                    document.querySelectorAll('.kg-node').forEach(n => n.classList.remove('selected'));
-                    g.classList.add('selected');
-                    
-                    // 生成涟漪效果
-                    createRipple(node.px, node.py);
-                    
-                    // 延迟执行，让动画完成
-                    setTimeout(() => {
-                        quickAsk(node.label + '是什么？');
-                        closeAllPanels();
-                        selectedNode = null;
-                    }, 600);
-                });
-                
+                // 圆
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                circle.setAttribute('r', node.category === 'root' ? 35 : node.category === 'branch' ? 25 : 18);
+                circle.setAttribute('r', node.category === 'root' ? 40 : node.category === 'branch' ? 28 : 20);
                 circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
                 circle.setAttribute('stroke', 'var(--border-color)');
                 circle.setAttribute('stroke-width', '2');
-                circle.style.transition = 'all 0.3s ease';
+                circle.style.filter = 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
                 
-                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-                text.setAttribute('text-anchor', 'middle');
-                text.setAttribute('dy', '0.35em');
-                text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
-                text.setAttribute('font-size', node.category === 'root' ? '14' : node.category === 'branch' ? '12' : '10');
-                text.setAttribute('font-weight', '500');
-                text.style.pointerEvents = 'none';
-                text.textContent = node.label;
+                // 文字 - 使用 foreignObject 确保中文显示正常
+                const fo = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+                const textWidth = node.category === 'root' ? 80 : node.category === 'branch' ? 56 : 40;
+                fo.setAttribute('x', -textWidth / 2);
+                fo.setAttribute('y', -10);
+                fo.setAttribute('width', textWidth);
+                fo.setAttribute('height', 20);
+                
+                const div = document.createElement('div');
+                div.style.cssText = `
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: ${node.category === 'root' ? 13 : node.category === 'branch' ? 11 : 10}px;
+                    font-weight: 500;
+                    color: ${node.category === 'leaf' ? 'var(--text-primary)' : 'white'};
+                    text-align: center;
+                    line-height: 1.2;
+                    user-select: none;
+                    pointer-events: none;
+                `;
+                div.textContent = node.label;
+                fo.appendChild(div);
+                
+                // 点击事件
+                g.addEventListener('click', function(e) {
+                    if (isDragging) return;
+                    e.stopPropagation();
+                    
+                    // 视觉反馈
+                    document.querySelectorAll('.kg-node circle').forEach(c => {
+                        c.style.stroke = 'var(--border-color)';
+                        c.style.strokeWidth = '2';
+                    });
+                    circle.style.stroke = 'var(--gold)';
+                    circle.style.strokeWidth = '4';
+                    
+                    // 涟漪效果
+                    createRipple(node.px, node.py);
+                    
+                    // 延迟执行
+                    setTimeout(() => {
+                        quickAsk(node.label + '是什么？');
+                        closeAllPanels();
+                    }, 400);
+                });
+                
+                g.addEventListener('mouseenter', () => {
+                    circle.style.filter = 'drop-shadow(0 0 15px var(--accent))';
+                });
+                g.addEventListener('mouseleave', () => {
+                    circle.style.filter = 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))';
+                });
                 
                 g.appendChild(circle);
-                g.appendChild(text);
-                svg.appendChild(g);
+                g.appendChild(fo);
+                nodesGroup.appendChild(g);
             });
+            mainGroup.appendChild(nodesGroup);
+            
+            // 添加拖拽和缩放事件
+            setupKgInteractions(svg, mainGroup);
+        }
+        
+        // 设置知识图谱交互
+        function setupKgInteractions(svg, mainGroup) {
+            let startX, startY;
+            let initialTransform = { ...kgTransform };
+            
+            // 鼠标按下 - 开始拖拽
+            svg.addEventListener('mousedown', (e) => {
+                isDragging = false;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialTransform = { ...kgTransform };
+                svg.style.cursor = 'grabbing';
+            });
+            
+            // 鼠标移动 - 拖拽
+            svg.addEventListener('mousemove', (e) => {
+                if (startX === undefined) return;
+                
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                    isDragging = true;
+                }
+                
+                kgTransform.x = initialTransform.x + dx;
+                kgTransform.y = initialTransform.y + dy;
+                updateKgTransform(mainGroup);
+            });
+            
+            // 鼠标释放
+            svg.addEventListener('mouseup', () => {
+                startX = undefined;
+                startY = undefined;
+                svg.style.cursor = 'grab';
+                setTimeout(() => isDragging = false, 50);
+            });
+            
+            svg.addEventListener('mouseleave', () => {
+                startX = undefined;
+                startY = undefined;
+                svg.style.cursor = 'grab';
+            });
+            
+            // 滚轮缩放
+            svg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
+                kgTransform.scale = Math.max(0.3, Math.min(3, kgTransform.scale * scaleFactor));
+                updateKgTransform(mainGroup);
+            }, { passive: false });
+            
+            // 触摸支持
+            let touchStartDist = 0;
+            let touchStartScale = 1;
+            
+            svg.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    startX = e.touches[0].clientX;
+                    startY = e.touches[0].clientY;
+                    initialTransform = { ...kgTransform };
+                } else if (e.touches.length === 2) {
+                    touchStartDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    touchStartScale = kgTransform.scale;
+                }
+            });
+            
+            svg.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (e.touches.length === 1 && startX !== undefined) {
+                    const dx = e.touches[0].clientX - startX;
+                    const dy = e.touches[0].clientY - startY;
+                    kgTransform.x = initialTransform.x + dx;
+                    kgTransform.y = initialTransform.y + dy;
+                    updateKgTransform(mainGroup);
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    kgTransform.scale = Math.max(0.3, Math.min(3, touchStartScale * (dist / touchStartDist)));
+                    updateKgTransform(mainGroup);
+                }
+            });
+            
+            svg.addEventListener('touchend', () => {
+                startX = undefined;
+                startY = undefined;
+            });
+        }
+        
+        // 更新变换
+        function updateKgTransform(group) {
+            group.setAttribute('transform', 
+                `translate(${kgTransform.x}, ${kgTransform.y}) scale(${kgTransform.scale})`
+            );
         }
         
         // 节点点击涟漪效果
         function createRipple(x, y) {
             const svg = document.getElementById('knowledgeGraph');
+            const mainGroup = document.getElementById('kgMainGroup');
+            if (!mainGroup) return;
+            
+            // 计算变换后的坐标
+            const adjustedX = x * kgTransform.scale + kgTransform.x;
+            const adjustedY = y * kgTransform.scale + kgTransform.y;
+            
             const ripple = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            ripple.setAttribute('cx', x);
-            ripple.setAttribute('cy', y);
+            ripple.setAttribute('cx', adjustedX);
+            ripple.setAttribute('cy', adjustedY);
             ripple.setAttribute('r', '10');
             ripple.setAttribute('fill', 'none');
             ripple.setAttribute('stroke', 'var(--gold)');
             ripple.setAttribute('stroke-width', '2');
             ripple.style.opacity = '1';
+            ripple.style.pointerEvents = 'none';
             ripple.style.transition = 'all 0.6s ease';
             svg.appendChild(ripple);
             
-            // 触发动画
             requestAnimationFrame(() => {
-                ripple.setAttribute('r', '80');
+                ripple.setAttribute('r', String(80 * kgTransform.scale));
                 ripple.style.opacity = '0';
             });
             
             setTimeout(() => ripple.remove(), 600);
+        }
+        
+        // 重置知识图谱视图
+        function resetKgView() {
+            kgTransform = { x: 0, y: 0, scale: 1 };
+            const mainGroup = document.getElementById('kgMainGroup');
+            if (mainGroup) {
+                updateKgTransform(mainGroup);
+            }
         }
 
         // ========== 聊天功能 ==========
@@ -2147,50 +2286,38 @@
             const bubble = container.querySelector('.chat-content') || container;
             if (!bubble) return;
             
-            // 创建固定在消息右上角的按钮组
+            // 检查是否已有操作按钮
+            if (bubble.querySelector('.message-actions')) return;
+            
+            // 创建固定在消息右下角的按钮组
             const actions = document.createElement('div');
-            actions.className = 'message-actions flex items-center gap-2 absolute -top-3 right-3 opacity-0 transition-all duration-300';
-            actions.style.transform = 'translateY(5px)';
+            actions.className = 'message-actions flex items-center gap-2 mt-2 pt-2 border-t';
+            actions.style.borderColor = 'var(--border-color)';
             actions.innerHTML = `
                 <button onclick="addToFavorites('${escapeHtml(question)}', '${escapeHtml(answer)}')" 
-                        class="fav-btn w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 btn-stitch" 
-                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color);"
+                        class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
                         onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
-                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary)';"
-                        title="收藏这条回答">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
                     </svg>
+                    收藏
                 </button>
                 <button onclick="openShareModal('${escapeHtml(question)}', '${escapeHtml(answer)}', ${messageCount})" 
-                        class="w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110" 
+                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
                         style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
                         onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
-                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold)';"
-                        title="生成分享卡片">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
                     </svg>
+                    分享
                 </button>
             `;
             
-            // 确保消息气泡是相对定位
-            bubble.style.position = 'relative';
+            // 添加到气泡底部
             bubble.appendChild(actions);
-            
-            // 立即显示按钮
-            requestAnimationFrame(() => {
-                actions.style.opacity = '1';
-                actions.style.transform = 'translateY(0)';
-            });
-            
-            // 鼠标悬停整个消息时保持按钮显示
-            const messageWrapper = bubble.closest('.flex.gap-2, .flex.gap-4');
-            if (messageWrapper) {
-                messageWrapper.addEventListener('mouseenter', () => {
-                    actions.style.opacity = '1';
-                });
-            }
         }
 
         // 窗口大小改变时重绘知识图谱
