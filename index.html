@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="red">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>瑶绣 · 瑶族刺绣知识问答</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        yao: {
+                            black: 'var(--bg-primary)',
+                            dark: 'var(--bg-secondary)',
+                            gray: 'var(--bg-tertiary)',
+                            'gray-light': 'var(--border-color)',
+                            red: 'var(--accent)',
+                            'red-light': 'var(--accent-light)',
+                            gold: 'var(--gold)',
+                            'gold-light': 'var(--gold-light)',
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['Noto Serif SC', 'serif'],
+                        sans: ['Noto Sans SC', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* ========== 动画系统变量 ========== */
+        :root {
+            --anim-fast: 150ms;
+            --anim-normal: 300ms;
+            --anim-slow: 500ms;
+            --anim-easing: cubic-bezier(0.4, 0, 0.2, 1);
+            --anim-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        /* ========== 针线光标动画 ========== */
+        .needle-cursor {
+            position: relative;
+        }
+        .needle-cursor::after {
+            content: '';
+            position: absolute;
+            right: -2px;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--gold) 0%, var(--accent) 100%);
+            animation: needlePulse 1.2s ease-in-out infinite;
+            border-radius: 1px;
+        }
+        @keyframes needlePulse {
+            0%, 100% { opacity: 1; transform: scaleY(1); }
+            50% { opacity: 0.6; transform: scaleY(0.95); }
+        }
+
+        /* ========== 飞针传书动画 ========== */
+        @keyframes needleFly {
+            0% { 
+                transform: translate(0, 0) rotate(0deg) scale(1); 
+                opacity: 1;
+            }
+            100% { 
+                transform: translate(100px, -50px) rotate(45deg) scale(0.5); 
+                opacity: 0;
+            }
+        }
+        .needle-flying {
+            animation: needleFly 0.4s var(--anim-easing) forwards;
+        }
+
+        /* ========== 丝线拖尾粒子 ========== */
+        .silk-trail {
+            position: absolute;
+            pointer-events: none;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), transparent);
+            border-radius: 1px;
+            opacity: 0.8;
+            animation: silkFade 0.6s ease-out forwards;
+        }
+        @keyframes silkFade {
+            0% { transform: scaleX(1); opacity: 0.8; }
+            100% { transform: scaleX(0); opacity: 0; }
+        }
+
+        /* ========== 金粉粒子系统 ========== */
+        .particle-gold {
+            position: fixed;
+            pointer-events: none;
+            width: 3px;
+            height: 3px;
+            background: var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--gold);
+            animation: particleFloat 1.5s ease-out forwards;
+        }
+        @keyframes particleFloat {
+            0% { 
+                transform: translate(0, 0) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(var(--tx, 30px), var(--ty, -60px)) scale(0); 
+                opacity: 0; 
+            }
+        }
+
+        /* ========== 八角花绽放动画 ========== */
+        @keyframes octagonBloom {
+            0% { 
+                transform: scale(0) rotate(0deg); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: scale(1.2) rotate(180deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: scale(1) rotate(360deg); 
+                opacity: 0; 
+            }
+        }
+        .octagon-bloom {
+            animation: octagonBloom 1s var(--anim-elastic) forwards;
+        }
+
+        /* ========== 针线穿梭边框 ========== */
+        .stitch-border {
+            position: relative;
+        }
+        .stitch-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px dashed var(--gold);
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .stitch-border:hover::before {
+            opacity: 0.5;
+            animation: stitchMove 1s linear infinite;
+        }
+        @keyframes stitchMove {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: 20; }
+        }
+
+        /* ========== 按钮针脚效果 ========== */
+        .btn-stitch {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-stitch::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border: 1px dashed var(--gold);
+            border-radius: inherit;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+        .btn-stitch:hover::after {
+            opacity: 1;
+            animation: stitchDash 2s linear infinite;
+        }
+        @keyframes stitchDash {
+            0% { clip-path: inset(0 100% 0 0); }
+            25% { clip-path: inset(0 0 100% 0); }
+            50% { clip-path: inset(0 0 0 100%); }
+            75% { clip-path: inset(100% 0 0 0); }
+            100% { clip-path: inset(0 100% 0 0); }
+        }
+
+        /* ========== 织锦渐入动画 ========== */
+        @keyframes weaveIn {
+            0% { 
+                clip-path: polygon(0 0, 0 0, 0 0, 0 0);
+                opacity: 0;
+            }
+            100% { 
+                clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+                opacity: 1;
+            }
+        }
+        .weave-in {
+            animation: weaveIn 0.6s var(--anim-easing) forwards;
+        }
+
+        /* ========== 打字机针线效果 ========== */
+        .type-needle {
+            display: inline-block;
+            position: relative;
+        }
+        .type-needle::after {
+            content: '🪡';
+            position: absolute;
+            right: -12px;
+            top: -2px;
+            font-size: 10px;
+            animation: needleStitch 0.1s ease-out;
+            opacity: 0;
+        }
+        @keyframes needleStitch {
+            0% { transform: translateY(-5px); opacity: 1; }
+            100% { transform: translateY(0); opacity: 0; }
+        }
+
+        /* ========== 背景飘浮八角花 ========== */
+        .floating-octagon {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0.03;
+            animation: floatOctagon 20s ease-in-out infinite;
+        }
+        @keyframes floatOctagon {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(20px, -30px) rotate(90deg); }
+            50% { transform: translate(-10px, -20px) rotate(180deg); }
+            75% { transform: translate(15px, 10px) rotate(270deg); }
+        }
+
+        /* ========== 收藏穿针引线动画 ========== */
+        .thread-line {
+            position: fixed;
+            height: 2px;
+            background: linear-gradient(90deg, var(--gold), var(--accent));
+            transform-origin: left center;
+            pointer-events: none;
+            z-index: 100;
+            animation: threadSew 0.8s var(--anim-easing) forwards;
+        }
+        @keyframes threadSew {
+            0% { transform: scaleX(0); opacity: 1; }
+            100% { transform: scaleX(1); opacity: 0.3; }
+        }
+
+        /* ========== 数字翻转动画 ========== */
+        @keyframes numberFlip {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); }
+        }
+        .number-flip {
+            animation: numberFlip 0.4s var(--anim-easing);
+            display: inline-block;
+        }
+
+        /* ========== 呼吸光晕 ========== */
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 0 5px var(--shadow); }
+            50% { box-shadow: 0 0 20px var(--shadow), 0 0 40px var(--shadow); }
+        }
+        .breathe {
+            animation: breathe 2s ease-in-out infinite;
+        }
+        /* ========== CSS 变量定义 ========== */
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-tertiary: #1f1f23;
+            --border-color: #2a2a2e;
+            --accent: #c41e3a;
+            --accent-light: #e63950;
+            --accent-hover: #9f1239;
+            --gold: #d4a574;
+            --gold-light: #e8c9a0;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --shadow: rgba(196, 30, 58, 0.15);
+        }
+        [data-theme="blue"] {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1e293b;
+            --border-color: #334155;
+            --accent: #3b82f6;
+            --accent-light: #60a5fa;
+            --accent-hover: #2563eb;
+            --gold: #93c5fd;
+            --gold-light: #bfdbfe;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --shadow: rgba(59, 130, 246, 0.2);
+        }
+        [data-theme="light"] {
+            --bg-primary: #fafaf9;
+            --bg-secondary: #f5f5f4;
+            --bg-tertiary: #e7e5e4;
+            --border-color: #d6d3d1;
+            --accent: #c41e3a;
+            --accent-light: #e63950;
+            --accent-hover: #9f1239;
+            --gold: #b45309;
+            --gold-light: #d97706;
+            --text-primary: #1c1917;
+            --text-secondary: #57534e;
+            --text-tertiary: #78716c;
+            --shadow: rgba(196, 30, 58, 0.1);
+        }
+        @media (prefers-color-scheme: light) {
+            [data-theme="auto"] {
+                --bg-primary: #fafaf9;
+                --bg-secondary: #f5f5f4;
+                --bg-tertiary: #e7e5e4;
+                --border-color: #d6d3d1;
+                --accent: #c41e3a;
+                --accent-light: #e63950;
+                --gold: #b45309;
+                --text-primary: #1c1917;
+                --text-secondary: #57534e;
+                --text-tertiary: #78716c;
+            }
+        }
+        @media (prefers-color-scheme: dark) {
+            [data-theme="auto"] {
+                --bg-primary: #0a0a0b;
+                --bg-secondary: #141416;
+                --bg-tertiary: #1f1f23;
+                --border-color: #2a2a2e;
+                --accent: #c41e3a;
+                --accent-light: #e63950;
+                --gold: #d4a574;
+                --text-primary: #f5f5f5;
+                --text-secondary: #a1a1aa;
+                --text-tertiary: #71717a;
+            }
+        }
+        [data-font-size="small"] { font-size: 14px; }
+        [data-font-size="medium"] { font-size: 16px; }
+        [data-font-size="large"] { font-size: 18px; }
+        [data-font-size="xlarge"] { font-size: 20px; }
+        [data-font-weight="light"] .chat-content { font-weight: 300; }
+        [data-font-weight="normal"] .chat-content { font-weight: 400; }
+        [data-font-weight="medium"] .chat-content { font-weight: 500; }
+        *, *::before, *::after {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .pattern-octagon {
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(196, 30, 58, 0.02) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(212, 165, 116, 0.02) 0%, transparent 50%),
+                linear-gradient(45deg, transparent 48%, rgba(196, 30, 58, 0.015) 49%, rgba(196, 30, 58, 0.015) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(196, 30, 58, 0.015) 49%, rgba(196, 30, 58, 0.015) 51%, transparent 52%);
+            background-size: 100px 100px, 100px 100px, 50px 50px, 50px 50px;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+        .cursor-blink::after {
+            content: '▊';
+            color: var(--accent);
+            animation: blink 1s step-end infinite;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        pre {
+            background: var(--bg-tertiary) !important;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 12px 0;
+        }
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85em;
+        }
+        .message-bubble {
+            max-width: min(85%, 720px);
+            word-wrap: break-word;
+        }
+        @media (min-width: 768px) {
+            .message-bubble { max-width: 75%; }
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        [data-theme="light"] .glass {
+            background: rgba(255, 255, 255, 0.7);
+        }
+        .settings-panel, .favorites-panel, .share-panel, .knowledge-panel {
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .settings-panel.open, .favorites-panel.open, .share-panel.open, .knowledge-panel.open {
+            transform: translateX(0);
+        }
+        .panel-overlay {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .panel-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+        .theme-card {
+            border: 2px solid var(--border-color);
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .theme-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .theme-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--shadow);
+        }
+        .favorite-item {
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .favorite-item:hover {
+            border-left-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+        /* 八角花旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .octagon-rotate {
+            animation: rotate 20s linear infinite;
+        }
+        .octagon-rotate:hover {
+            animation-play-state: paused;
+        }
+        /* 分享卡片样式 */
+        .share-card {
+            width: 375px;
+            min-height: 500px;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 2px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+        .share-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(196, 30, 58, 0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        /* 知识图谱节点 */
+        .kg-node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .kg-node:hover {
+            filter: drop-shadow(0 0 8px var(--accent));
+            transform: scale(1.1);
+        }
+        .kg-line {
+            stroke: var(--border-color);
+            stroke-width: 2;
+            transition: stroke 0.3s ease;
+        }
+        .kg-line.active {
+            stroke: var(--accent);
+            stroke-width: 3;
+        }
+    </style>
+</head>
+<body class="min-h-screen pattern-octagon">
+    <!-- 背景飘浮八角花 -->
+    <div id="floatingOctagons" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
+    <div class="max-w-5xl mx-auto h-screen flex flex-col">
+        
+        <!-- Header -->
+        <header class="glass border-b sticky top-0 z-40" style="border-color: var(--border-color);">
+            <div class="px-4 sm:px-6 py-3 sm:py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <div class="relative cursor-pointer" onclick="openKnowledgeGraph()">
+                            <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg" style="box-shadow: 0 10px 30px var(--shadow);">
+                                <span class="text-lg sm:text-2xl font-serif font-bold text-white">瑶</span>
+                            </div>
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yao-gold flex items-center justify-center">
+                                <span class="text-xs">❋</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h1 class="font-serif text-base sm:text-xl font-bold tracking-wide cursor-pointer" onclick="openKnowledgeGraph()" style="color: var(--text-primary);">
+                                瑶绣<span style="color: var(--gold);">·</span>智问
+                            </h1>
+                            <p class="text-xs mt-0.5" style="color: var(--text-tertiary);">瑶族刺绣非遗知识库</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-1 sm:gap-3">
+                        <!-- 收藏入口 -->
+                        <button onclick="openFavorites()" id="headerFavBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="我的收藏">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                            <span id="favBadge" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yao-red text-white text-xs flex items-center justify-center hidden animate-pulse">0</span>
+                            
+                            <!-- 新用户提示 -->
+                            <span id="favHint" class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 transition-opacity pointer-events-none" style="background: var(--accent); color: white;">
+                                查看收藏
+                                <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45" style="background: var(--accent);"></span>
+                            </span>
+                        </button>
+                        
+                        <!-- 深度思考/快速切换 -->
+                        <div class="flex items-center gap-1 p-1 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                            <button id="modeFast" onclick="setModelMode('fast')" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1" style="background: var(--accent); color: white;">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                <span class="hidden sm:inline">快速</span>
+                                <span class="sm:hidden">快</span>
+                            </button>
+                            <button id="modeDeep" onclick="setModelMode('deep')" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1" style="color: var(--text-secondary);">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                                <span class="hidden sm:inline">深度</span>
+                                <span class="sm:hidden">深</span>
+                            </button>
+                        </div>
+                        <!-- 隐藏的 model select 用于存储值 -->
+                        <select id="modelSelect" class="hidden">
+                            <option value="deepseek-chat" selected>V3</option>
+                            <option value="deepseek-reasoner">R1</option>
+                        </select>
+                        
+                        <button onclick="openSettings()" class="p-2 rounded-lg transition-all duration-200" style="color: var(--text-secondary);" title="设置">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Chat Area -->
+        <div id="chatContainer" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth">
+            <div class="flex justify-center animate-fade-in">
+                <div class="rounded-2xl px-4 sm:px-6 py-2 border backdrop-blur-sm" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                    <span class="text-xs sm:text-sm" style="color: var(--text-tertiary);">今日共绣 </span>
+                    <span class="font-medium" style="color: var(--gold);" id="msgCount">0</span>
+                    <span class="text-xs sm:text-sm" style="color: var(--text-tertiary);"> 纹</span>
+                </div>
+            </div>
+            
+            <!-- Assistant Welcome -->
+            <div class="flex gap-2 sm:gap-4 animate-slide-up">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
+                        <span class="text-sm sm:text-lg font-serif font-bold text-white">瑶</span>
+                    </div>
+                </div>
+                <div class="message-bubble">
+                    <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                        <p class="leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base" style="color: var(--text-primary);">
+                            您好，我是瑶族刺绣知识专家。千百年来，瑶家女儿以针为笔、以线为墨，在靛蓝布上绣出八角花的图腾。
+                        </p>
+                        <!-- 八角花纹样展示 -->
+                        <div class="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span style="color: var(--gold);">❋</span>
+                                <span class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">八角花纹样示意</span>
+                            </div>
+                            <div class="flex justify-center py-2">
+                                <svg class="w-24 h-24 sm:w-32 sm:h-32 octagon-rotate" viewBox="0 0 200 200">
+                                    <defs>
+                                        <linearGradient id="octGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#c41e3a;stop-opacity:1" />
+                                            <stop offset="100%" style="stop-color:#d4a574;stop-opacity:1" />
+                                        </linearGradient>
+                                    </defs>
+                                    <!-- 八角花外框 -->
+                                    <polygon points="100,10 170,40 190,100 170,160 100,190 30,160 10,100 30,40" fill="none" stroke="url(#octGrad)" stroke-width="3"/>
+                                    <!-- 内部几何纹 -->
+                                    <polygon points="100,30 150,55 160,100 150,145 100,170 50,145 40,100 50,55" fill="none" stroke="#c41e3a" stroke-width="2" opacity="0.6"/>
+                                    <polygon points="100,50 130,65 135,100 130,135 100,150 70,135 65,100 70,65" fill="#c41e3a" opacity="0.3"/>
+                                    <!-- 中心 -->
+                                    <circle cx="100" cy="100" r="15" fill="#d4a574"/>
+                                    <!-- 装饰点 -->
+                                    <circle cx="100" cy="10" r="4" fill="#d4a574"/>
+                                    <circle cx="190" cy="100" r="4" fill="#d4a574"/>
+                                    <circle cx="100" cy="190" r="4" fill="#d4a574"/>
+                                    <circle cx="10" cy="100" r="4" fill="#d4a574"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-center" style="color: var(--text-tertiary);">鼠标悬停暂停旋转 · 象征太阳与生命</p>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                            <div class="rounded-lg p-2.5 sm:p-3 border cursor-pointer transition-all hover:-translate-y-0.5" style="background: var(--bg-tertiary); border-color: var(--border-color);" onclick="quickAsk('什么是八角花纹样？')">
+                                <div class="mb-1" style="color: var(--gold);">❋</div>
+                                <div class="text-sm font-medium" style="color: var(--text-primary);">八角花纹样</div>
+                                <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">族徽图腾的几何美学</div>
+                            </div>
+                            <div class="rounded-lg p-2.5 sm:p-3 border cursor-pointer transition-all hover:-translate-y-0.5" style="background: var(--bg-tertiary); border-color: var(--border-color);" onclick="quickAsk('十字挑花针法怎么绣？')">
+                                <div class="mb-1" style="color: var(--accent);">✦</div>
+                                <div class="text-sm font-medium" style="color: var(--text-primary);">十字挑花</div>
+                                <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">反面挑花正面看</div>
+                            </div>
+                            <div class="rounded-lg p-2.5 sm:p-3 border cursor-pointer transition-all hover:-translate-y-0.5" style="background: var(--bg-tertiary); border-color: var(--border-color);" onclick="quickAsk('黑底红彩配色有什么讲究？')">
+                                <div class="mb-1" style="color: var(--gold-light);">◈</div>
+                                <div class="text-sm font-medium" style="color: var(--text-primary);">黑底红彩</div>
+                                <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">经典色彩体系寓意</div>
+                            </div>
+                        </div>
+                        <p class="text-xs sm:text-sm italic" style="color: var(--text-secondary);">请问，您想了解哪一方面的瑶绣知识？</p>
+                        <div class="mt-3 pt-3 border-t flex items-center gap-2" style="border-color: var(--border-color);">
+                            <span class="text-xs" style="color: var(--text-tertiary);">💡 提示：对话后点击</span>
+                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background: var(--bg-tertiary); border: 1px solid var(--border-color);">⭐</span>
+                            <span class="text-xs" style="color: var(--text-tertiary);">收藏精彩内容</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="glass border-t px-3 sm:px-6 py-3 sm:py-4" style="border-color: var(--border-color);">
+            <div class="max-w-4xl mx-auto">
+                <div class="relative rounded-2xl border transition-all duration-300 focus-within:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color);" id="inputWrapper">
+                    <textarea 
+                        id="userInput" 
+                        rows="1"
+                        placeholder="询问瑶绣知识..."
+                        class="w-full bg-transparent px-4 sm:px-5 py-3 pr-11 sm:pr-14 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
+                        style="color: var(--text-primary);"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button 
+                        onclick="sendMessageWithAnimation(event)" 
+                        id="sendBtn"
+                        class="absolute right-2 bottom-2 p-1.5 sm:p-2.5 rounded-xl transition-all duration-200 btn-glow btn-stitch disabled:opacity-40 disabled:cursor-not-allowed breathe"
+                        style="background: var(--accent); color: white;"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between mt-2 sm:mt-3 text-xs" style="color: var(--text-tertiary);">
+                    <div class="flex items-center gap-2 sm:gap-4">
+                        <span>支持 Markdown</span>
+                        <span class="hidden sm:inline">·</span>
+                        <span class="hidden sm:inline">Shift + Enter 换行</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--accent);"></span>
+                        <span>瑶绣专家在线</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Overlay -->
+    <div id="panelOverlay" class="panel-overlay fixed inset-0 bg-black/50 z-50" onclick="closeAllPanels()"></div>
+
+    <!-- Settings Panel -->
+    <div id="settingsPanel" class="settings-panel fixed right-0 top-0 h-full w-full sm:w-[400px] z-50 overflow-y-auto" style="background: var(--bg-primary); border-left: 1px solid var(--border-color);">
+        <div class="p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-6 sm:mb-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style="background: var(--bg-tertiary);">
+                        <svg class="w-5 h-5" style="color: var(--accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <h2 class="text-lg sm:text-xl font-serif font-bold" style="color: var(--text-primary);">设置</h2>
+                </div>
+                <button onclick="closeAllPanels()" class="p-2 rounded-lg" style="color: var(--text-secondary);">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Theme Settings -->
+            <div class="mb-6 sm:mb-8">
+                <h3 class="text-sm font-medium mb-3 sm:mb-4 flex items-center gap-2" style="color: var(--text-secondary);">
+                    <span style="color: var(--gold);">●</span> 主题色彩
+                </h3>
+                <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="red" onclick="setTheme('red')">
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0a0b] to-[#c41e3a]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">黑底红彩</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">经典传统</div>
+                    </div>
+                    <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="blue" onclick="setTheme('blue')">
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0f1a] to-[#3b82f6]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">青花蓝调</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">蓝靛支系</div>
+                    </div>
+                    <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="light" onclick="setTheme('light')">
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fafaf9] to-[#c41e3a]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">素雅白底</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">护眼模式</div>
+                    </div>
+                    <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="auto" onclick="setTheme('auto')">
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-r from-[#0a0a0b] to-[#fafaf9]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">跟随系统</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">自动切换</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Font Settings -->
+            <div class="mb-6 sm:mb-8">
+                <h3 class="text-sm font-medium mb-3 sm:mb-4 flex items-center gap-2" style="color: var(--text-secondary);">
+                    <span style="color: var(--gold);">●</span> 字体设置
+                </h3>
+                <div class="space-y-3 sm:space-y-4">
+                    <div>
+                        <label class="text-xs mb-1.5 sm:mb-2 block" style="color: var(--text-tertiary);">字体大小</label>
+                        <div class="flex gap-2">
+                            <button onclick="setFontSize('small')" class="font-size-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-size="small" style="border-color: var(--border-color); color: var(--text-secondary);">小</button>
+                            <button onclick="setFontSize('medium')" class="font-size-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-size="medium" style="border-color: var(--border-color); color: var(--text-secondary);">中</button>
+                            <button onclick="setFontSize('large')" class="font-size-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-size="large" style="border-color: var(--border-color); color: var(--text-secondary);">大</button>
+                            <button onclick="setFontSize('xlarge')" class="font-size-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-size="xlarge" style="border-color: var(--border-color); color: var(--text-secondary);">特大</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs mb-1.5 sm:mb-2 block" style="color: var(--text-tertiary);">字重</label>
+                        <div class="flex gap-2">
+                            <button onclick="setFontWeight('light')" class="font-weight-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-weight="light" style="border-color: var(--border-color); color: var(--text-secondary);">细</button>
+                            <button onclick="setFontWeight('normal')" class="font-weight-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-weight="normal" style="border-color: var(--border-color); color: var(--text-secondary);">常规</button>
+                            <button onclick="setFontWeight('medium')" class="font-weight-btn flex-1 py-2 px-2 sm:px-3 rounded-lg text-xs sm:text-sm border transition-all" data-weight="medium" style="border-color: var(--border-color); color: var(--text-secondary);">中等</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Settings -->
+            <div class="mb-6 sm:mb-8">
+                <h3 class="text-sm font-medium mb-3 sm:mb-4 flex items-center gap-2" style="color: var(--text-secondary);">
+                    <span style="color: var(--gold);">●</span> API 配置
+                </h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs mb-1.5 block" style="color: var(--text-tertiary);">Worker URL</label>
+                        <input type="text" id="settingsApiUrl" class="w-full px-3 py-2 rounded-lg border text-xs sm:text-sm focus:outline-none focus:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);" placeholder="https://your-worker.workers.dev">
+                    </div>
+                    <div>
+                        <label class="text-xs mb-1.5 block" style="color: var(--text-tertiary);">API Key (可选)</label>
+                        <div class="relative">
+                            <input type="password" id="settingsApiKey" class="w-full px-3 py-2 rounded-lg border text-xs sm:text-sm focus:outline-none focus:ring-2 pr-10" style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);" placeholder="sk-...">
+                            <button onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--text-tertiary);">
+                                <svg id="eyeIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                            </button>
+                        </div>
+                        <p class="text-xs mt-1.5" style="color: var(--text-tertiary);">如 Worker 已内置 Key，此处可留空</p>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button onclick="testApiConnection()" class="flex-1 py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium border transition-all btn-glow" style="border-color: var(--accent); color: var(--accent);">
+                            测试连接
+                        </button>
+                        <button onclick="resetApiSettings()" class="flex-1 py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium border transition-all" style="border-color: var(--border-color); color: var(--text-secondary);">
+                            重置默认
+                        </button>
+                    </div>
+                    <div id="apiTestResult" class="hidden rounded-lg px-3 py-2 text-xs sm:text-sm"></div>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="pt-4 sm:pt-6 border-t" style="border-color: var(--border-color);">
+                <div class="text-center">
+                    <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
+                        <span class="text-2xl sm:text-3xl font-serif font-bold text-white">瑶</span>
+                    </div>
+                    <h3 class="font-serif text-base sm:text-lg font-bold mb-0.5" style="color: var(--text-primary);">瑶绣 · 智问</h3>
+                    <p class="text-xs mb-2 sm:mb-4" style="color: var(--text-tertiary);">v2.0 · 传承千年非遗工艺</p>
+                    <p class="text-xs sm:text-sm mb-3 sm:mb-4 leading-relaxed px-2" style="color: var(--text-secondary);">
+                        瑶族刺绣是国家级非物质文化遗产。本应用基于 DeepSeek AI，专注于瑶绣知识的智能问答与文化传播。
+                    </p>
+                    <div class="flex justify-center gap-3 text-xs" style="color: var(--text-tertiary);">
+                        <span>DeepSeek</span>
+                        <span>·</span>
+                        <span>Cloudflare</span>
+                        <span>·</span>
+                        <span>Tailwind</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorites Panel -->
+    <div id="favoritesPanel" class="favorites-panel fixed right-0 top-0 h-full w-full sm:w-[420px] z-50 overflow-hidden" style="background: var(--bg-primary); border-left: 1px solid var(--border-color);">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="p-4 sm:p-6 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style="background: var(--bg-tertiary);">
+                        <svg class="w-5 h-5" style="color: var(--gold);" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-serif font-bold" style="color: var(--text-primary);">我的收藏</h2>
+                        <p class="text-xs" style="color: var(--text-tertiary);"><span id="favCount">0</span> 条珍藏</p>
+                    </div>
+                </div>
+                <button onclick="closeAllPanels()" class="p-2 rounded-lg" style="color: var(--text-secondary);">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="p-3 sm:p-4 border-b space-y-2 sm:space-y-3" style="border-color: var(--border-color);">
+                <div class="relative">
+                    <input type="text" id="favSearch" placeholder="搜索收藏..." class="w-full px-3 py-2 pl-9 rounded-lg border text-xs sm:text-sm focus:outline-none focus:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);" oninput="filterFavorites()">
+                    <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <div class="flex flex-wrap gap-1.5 sm:gap-2" id="favTags">
+                    <button onclick="filterByTag('all')" class="tag-btn px-2.5 py-1 rounded-full text-xs border transition-all active" data-tag="all" style="border-color: var(--accent); background: var(--accent); color: white;">全部</button>
+                    <button onclick="filterByTag('纹样')" class="tag-btn px-2.5 py-1 rounded-full text-xs border transition-all" data-tag="纹样" style="border-color: var(--border-color); color: var(--text-secondary);">纹样</button>
+                    <button onclick="filterByTag('针法')" class="tag-btn px-2.5 py-1 rounded-full text-xs border transition-all" data-tag="针法" style="border-color: var(--border-color); color: var(--text-secondary);">针法</button>
+                    <button onclick="filterByTag('配色')" class="tag-btn px-2.5 py-1 rounded-full text-xs border transition-all" data-tag="配色" style="border-color: var(--border-color); color: var(--text-secondary);">配色</button>
+                    <button onclick="filterByTag('历史')" class="tag-btn px-2.5 py-1 rounded-full text-xs border transition-all" data-tag="历史" style="border-color: var(--border-color); color: var(--text-secondary);">历史</button>
+                </div>
+            </div>
+
+            <!-- Favorites List -->
+            <div id="favoritesList" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <!-- Dynamic content -->
+                <div class="text-center py-8 sm:py-12" style="color: var(--text-tertiary);">
+                    <div class="text-4xl sm:text-5xl mb-3 opacity-30">📚</div>
+                    <p class="text-sm">暂无收藏</p>
+                    <p class="text-xs mt-1">点击对话中的 ⭐ 收藏精彩内容</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 sm:p-4 border-t flex gap-2" style="border-color: var(--border-color);">
+                <button onclick="exportFavorites()" class="flex-1 py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-all" style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);">
+                    导出收藏
+                </button>
+                <button onclick="clearAllFavorites()" class="py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-all" style="background: rgba(196, 30, 58, 0.1); border-color: rgba(196, 30, 58, 0.3); color: #e63950;">
+                    清空
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Card Modal -->
+    <div id="shareModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);">
+        <div class="relative w-full max-w-md">
+            <button onclick="closeShareModal()" class="absolute -top-10 right-0 p-2 rounded-lg text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <!-- Share Card Preview -->
+            <div id="shareCardContainer" class="share-card rounded-2xl p-6 sm:p-8 mx-auto">
+                <div class="relative z-10">
+                    <!-- Header -->
+                    <div class="flex items-center justify-center gap-2 mb-4 sm:mb-6">
+                        <span style="color: var(--gold);">❋</span>
+                        <span class="font-serif text-lg sm:text-xl font-bold" style="color: var(--text-primary);">瑶绣 · 智问</span>
+                        <span style="color: var(--gold);">❋</span>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="mb-4 sm:mb-6">
+                        <p id="shareQuestion" class="text-xs sm:text-sm font-medium mb-2" style="color: var(--gold);"></p>
+                        <p id="shareAnswer" class="text-sm sm:text-base leading-relaxed line-clamp-6" style="color: var(--text-primary);"></p>
+                    </div>
+                    
+                    <!-- Pattern Preview -->
+                    <div class="flex justify-center mb-4 sm:mb-6">
+                        <svg class="w-16 h-16 sm:w-20 sm:h-20" viewBox="0 0 200 200">
+                            <defs>
+                                <linearGradient id="shareGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" style="stop-color:#c41e3a;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#d4a574;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <polygon points="100,15 165,45 185,100 165,155 100,185 35,155 15,100 35,45" fill="none" stroke="url(#shareGrad)" stroke-width="4"/>
+                            <polygon points="100,40 140,60 150,100 140,140 100,160 60,140 50,100 60,60" fill="none" stroke="#c41e3a" stroke-width="2"/>
+                            <circle cx="100" cy="100" r="20" fill="#d4a574"/>
+                        </svg>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="flex items-center justify-between pt-4 border-t" style="border-color: var(--border-color);">
+                        <div class="text-xs" style="color: var(--text-tertiary);">
+                            <p>瑶绣专家 · 第 <span id="shareCount">12</span> 纹</p>
+                            <p class="text-[10px] mt-0.5">传承千年非遗工艺</p>
+                        </div>
+                        <div id="qrcode" class="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-lg p-1"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex gap-3 mt-4 sm:mt-6">
+                <button onclick="downloadShareCard()" class="flex-1 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base btn-glow" style="background: var(--accent); color: white;">
+                    保存图片
+                </button>
+                <button onclick="closeShareModal()" class="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-medium text-sm sm:text-base" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+                    取消
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Knowledge Graph Panel -->
+    <div id="knowledgePanel" class="knowledge-panel fixed inset-0 z-50 overflow-hidden" style="background: var(--bg-primary);">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="p-4 sm:p-6 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style="background: var(--bg-tertiary);">
+                        <svg class="w-5 h-5" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-serif font-bold" style="color: var(--text-primary);">瑶绣知识图谱</h2>
+                        <p class="text-xs" style="color: var(--text-tertiary);">点击节点探索知识</p>
+                    </div>
+                </div>
+                <button onclick="closeAllPanels()" class="p-2 rounded-lg" style="color: var(--text-secondary);">
+                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Graph Area -->
+            <div class="flex-1 relative overflow-hidden" id="kgContainer">
+                <svg id="knowledgeGraph" class="w-full h-full" preserveAspectRatio="xMidYMid meet">
+                    <!-- Dynamic SVG content -->
+                </svg>
+                
+                <!-- Legend -->
+                <div class="absolute bottom-4 left-4 p-3 rounded-xl border" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                    <div class="text-xs font-medium mb-2" style="color: var(--text-secondary);">图例</div>
+                    <div class="space-y-1.5">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full" style="background: var(--accent);"></div>
+                            <span class="text-xs" style="color: var(--text-tertiary);">核心主题</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full" style="background: var(--gold);"></div>
+                            <span class="text-xs" style="color: var(--text-tertiary);">知识分支</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 rounded-full" style="background: var(--text-secondary);"></div>
+                            <span class="text-xs" style="color: var(--text-tertiary);">具体知识点</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 text-xs sm:text-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
+        <span id="toastMsg"></span>
+    </div>
+
+    <script>
+        // ========== 配置与状态 ==========
+        const DEFAULT_API_URL = 'https://your-worker-name.your-subdomain.workers.dev';
+        
+        // ===== 本地开发配置 =====
+        // 如需本地直接调用 DeepSeek API（不经过 Worker），将 USE_DIRECT_API 设为 true
+        // 并在下方填写你的 DeepSeek API Key
+        const USE_DIRECT_API = true;  // 设为 true 启用本地直连模式
+        const DIRECT_API_KEY = 'sk-3144bf0982b34c758559f05e340cc0bf';  // 填写你的 DS Key
+        const DIRECT_API_URL = 'https://api.deepseek.com/chat/completions';  // DeepSeek API 地址
+        // ========================
+        
+        let config = {
+            apiUrl: DEFAULT_API_URL,
+            apiKey: '',
+            theme: 'red',
+            fontSize: 'medium',
+            fontWeight: 'normal'
+        };
+
+        let isGenerating = false;
+        let controller = null;
+        let messageCount = 0;
+        let chatHistory = [];
+        let favorites = [];
+        let currentFilterTag = 'all';
+        let shareData = null;
+
+        // 知识图谱数据
+        const kgData = {
+            nodes: [
+                { id: 'root', label: '瑶族刺绣', category: 'root', x: 0.5, y: 0.5 },
+                { id: 'pattern', label: '纹样', category: 'branch', x: 0.2, y: 0.25 },
+                { id: 'technique', label: '针法', category: 'branch', x: 0.8, y: 0.25 },
+                { id: 'color', label: '配色', category: 'branch', x: 0.2, y: 0.75 },
+                { id: 'clothing', label: '服饰', category: 'branch', x: 0.8, y: 0.75 },
+                { id: 'octagon', label: '八角花', category: 'leaf', x: 0.05, y: 0.15 },
+                { id: 'frog', label: '蛙纹', category: 'leaf', x: 0.25, y: 0.1 },
+                { id: 'cross', label: '十字挑花', category: 'leaf', x: 0.7, y: 0.15 },
+                { id: 'flat', label: '平绣', category: 'leaf', x: 0.9, y: 0.2 },
+                { id: 'blackred', label: '黑底红彩', category: 'leaf', x: 0.05, y: 0.8 },
+                { id: 'indigo', label: '蓝靛染色', category: 'leaf', x: 0.3, y: 0.85 },
+                { id: 'headscarf', label: '头巾', category: 'leaf', x: 0.75, y: 0.8 },
+                { id: 'belt', label: '腰带', category: 'leaf', x: 0.9, y: 0.7 },
+            ],
+            edges: [
+                { source: 'root', target: 'pattern' },
+                { source: 'root', target: 'technique' },
+                { source: 'root', target: 'color' },
+                { source: 'root', target: 'clothing' },
+                { source: 'pattern', target: 'octagon' },
+                { source: 'pattern', target: 'frog' },
+                { source: 'technique', target: 'cross' },
+                { source: 'technique', target: 'flat' },
+                { source: 'color', target: 'blackred' },
+                { source: 'color', target: 'indigo' },
+                { source: 'clothing', target: 'headscarf' },
+                { source: 'clothing', target: 'belt' },
+            ]
+        };
+
+        // ========== 初始化 ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            initStorage();
+            loadConfig();
+            applyConfig();
+            loadFavorites();
+            updateUI();
+            initFloatingOctagons();
+        });
+
+        // ========== 背景飘浮八角花 ==========
+        function initFloatingOctagons() {
+            const container = document.getElementById('floatingOctagons');
+            const colors = ['var(--gold)', 'var(--accent)', 'var(--text-tertiary)'];
+            
+            for (let i = 0; i < 5; i++) {
+                const octagon = document.createElement('div');
+                octagon.className = 'floating-octagon';
+                const size = 60 + Math.random() * 100;
+                octagon.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    animation-delay: ${i * 4}s;
+                    animation-duration: ${15 + Math.random() * 10}s;
+                `;
+                
+                // SVG 八角花
+                octagon.innerHTML = `
+                    <svg viewBox="0 0 100 100" style="width: 100%; height: 100%; opacity: 0.5;">
+                        <polygon points="50,5 85,25 95,60 75,90 25,90 5,60 15,25" 
+                                 fill="none" stroke="${colors[i % colors.length]}" stroke-width="1"/>
+                        <polygon points="50,20 70,35 75,60 60,75 40,75 25,60 30,35" 
+                                 fill="none" stroke="${colors[i % colors.length]}" stroke-width="0.5" opacity="0.5"/>
+                    </svg>
+                `;
+                
+                container.appendChild(octagon);
+            }
+        }
+
+        // ========== 粒子系统 ==========
+        function spawnParticles(x, y, type = 'gold', count = 8) {
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5;
+                const velocity = 30 + Math.random() * 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity - 30;
+                
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                if (type === 'gold') {
+                    particle.className = 'particle-gold';
+                } else if (type === 'octagon') {
+                    particle.className = 'floating-octagon octagon-bloom';
+                    particle.style.width = '20px';
+                    particle.style.height = '20px';
+                    particle.innerHTML = `
+                        <svg viewBox="0 0 100 100" style="width: 100%; height: 100%;">
+                            <polygon points="50,5 85,25 95,60 75,90 25,90 5,60 15,25" 
+                                     fill="var(--gold)" opacity="0.8"/>
+                        </svg>
+                    `;
+                }
+                
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                particle.style.animationDelay = `${i * 0.05}s`;
+                
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 2000);
+            }
+        }
+
+        // ========== 针线飞行动画 ==========
+        function animateNeedleFly(startX, startY, endX, endY) {
+            // 创建飞针
+            const needle = document.createElement('div');
+            needle.innerHTML = '🪡';
+            needle.style.cssText = `
+                position: fixed;
+                left: ${startX}px;
+                top: ${startY}px;
+                font-size: 24px;
+                z-index: 1000;
+                pointer-events: none;
+                transform: rotate(-45deg);
+            `;
+            document.body.appendChild(needle);
+            
+            // 创建丝线拖尾
+            const trail = document.createElement('div');
+            trail.className = 'silk-trail';
+            const angle = Math.atan2(endY - startY, endX - startX);
+            const distance = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+            trail.style.cssText = `
+                left: ${startX}px;
+                top: ${startY}px;
+                width: ${distance}px;
+                transform: rotate(${angle}rad);
+            `;
+            document.body.appendChild(trail);
+            
+            // 飞行动画
+            needle.animate([
+                { transform: `translate(0, 0) rotate(-45deg)`, opacity: 1 },
+                { transform: `translate(${endX - startX}px, ${endY - startY}px) rotate(-45deg)`, opacity: 0 }
+            ], {
+                duration: 400,
+                easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+            }).onfinish = () => {
+                needle.remove();
+                trail.remove();
+            };
+        }
+
+        // ========== 收藏穿针引线 ==========
+        function animateFavoriteSewing(fromX, fromY, toX, toY) {
+            // 创建丝线
+            const thread = document.createElement('div');
+            thread.className = 'thread-line';
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+            const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+            
+            thread.style.cssText = `
+                left: ${fromX}px;
+                top: ${fromY}px;
+                width: ${distance}px;
+                transform: rotate(${angle}rad);
+            `;
+            document.body.appendChild(thread);
+            
+            // 针飞动画
+            const needle = document.createElement('div');
+            needle.innerHTML = '🪡';
+            needle.style.cssText = `
+                position: fixed;
+                left: ${fromX}px;
+                top: ${fromY}px;
+                font-size: 16px;
+                z-index: 1001;
+                transform: rotate(${angle}rad);
+                transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            `;
+            document.body.appendChild(needle);
+            
+            // 延迟启动飞针
+            setTimeout(() => {
+                needle.style.transform = `translate(${toX - fromX}px, ${toY - fromY}px) rotate(${angle}rad)`;
+            }, 50);
+            
+            // 清理
+            setTimeout(() => {
+                thread.remove();
+                needle.remove();
+                // 顶部徽章闪烁
+                const badge = document.getElementById('favBadge');
+                badge.style.transform = 'scale(1.5)';
+                badge.style.transition = 'transform 0.3s';
+                setTimeout(() => badge.style.transform = 'scale(1)', 300);
+            }, 700);
+        }
+
+        async function initStorage() {
+            await localforage.config({
+                name: 'YaoEmbroidery',
+                storeName: 'favorites'
+            });
+        }
+
+        // ========== 配置管理 ==========
+        function loadConfig() {
+            const saved = localStorage.getItem('yao-config');
+            if (saved) {
+                config = { ...config, ...JSON.parse(saved) };
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('yao-config', JSON.stringify(config));
+        }
+
+        function applyConfig() {
+            document.documentElement.setAttribute('data-theme', config.theme);
+            document.documentElement.setAttribute('data-font-size', config.fontSize);
+            document.documentElement.setAttribute('data-font-weight', config.fontWeight);
+            document.getElementById('settingsApiUrl').value = config.apiUrl;
+            document.getElementById('settingsApiKey').value = config.apiKey;
+        }
+
+        function updateUI() {
+            document.querySelectorAll('.theme-card').forEach(card => {
+                card.classList.toggle('active', card.dataset.themeValue === config.theme);
+            });
+            document.querySelectorAll('.font-size-btn').forEach(btn => {
+                const isActive = btn.dataset.size === config.fontSize;
+                btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border-color)';
+                btn.style.color = isActive ? 'var(--accent)' : 'var(--text-secondary)';
+                btn.style.background = isActive ? 'var(--bg-tertiary)' : 'transparent';
+            });
+            document.querySelectorAll('.font-weight-btn').forEach(btn => {
+                const isActive = btn.dataset.weight === config.fontWeight;
+                btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border-color)';
+                btn.style.color = isActive ? 'var(--accent)' : 'var(--text-secondary)';
+                btn.style.background = isActive ? 'var(--bg-tertiary)' : 'transparent';
+            });
+        }
+
+        // ========== 面板控制 ==========
+        function openSettings() {
+            document.getElementById('panelOverlay').classList.add('open');
+            document.getElementById('settingsPanel').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openFavorites() {
+            document.getElementById('panelOverlay').classList.add('open');
+            document.getElementById('favoritesPanel').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            renderFavorites();
+        }
+
+        function openKnowledgeGraph() {
+            document.getElementById('knowledgePanel').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            renderKnowledgeGraph();
+        }
+
+        function closeAllPanels() {
+            document.getElementById('panelOverlay').classList.remove('open');
+            document.getElementById('settingsPanel').classList.remove('open');
+            document.getElementById('favoritesPanel').classList.remove('open');
+            document.getElementById('knowledgePanel').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.add('hidden');
+        }
+
+        // ========== 模型模式切换 ==========
+        let currentModelMode = 'fast'; // 'fast' or 'deep'
+        
+        function setModelMode(mode) {
+            currentModelMode = mode;
+            const modelSelect = document.getElementById('modelSelect');
+            const modeFastBtn = document.getElementById('modeFast');
+            const modeDeepBtn = document.getElementById('modeDeep');
+            
+            if (mode === 'fast') {
+                // 快速模式 - V3
+                modelSelect.value = 'deepseek-chat';
+                modeFastBtn.style.background = 'var(--accent)';
+                modeFastBtn.style.color = 'white';
+                modeDeepBtn.style.background = 'transparent';
+                modeDeepBtn.style.color = 'var(--text-secondary)';
+                showToast('已切换：快速回复模式');
+            } else {
+                // 深度思考模式 - R1
+                modelSelect.value = 'deepseek-reasoner';
+                modeDeepBtn.style.background = 'var(--accent)';
+                modeDeepBtn.style.color = 'white';
+                modeFastBtn.style.background = 'transparent';
+                modeFastBtn.style.color = 'var(--text-secondary)';
+                showToast('已切换：深度思考模式');
+            }
+        }
+        
+        // ========== 主题设置 ==========
+        function setTheme(theme) {
+            config.theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            updateUI();
+            saveConfig();
+            showToast('主题已切换');
+        }
+
+        function setFontSize(size) {
+            config.fontSize = size;
+            document.documentElement.setAttribute('data-font-size', size);
+            updateUI();
+            saveConfig();
+        }
+
+        function setFontWeight(weight) {
+            config.fontWeight = weight;
+            document.documentElement.setAttribute('data-font-weight', weight);
+            updateUI();
+            saveConfig();
+        }
+
+        // ========== API 设置 ==========
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('settingsApiKey');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        async function testApiConnection() {
+            const url = document.getElementById('settingsApiUrl').value || config.apiUrl;
+            const resultDiv = document.getElementById('apiTestResult');
+            resultDiv.classList.remove('hidden');
+            resultDiv.style.background = 'var(--bg-tertiary)';
+            resultDiv.style.color = 'var(--text-secondary)';
+            resultDiv.textContent = '测试中...';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'test', model: 'deepseek-chat' })
+                });
+
+                if (response.ok) {
+                    resultDiv.style.background = 'rgba(34, 197, 94, 0.1)';
+                    resultDiv.style.color = '#22c55e';
+                    resultDiv.textContent = '✓ 连接成功';
+                } else {
+                    throw new Error('HTTP ' + response.status);
+                }
+            } catch (err) {
+                resultDiv.style.background = 'rgba(239, 68, 68, 0.1)';
+                resultDiv.style.color = '#ef4444';
+                resultDiv.textContent = '✗ 连接失败: ' + err.message;
+            }
+        }
+
+        function resetApiSettings() {
+            document.getElementById('settingsApiUrl').value = DEFAULT_API_URL;
+            document.getElementById('settingsApiKey').value = '';
+            config.apiUrl = DEFAULT_API_URL;
+            config.apiKey = '';
+            saveConfig();
+            showToast('已重置为默认配置');
+        }
+
+        // ========== 收藏功能 ==========
+        async function loadFavorites() {
+            const saved = await localforage.getItem('favorites');
+            if (saved) {
+                favorites = saved;
+                updateFavBadge();
+            } else {
+                // 首次使用，显示收藏提示
+                setTimeout(() => {
+                    const hint = document.getElementById('favHint');
+                    if (hint && favorites.length === 0) {
+                        hint.style.opacity = '1';
+                        setTimeout(() => {
+                            hint.style.opacity = '0';
+                        }, 3000);
+                    }
+                }, 2000);
+            }
+        }
+
+        async function saveFavorites() {
+            await localforage.setItem('favorites', favorites);
+            updateFavBadge();
+        }
+
+        function updateFavBadge() {
+            const badge = document.getElementById('favBadge');
+            const count = favorites.length;
+            document.getElementById('favCount').textContent = count;
+            if (count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function addToFavorites(question, answer) {
+            // 检查是否已收藏（避免重复）
+            const isDuplicate = favorites.some(f => f.question === question);
+            if (isDuplicate) {
+                showToast('这条已经在收藏夹里了');
+                return;
+            }
+            
+            const id = 'fav_' + Date.now();
+            const tags = autoTagContent(question + ' ' + answer);
+            
+            favorites.unshift({
+                id,
+                question,
+                answer: stripHtml(answer).substring(0, 500) + '...',
+                tags,
+                timestamp: Date.now()
+            });
+            
+            saveFavorites();
+            
+            // 触发收藏动画和粒子效果
+            triggerFavoriteAnimation();
+            
+            // 从收藏按钮飞到顶部收藏夹
+            const favBtn = document.querySelector('.fav-btn');
+            const headerFav = document.getElementById('headerFavBtn');
+            if (favBtn && headerFav) {
+                const fromRect = favBtn.getBoundingClientRect();
+                const toRect = headerFav.getBoundingClientRect();
+                animateFavoriteSewing(
+                    fromRect.left + fromRect.width / 2,
+                    fromRect.top + fromRect.height / 2,
+                    toRect.left + toRect.width / 2,
+                    toRect.top + toRect.height / 2
+                );
+            }
+            
+            // 金粉粒子
+            if (favBtn) {
+                const rect = favBtn.getBoundingClientRect();
+                spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 'octagon', 5);
+            }
+            
+            // 更明显的提示
+            showToast('⭐ 已收藏到「我的收藏」');
+            
+            // 如果有收藏面板打开，刷新列表
+            if (document.getElementById('favoritesPanel').classList.contains('open')) {
+                renderFavorites();
+            }
+        }
+        
+        // 收藏成功动画
+        function triggerFavoriteAnimation() {
+            // 创建飘浮的爱心
+            const heart = document.createElement('div');
+            heart.innerHTML = '⭐';
+            heart.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                font-size: 48px;
+                z-index: 9999;
+                pointer-events: none;
+                animation: favoritePop 0.8s ease-out forwards;
+            `;
+            
+            // 添加动画样式
+            if (!document.getElementById('favoriteAnimStyle')) {
+                const style = document.createElement('style');
+                style.id = 'favoriteAnimStyle';
+                style.textContent = `
+                    @keyframes favoritePop {
+                        0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0; }
+                        50% { transform: translate(-50%, -50%) scale(1.2) rotate(10deg); opacity: 1; }
+                        100% { transform: translate(-50%, -80%) scale(1) rotate(0deg); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 800);
+            
+            // 收藏按钮跳动
+            const favBtn = document.querySelector('.fav-btn:hover');
+            if (favBtn) {
+                favBtn.style.transform = 'scale(1.2)';
+                favBtn.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>';
+                setTimeout(() => {
+                    favBtn.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        function autoTagContent(text) {
+            const tags = [];
+            const keywords = {
+                '纹样': ['纹样', '图案', '八角花', '花纹', '图腾'],
+                '针法': ['针法', '挑花', '绣法', '针脚', '刺绣'],
+                '配色': ['配色', '颜色', '色彩', '黑底', '红彩'],
+                '历史': ['历史', '传统', '起源', '文化', '传承']
+            };
+            
+            for (const [tag, words] of Object.entries(keywords)) {
+                if (words.some(w => text.includes(w))) {
+                    tags.push(tag);
+                }
+            }
+            return tags.length > 0 ? tags : ['其他'];
+        }
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        }
+
+        function renderFavorites() {
+            const container = document.getElementById('favoritesList');
+            const searchTerm = document.getElementById('favSearch').value.toLowerCase();
+            
+            let filtered = favorites;
+            if (currentFilterTag !== 'all') {
+                filtered = filtered.filter(f => f.tags.includes(currentFilterTag));
+            }
+            if (searchTerm) {
+                filtered = filtered.filter(f => 
+                    f.question.toLowerCase().includes(searchTerm) || 
+                    f.answer.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 px-4" style="color: var(--text-tertiary);">
+                        <div class="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: var(--bg-tertiary);">
+                            <svg class="w-10 h-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-base font-medium mb-2" style="color: var(--text-secondary);">${favorites.length === 0 ? '还没有收藏哦' : '未找到匹配项'}</p>
+                        <p class="text-xs mb-4">${favorites.length === 0 ? '和瑶绣专家对话后，点击右上角的 ⭐ 按钮收藏精彩内容' : '尝试其他搜索词或标签'}</p>
+                        ${favorites.length === 0 ? `
+                        <div class="p-3 rounded-xl border text-left" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                            <p class="text-xs mb-2" style="color: var(--gold);">📌 推荐收藏：</p>
+                            <div class="space-y-1.5">
+                                <button onclick="quickAsk('八角花纹样的象征意义'); closeAllPanels();" class="block w-full text-left text-xs py-1.5 px-2 rounded transition-colors hover:bg-white/5" style="color: var(--text-secondary);">❋ 八角花纹样的象征意义</button>
+                                <button onclick="quickAsk('十字挑花的针法步骤'); closeAllPanels();" class="block w-full text-left text-xs py-1.5 px-2 rounded transition-colors hover:bg-white/5" style="color: var(--text-secondary);">✦ 十字挑花的针法步骤</button>
+                                <button onclick="quickAsk('黑底红彩配色的文化内涵'); closeAllPanels();" class="block w-full text-left text-xs py-1.5 px-2 rounded transition-colors hover:bg-white/5" style="color: var(--text-secondary);">◈ 黑底红彩配色的文化内涵</button>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filtered.map(fav => `
+                <div class="favorite-item rounded-xl p-3 sm:p-4 border" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <h4 class="font-medium text-sm leading-snug" style="color: var(--text-primary);">${escapeHtml(fav.question)}</h4>
+                        <button onclick="deleteFavorite('${fav.id}')" class="p-1 rounded flex-shrink-0" style="color: var(--text-tertiary);">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs sm:text-sm mb-2 line-clamp-2" style="color: var(--text-secondary);">${escapeHtml(fav.answer)}</p>
+                    <div class="flex items-center justify-between">
+                        <div class="flex gap-1 flex-wrap">
+                            ${fav.tags.map(tag => `<span class="px-2 py-0.5 rounded-full text-[10px] sm:text-xs" style="background: var(--bg-tertiary); color: var(--text-tertiary);">${tag}</span>`).join('')}
+                        </div>
+                        <button onclick="shareFromFavorite('${fav.id}')" class="p-1.5 rounded-lg" style="color: var(--gold);">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterFavorites() {
+            renderFavorites();
+        }
+
+        function filterByTag(tag) {
+            currentFilterTag = tag;
+            document.querySelectorAll('.tag-btn').forEach(btn => {
+                const isActive = btn.dataset.tag === tag;
+                btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border-color)';
+                btn.style.background = isActive ? 'var(--accent)' : 'transparent';
+                btn.style.color = isActive ? 'white' : 'var(--text-secondary)';
+            });
+            renderFavorites();
+        }
+
+        async function deleteFavorite(id) {
+            favorites = favorites.filter(f => f.id !== id);
+            await saveFavorites();
+            renderFavorites();
+            showToast('已删除');
+        }
+
+        async function clearAllFavorites() {
+            if (!confirm('确定要清空所有收藏吗？')) return;
+            favorites = [];
+            await saveFavorites();
+            renderFavorites();
+            showToast('收藏已清空');
+        }
+
+        function exportFavorites() {
+            if (favorites.length === 0) {
+                showToast('暂无收藏可导出');
+                return;
+            }
+            const data = {
+                version: '2.0',
+                exportTime: new Date().toISOString(),
+                favorites
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `瑶绣收藏_${new Date().toLocaleDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('收藏已导出');
+        }
+
+        // ========== 分享功能 ==========
+        function openShareModal(question, answer, count) {
+            shareData = { question, answer, count };
+            document.getElementById('shareQuestion').textContent = 'Q: ' + question.substring(0, 50) + (question.length > 50 ? '...' : '');
+            document.getElementById('shareAnswer').textContent = stripHtml(answer).substring(0, 200) + '...';
+            document.getElementById('shareCount').textContent = count;
+            
+            // 生成二维码
+            const qrcodeDiv = document.getElementById('qrcode');
+            qrcodeDiv.innerHTML = '';
+            new QRCode(qrcodeDiv, {
+                text: window.location.href,
+                width: 64,
+                height: 64,
+                colorDark: '#000000',
+                colorLight: '#ffffff'
+            });
+            
+            document.getElementById('shareModal').classList.remove('hidden');
+        }
+
+        function shareFromFavorite(id) {
+            const fav = favorites.find(f => f.id === id);
+            if (fav) {
+                openShareModal(fav.question, fav.answer, favorites.length);
+            }
+        }
+
+        async function downloadShareCard() {
+            const card = document.getElementById('shareCardContainer');
+            try {
+                const canvas = await html2canvas(card, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true
+                });
+                const link = document.createElement('a');
+                link.download = `瑶绣_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                showToast('图片已保存');
+            } catch (err) {
+                showToast('保存失败: ' + err.message);
+            }
+        }
+
+        // ========== 知识图谱 ==========
+        function renderKnowledgeGraph() {
+            const svg = document.getElementById('knowledgeGraph');
+            const container = document.getElementById('kgContainer');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            svg.innerHTML = '';
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            
+            // 计算节点位置
+            const nodes = kgData.nodes.map(n => ({
+                ...n,
+                px: n.x * width,
+                py: n.y * height
+            }));
+            
+            // 绘制连线
+            kgData.edges.forEach(edge => {
+                const source = nodes.find(n => n.id === edge.source);
+                const target = nodes.find(n => n.id === edge.target);
+                if (source && target) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', source.px);
+                    line.setAttribute('y1', source.py);
+                    line.setAttribute('x2', target.px);
+                    line.setAttribute('y2', target.py);
+                    line.setAttribute('class', 'kg-line');
+                    svg.appendChild(line);
+                }
+            });
+            
+            // 绘制节点
+            nodes.forEach(node => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'kg-node');
+                g.setAttribute('transform', `translate(${node.px}, ${node.py})`);
+                g.onclick = () => {
+                    quickAsk(node.label + '是什么？');
+                    closeAllPanels();
+                };
+                
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('r', node.category === 'root' ? 35 : node.category === 'branch' ? 25 : 18);
+                circle.setAttribute('fill', node.category === 'root' ? 'var(--accent)' : node.category === 'branch' ? 'var(--gold)' : 'var(--bg-tertiary)');
+                circle.setAttribute('stroke', 'var(--border-color)');
+                circle.setAttribute('stroke-width', '2');
+                
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dy', '0.35em');
+                text.setAttribute('fill', node.category === 'leaf' ? 'var(--text-primary)' : 'white');
+                text.setAttribute('font-size', node.category === 'root' ? '14' : node.category === 'branch' ? '12' : '10');
+                text.setAttribute('font-weight', '500');
+                text.textContent = node.label;
+                
+                g.appendChild(circle);
+                g.appendChild(text);
+                svg.appendChild(g);
+            });
+        }
+
+        // ========== 聊天功能 ==========
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 128) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function quickAsk(text) {
+            document.getElementById('userInput').value = text;
+            autoResize(document.getElementById('userInput'));
+            document.getElementById('userInput').focus();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chatContainer');
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+
+        // 带动画的发送
+        function sendMessageWithAnimation(event) {
+            const btn = event.currentTarget;
+            const rect = btn.getBoundingClientRect();
+            const chatContainer = document.getElementById('chatContainer');
+            const chatRect = chatContainer.getBoundingClientRect();
+            
+            // 飞针动画
+            animateNeedleFly(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                chatRect.left + chatRect.width - 50,
+                chatRect.top + chatRect.height - 100
+            );
+            
+            // 金粉粒子
+            spawnParticles(rect.left + rect.width / 2, rect.top + rect.height / 2, 'gold', 6);
+            
+            // 执行发送
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const content = userInput.value.trim();
+            if (!content || isGenerating) return;
+
+            // 检查配置
+            if (!USE_DIRECT_API) {
+                const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                if (apiUrl.includes('your-worker-name')) {
+                    showToast('请先配置 API 地址（点击右上角设置）');
+                    openSettings();
+                    return;
+                }
+            }
+
+            messageCount++;
+            document.getElementById('msgCount').textContent = messageCount;
+
+            // 添加用户消息
+            appendUserMessage(content);
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            
+            isGenerating = true;
+            document.getElementById('sendBtn').disabled = true;
+
+            const streamingDiv = createAssistantMessage();
+            let fullText = '';
+            let reasoningText = '';
+            let hasReceivedContent = false;
+
+            controller = new AbortController();
+
+            try {
+                let response;
+                
+                if (USE_DIRECT_API) {
+                    // 本地直连模式：直接调用 DeepSeek API
+                    if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
+                        throw new Error('请先在代码中填写 DIRECT_API_KEY');
+                    }
+                    
+                    const model = document.getElementById('modelSelect').value;
+                    response = await fetch(DIRECT_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DIRECT_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: [
+                                { 
+                                    role: 'system', 
+                                    content: '你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。只回答瑶族刺绣相关问题。'
+                                },
+                                { role: 'user', content: content }
+                            ],
+                            stream: true
+                        }),
+                        signal: controller.signal
+                    });
+                } else {
+                    // Worker 模式：通过 Cloudflare Worker 调用
+                    const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                        },
+                        body: JSON.stringify({
+                            message: content,
+                            model: document.getElementById('modelSelect').value
+                        }),
+                        signal: controller.signal
+                    });
+                }
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        
+                        const data = line.slice(5).trim();
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            
+                            if (!hasReceivedContent) {
+                                streamingDiv.innerHTML = '';
+                                hasReceivedContent = true;
+                            }
+                            
+                            // 处理深度思考过程（R1 模型）
+                            if (delta?.reasoning_content) {
+                                reasoningText += delta.reasoning_content;
+                                // 实时更新思考过程
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>深度思考中...</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                }
+                                if (fullText) {
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                }
+                                streamingDiv.innerHTML = displayText;
+                            }
+                            
+                            // 处理正式回复内容
+                            if (delta?.content) {
+                                fullText += delta.content;
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                } else {
+                                    displayText = marked.parse(fullText);
+                                }
+                                streamingDiv.innerHTML = displayText;
+                                streamingDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                            scrollToBottom();
+                        } catch (e) {}
+                    }
+                }
+
+                streamingDiv.classList.remove('cursor-blink');
+                
+                // 添加操作按钮
+                addMessageActions(streamingDiv.parentElement, content, fullText);
+
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                } else {
+                    streamingDiv.innerHTML = `<div style="color: #ef4444;">出错了：${escapeHtml(err.message)}</div>`;
+                }
+            } finally {
+                isGenerating = false;
+                document.getElementById('sendBtn').disabled = false;
+                controller = null;
+            }
+        }
+
+        function appendUserMessage(content) {
+            const container = document.getElementById('chatContainer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            wrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
+                        <p class="leading-relaxed text-sm sm:text-base" style="color: var(--text-primary);">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg" style="background: var(--gold);">
+                        <span class="text-sm sm:text-lg font-serif font-bold" style="color: var(--bg-primary);">问</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            scrollToBottom();
+        }
+
+        function createAssistantMessage() {
+            const container = document.getElementById('chatContainer');
+            const uniqueId = 'streaming_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 animate-slide-up';
+            wrapper.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
+                        <span class="text-sm sm:text-lg font-serif font-bold text-white">瑶</span>
+                    </div>
+                </div>
+                <div class="message-bubble">
+                    <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                        <div class="cursor-blink streaming-content" id="${uniqueId}">
+                            <span style="color: var(--text-tertiary);">正在思考...</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            scrollToBottom();
+            return document.getElementById(uniqueId);
+        }
+
+        function addMessageActions(container, question, answer) {
+            const bubble = container.querySelector('.chat-content');
+            if (!bubble) return;
+            
+            // 创建固定在消息右上角的按钮组
+            const actions = document.createElement('div');
+            actions.className = 'message-actions flex items-center gap-2 absolute -top-3 right-3 opacity-0 transition-all duration-300';
+            actions.style.transform = 'translateY(5px)';
+            actions.innerHTML = `
+                <button onclick="addToFavorites('${escapeHtml(question)}', '${escapeHtml(answer)}')" 
+                        class="fav-btn w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 btn-stitch" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color);"
+                        onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary)';"
+                        title="收藏这条回答">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                    </svg>
+                </button>
+                <button onclick="openShareModal('${escapeHtml(question)}', '${escapeHtml(answer)}', ${messageCount})" 
+                        class="w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
+                        onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold)';"
+                        title="生成分享卡片">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                    </svg>
+                </button>
+            `;
+            
+            // 确保消息气泡是相对定位
+            bubble.style.position = 'relative';
+            bubble.appendChild(actions);
+            
+            // 延迟显示按钮（避免闪烁）
+            setTimeout(() => {
+                actions.style.opacity = '1';
+                actions.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // 鼠标悬停整个消息时显示按钮
+            container.parentElement.addEventListener('mouseenter', () => {
+                actions.style.opacity = '1';
+            });
+            container.parentElement.addEventListener('mouseleave', () => {
+                // 保持显示，不隐藏
+            });
+        }
+
+        // 窗口大小改变时重绘知识图谱
+        window.addEventListener('resize', () => {
+            if (document.getElementById('knowledgePanel').classList.contains('open')) {
+                renderKnowledgeGraph();
+            }
+        });
+    </script>
+</body>
+</html>
