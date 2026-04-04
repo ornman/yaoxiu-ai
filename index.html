@@ -937,7 +937,7 @@
                             <p>瑶绣专家 · 第 <span id="shareCount">12</span> 纹</p>
                             <p class="text-[10px] mt-0.5">传承千年非遗工艺</p>
                         </div>
-                        <div id="qrcode" class="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-lg p-1"></div>
+                        <div id="qrcode" class="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-lg p-2 flex items-center justify-center"></div>
                     </div>
                 </div>
             </div>
@@ -1700,12 +1700,16 @@
             // 生成二维码
             const qrcodeDiv = document.getElementById('qrcode');
             qrcodeDiv.innerHTML = '';
+            
+            // 生成更可靠的二维码
+            const qrText = window.location.href || 'https://yao-embroidery.app';
             new QRCode(qrcodeDiv, {
-                text: window.location.href,
-                width: 64,
-                height: 64,
+                text: qrText,
+                width: 96,
+                height: 96,
                 colorDark: '#000000',
-                colorLight: '#ffffff'
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M  // 中等纠错级别
             });
             
             document.getElementById('shareModal').classList.remove('hidden');
