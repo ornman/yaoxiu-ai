@@ -686,12 +686,12 @@
                         oninput="autoResize(this)"
                     ></textarea>
                     <button 
-                        onclick="sendMessageWithAnimation(event)" 
+                        onclick="handleSendBtnClick(event)" 
                         id="sendBtn"
                         class="absolute right-2 bottom-2 p-1.5 sm:p-2.5 rounded-xl transition-all duration-200 btn-glow btn-stitch disabled:opacity-40 disabled:cursor-not-allowed breathe"
                         style="background: var(--accent); color: white;"
                     >
-                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                        <svg id="sendBtnIcon" class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                     </button>
                 </div>
                 <div class="flex items-center justify-between mt-2 sm:mt-3 text-xs" style="color: var(--text-tertiary);">
@@ -2199,6 +2199,39 @@
             // 执行发送
             sendMessage();
         }
+        
+        // 处理发送按钮点击（发送/停止 切换）
+        function handleSendBtnClick(event) {
+            if (isGenerating) {
+                stopGeneration();
+            } else {
+                sendMessageWithAnimation(event);
+            }
+        }
+        
+        // 停止 AI 生成
+        function stopGeneration() {
+            if (controller) {
+                controller.abort();
+                showToast('已停止生成');
+            }
+        }
+        
+        // 更新发送按钮状态（生成中显示停止图标）
+        function updateSendBtnState() {
+            const btn = document.getElementById('sendBtn');
+            const icon = document.getElementById('sendBtnIcon');
+            
+            if (isGenerating) {
+                // 生成中：显示停止方块图标
+                btn.style.background = 'var(--text-tertiary)';
+                icon.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/>';
+            } else {
+                // 空闲：显示发送纸飞机图标
+                btn.style.background = 'var(--accent)';
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>';
+            }
+        }
 
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
@@ -2224,7 +2257,8 @@
             userInput.style.height = 'auto';
             
             isGenerating = true;
-            document.getElementById('sendBtn').disabled = true;
+            document.getElementById('sendBtn').disabled = false; // 保持可点击以便停止
+            updateSendBtnState();
 
             const streamingDiv = createAssistantMessage();
             let fullText = '';
@@ -2359,6 +2393,7 @@
             } finally {
                 isGenerating = false;
                 document.getElementById('sendBtn').disabled = false;
+                updateSendBtnState();
                 controller = null;
             }
         }
