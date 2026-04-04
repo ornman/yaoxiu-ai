@@ -1164,7 +1164,7 @@
         
         // ===== Qwen-VL 配置 =====
         const USE_QWEN_VL = true;  // 设为 true 使用 Qwen-VL 进行图片识别
-        const QWEN_API_KEY = 'sk-你的阿里云百炼APIKey';  // 阿里云百炼 API Key
+        const QWEN_API_KEY = 'sk-bf855dcf758d4fb5a81447acd6944b77';  // 阿里云百炼 API Key
         const QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
         // ========================
         
@@ -2525,40 +2525,45 @@
 
         // 调用 Qwen-VL API 识别图片
         async function callQwenVL(images, text) {
-            const messages = [{
-                role: 'user',
-                content: []
-            }];
-            
-            // 添加提示文字
-            messages[0].content.push({
-                text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。'
-            });
+            // 构建 content - 先图片后文字（Qwen-VL 推荐顺序）
+            const content = [];
             
             // 添加所有图片
             images.forEach(img => {
-                messages[0].content.push({
-                    image: img
-                });
+                content.push({ image: img });
             });
+            
+            // 添加提示文字
+            content.push({
+                text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。'
+            });
+            
+            const requestBody = {
+                model: 'qwen-vl-plus',
+                input: {
+                    messages: [{
+                        role: 'user',
+                        content: content
+                    }]
+                },
+                parameters: {
+                    result_format: 'message'
+                }
+            };
             
             const response = await fetch(QWEN_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${QWEN_API_KEY}`
+                    'Authorization': 'Bearer ' + QWEN_API_KEY,
+                    'X-DashScope-SSE': 'enable'
                 },
-                body: JSON.stringify({
-                    model: 'qwen-vl-plus',
-                    input: { messages },
-                    parameters: {
-                        incremental_output: true
-                    }
-                })
+                body: JSON.stringify(requestBody)
             });
             
             if (!response.ok) {
-                throw new Error('Qwen-VL HTTP ' + response.status);
+                const errorText = await response.text();
+                throw new Error('Qwen-VL HTTP ' + response.status + ': ' + errorText);
             }
             
             return response;
