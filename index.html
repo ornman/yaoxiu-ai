@@ -2121,16 +2121,30 @@
             }
         }
         
-        // 其他节点退避
+        // 其他节点退避（修复：基于屏幕位置计算方向）
         function scatterOtherNodes(clickedId, nodes, mainGroup) {
             const clicked = nodes.find(n => n.id === clickedId);
+            const clickedG = mainGroup.querySelector(`[data-node-id="${clickedId}"]`);
+            if (!clickedG) return;
+            
+            // 获取点击节点的当前屏幕位置
+            const clickedRect = clickedG.getBoundingClientRect();
+            const clickedX = clickedRect.left + clickedRect.width / 2;
+            const clickedY = clickedRect.top + clickedRect.height / 2;
+            
             nodes.forEach(node => {
                 if (node.id === clickedId) return;
                 
                 const g = mainGroup.querySelector(`[data-node-id="${node.id}"]`);
                 if (!g) return;
                 
-                const angle = Math.atan2(node.py - clicked.py, node.px - clicked.px);
+                // 获取其他节点的当前屏幕位置
+                const rect = g.getBoundingClientRect();
+                const nodeX = rect.left + rect.width / 2;
+                const nodeY = rect.top + rect.height / 2;
+                
+                // 基于屏幕位置计算退避方向
+                const angle = Math.atan2(nodeY - clickedY, nodeX - clickedX);
                 const distance = 80 + Math.random() * 40;
                 const scatterX = Math.cos(angle) * distance;
                 const scatterY = Math.sin(angle) * distance;
