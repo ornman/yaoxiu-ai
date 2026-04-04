@@ -751,25 +751,25 @@
                     </div>
                 </div>
                 <div class="relative rounded-2xl border transition-all duration-300 focus-within:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color);" id="inputWrapper">
-                    <textarea 
-                        id="userInput" 
-                        rows="1"
-                        placeholder="询问瑶绣知识，或上传图片识别..."
-                        class="w-full bg-transparent px-4 sm:px-5 py-3 pr-24 sm:pr-28 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
-                        style="color: var(--text-primary);"
-                        onkeydown="handleKeyDown(event)"
-                        oninput="autoResize(this)"
-                    ></textarea>
-                    <!-- 图片上传按钮 -->
+                    <!-- 图片上传按钮（左侧） -->
                     <button 
                         onclick="openImagePicker()" 
                         id="imageUploadBtn"
-                        class="image-upload-btn absolute right-11 sm:right-14 bottom-2 p-1.5 sm:p-2 rounded-xl"
+                        class="image-upload-btn absolute left-2 sm:left-3 bottom-2 p-1.5 sm:p-2 rounded-xl z-10"
                         style="color: var(--text-tertiary);"
                         title="上传图片"
                     >
                         <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     </button>
+                    <textarea 
+                        id="userInput" 
+                        rows="1"
+                        placeholder="询问瑶绣知识，或上传图片识别..."
+                        class="w-full bg-transparent px-10 sm:px-12 py-3 pr-14 sm:pr-16 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
+                        style="color: var(--text-primary);"
+                        onkeydown="handleKeyDown(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
                     <button 
                         onclick="handleSendBtnClick(event)" 
                         id="sendBtn"
