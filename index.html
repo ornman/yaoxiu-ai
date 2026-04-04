@@ -1921,8 +1921,10 @@
                     closeAllPanels();
                     await new Promise(r => setTimeout(r, 300));
                     
-                    // 7. 添加用户消息
-                    appendUserMessage(node.label + '是什么？');
+                    // 7. 添加用户消息并设置到输入框
+                    const question = node.label + '是什么？';
+                    document.getElementById('userInput').value = question;
+                    appendUserMessage(question);
                     
                     // 8. 触发 AI 回复
                     await new Promise(r => setTimeout(r, 400));
