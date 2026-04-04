@@ -675,16 +675,38 @@
         <!-- Input Area -->
         <div class="glass border-t px-3 sm:px-6 py-3 sm:py-4" style="border-color: var(--border-color);">
             <div class="max-w-4xl mx-auto">
+                <!-- 已选图片预览 -->
+                <div id="imagePreviewContainer" class="hidden mb-3">
+                    <div class="flex items-center gap-3 p-3 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                        <img id="imagePreview" class="image-preview" alt="预览">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs" style="color: var(--text-tertiary);">已选择图片</p>
+                            <p class="text-xs mt-1" style="color: var(--gold);">将使用 V3 模型进行识别</p>
+                        </div>
+                        <button onclick="clearSelectedImage()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                </div>
                 <div class="relative rounded-2xl border transition-all duration-300 focus-within:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color);" id="inputWrapper">
                     <textarea 
                         id="userInput" 
                         rows="1"
                         placeholder="询问瑶绣知识..."
-                        class="w-full bg-transparent px-4 sm:px-5 py-3 pr-11 sm:pr-14 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
+                        class="w-full bg-transparent px-4 sm:px-5 py-3 pr-24 resize-none focus:outline-none rounded-2xl max-h-32 chat-content text-sm sm:text-base"
                         style="color: var(--text-primary);"
                         onkeydown="handleKeyDown(event)"
                         oninput="autoResize(this)"
                     ></textarea>
+                    <!-- 图片上传按钮 -->
+                    <button 
+                        onclick="openImagePicker()" 
+                        id="imageUploadBtn"
+                        class="image-upload-btn p-1.5 sm:p-2 rounded-xl"
+                        title="上传图片"
+                    >
+                        <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
                     <button 
                         onclick="handleSendBtnClick(event)" 
                         id="sendBtn"
@@ -1018,6 +1040,63 @@
         </div>
     </div>
 
+    <!-- Image Picker Modal -->
+    <div id="imagePickerModal" class="image-picker-modal" onclick="if(event.target===this)closeImagePicker()">
+        <div class="image-picker-content" style="background: var(--bg-secondary);">
+            <div class="p-4 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+                <span class="font-medium" style="color: var(--text-primary);">选择图片来源</span>
+                <button onclick="closeImagePicker()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-4 space-y-3">
+                <button onclick="openCamera()" class="w-full flex items-center gap-4 p-4 rounded-xl transition-all" style="background: var(--bg-tertiary);">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--accent);">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-medium" style="color: var(--text-primary);">拍照</p>
+                        <p class="text-xs" style="color: var(--text-tertiary);">使用相机拍摄瑶绣图案</p>
+                    </div>
+                </button>
+                <button onclick="document.getElementById('fileInput').click()" class="w-full flex items-center gap-4 p-4 rounded-xl transition-all" style="background: var(--bg-tertiary);">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background: var(--gold);">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <div class="text-left">
+                        <p class="font-medium" style="color: var(--text-primary);">从相册选择</p>
+                        <p class="text-xs" style="color: var(--text-tertiary);">选择已有的瑶绣图片</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div id="cameraModal" class="camera-modal">
+        <video id="cameraVideo" autoplay playsinline></video>
+        <div class="absolute top-4 left-4 right-4 flex justify-between items-center">
+            <button onclick="closeCamera()" class="w-10 h-10 rounded-full flex items-center justify-center" style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px);">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <span class="text-white text-sm font-medium">拍摄瑶绣</span>
+            <div class="w-10"></div>
+        </div>
+        <div class="camera-controls">
+            <div></div>
+            <button onclick="capturePhoto()" class="capture-btn"></button>
+            <button onclick="closeCamera()" class="close-camera-btn">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Hidden File Input -->
+    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+
+    <!-- Canvas for Image Processing -->
+    <canvas id="processCanvas" style="display: none;"></canvas>
+
     <!-- Toast -->
     <div id="toast" class="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 text-xs sm:text-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
         <span id="toastMsg"></span>
@@ -1050,6 +1129,8 @@
         let favorites = [];
         let currentFilterTag = 'all';
         let shareData = null;
+        let selectedImageBase64 = null;
+        let videoStream = null;
 
         // 知识图谱数据
         const kgData = {
@@ -2138,6 +2219,157 @@
             }
         }
 
+        // ========== 图片上传功能 ==========
+        function openImagePicker() {
+            if (selectedImageBase64) {
+                clearSelectedImage();
+                return;
+            }
+            document.getElementById('imagePickerModal').classList.add('open');
+        }
+
+        function closeImagePicker() {
+            document.getElementById('imagePickerModal').classList.remove('open');
+        }
+
+        async function openCamera() {
+            closeImagePicker();
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+            
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' },
+                    audio: false 
+                });
+                video.srcObject = videoStream;
+                modal.classList.add('open');
+            } catch (err) {
+                showToast('无法访问相机: ' + err.message);
+                // 回退到文件选择
+                document.getElementById('fileInput').click();
+            }
+        }
+
+        function closeCamera() {
+            const modal = document.getElementById('cameraModal');
+            const video = document.getElementById('cameraVideo');
+            
+            modal.classList.remove('open');
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            video.srcObject = null;
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('processCanvas');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            const base64 = canvas.toDataURL('image/jpeg', 0.9);
+            closeCamera();
+            handleImageSelected(base64);
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showToast('请选择图片文件');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                handleImageSelected(e.target.result);
+            };
+            reader.readAsDataURL(file);
+            
+            // 清空 input 以便可以再次选择同一文件
+            event.target.value = '';
+        }
+
+        async function handleImageSelected(base64) {
+            // 压缩图片
+            const compressed = await compressImage(base64, 1200);
+            selectedImageBase64 = compressed;
+            
+            // 显示预览
+            document.getElementById('imagePreview').src = compressed;
+            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            
+            // 更新上传按钮图标
+            const btn = document.getElementById('imageUploadBtn');
+            btn.innerHTML = '<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            btn.style.color = 'var(--accent)';
+            
+            showToast('图片已选择，可以开始提问');
+        }
+
+        function compressImage(base64, maxWidth) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = (maxWidth / width) * height;
+                        width = maxWidth;
+                    }
+                    
+                    const canvas = document.getElementById('processCanvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.src = base64;
+            });
+        }
+
+        function clearSelectedImage() {
+            selectedImageBase64 = null;
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+            document.getElementById('imagePreview').src = '';
+            
+            // 恢复上传按钮图标
+            const btn = document.getElementById('imageUploadBtn');
+            btn.innerHTML = '<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>';
+            btn.style.color = '';
+        }
+
+        function appendImageMessage(base64Data) {
+            const container = document.getElementById('chatContainer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            wrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
+                        <img src="${base64Data}" alt="上传的图片" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-bottom: 8px; display: block;">
+                        <p class="leading-relaxed text-sm sm:text-base" style="color: var(--text-primary);">请识别这张瑶绣图片</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg" style="background: var(--gold);">
+                        <span class="text-sm sm:text-lg font-serif font-bold" style="color: var(--bg-primary);">问</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+            scrollToBottom();
+        }
+
         // ========== 聊天功能 ==========
         function autoResize(textarea) {
             textarea.style.height = 'auto';
@@ -2204,8 +2436,140 @@
         function handleSendBtnClick(event) {
             if (isGenerating) {
                 stopGeneration();
+            } else if (selectedImageBase64) {
+                sendMessageWithImage();
             } else {
                 sendMessageWithAnimation(event);
+            }
+        }
+
+        // 发送带图片的消息
+        async function sendMessageWithImage() {
+            if (!selectedImageBase64 || isGenerating) return;
+
+            // 保存图片数据（因为 clearSelectedImage 会清空它）
+            const imageData = selectedImageBase64;
+
+            // R1 模型不支持图片，自动切换到 V3
+            const modelSelect = document.getElementById('modelSelect');
+            if (modelSelect.value === 'deepseek-reasoner') {
+                modelSelect.value = 'deepseek-chat';
+                // 更新模式按钮状态
+                const modeFastBtn = document.getElementById('modeFast');
+                const modeDeepBtn = document.getElementById('modeDeep');
+                modeFastBtn.style.background = 'var(--accent)';
+                modeFastBtn.style.color = 'white';
+                modeDeepBtn.style.background = 'transparent';
+                modeDeepBtn.style.color = 'var(--text-secondary)';
+                currentModelMode = 'fast';
+                showToast('图片识别已自动切换至 V3 模型（R1 不支持图片）');
+            }
+
+            messageCount++;
+            document.getElementById('msgCount').textContent = messageCount;
+
+            // 添加带图片的用户消息
+            appendImageMessage(imageData);
+            
+            // 清空输入和预览
+            clearSelectedImage();
+            
+            isGenerating = true;
+            document.getElementById('sendBtn').disabled = false;
+            updateSendBtnState();
+
+            const streamingDiv = createAssistantMessage();
+            let fullText = '';
+            let hasReceivedContent = false;
+
+            controller = new AbortController();
+
+            try {
+                const response = await fetch(DIRECT_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DIRECT_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: 'deepseek-chat', // 图片识别强制使用 V3
+                        messages: [
+                            {
+                                role: 'system',
+                                content: '你是瑶族刺绣知识专家，精通八角花纹样、十字挑花针法、黑底红彩配色。请识别用户上传的图片，详细分析其中的瑶绣元素，包括纹样、针法、配色等。'
+                            },
+                            {
+                                role: 'user',
+                                content: [
+                                    { type: 'text', text: '请识别这张图片中的瑶绣图案，分析其纹样、针法和配色特点。' },
+                                    { type: 'image_url', image_url: { url: imageData } }
+                                ]
+                            }
+                        ],
+                        stream: true
+                    }),
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        
+                        const data = line.slice(5).trim();
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            
+                            if (!hasReceivedContent) {
+                                streamingDiv.innerHTML = '';
+                                hasReceivedContent = true;
+                            }
+                            
+                            if (delta?.content) {
+                                fullText += delta.content;
+                                streamingDiv.innerHTML = marked.parse(fullText);
+                                streamingDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                            scrollToBottom();
+                        } catch (e) {}
+                    }
+                }
+
+                streamingDiv.classList.remove('cursor-blink');
+                
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addMessageActions(messageBubble, '[图片识别] 请识别这张瑶绣图片', fullText);
+                }
+
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                } else {
+                    streamingDiv.innerHTML = `<div style="color: #ef4444;">出错了：${escapeHtml(err.message)}</div>`;
+                }
+            } finally {
+                isGenerating = false;
+                document.getElementById('sendBtn').disabled = false;
+                updateSendBtnState();
+                controller = null;
             }
         }
         
