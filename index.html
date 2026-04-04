@@ -753,17 +753,18 @@
         <!-- Input Area -->
         <div class="glass border-t px-3 sm:px-6 py-3 sm:py-4" style="border-color: var(--border-color);">
             <div class="max-w-4xl mx-auto">
-                <!-- 已选图片预览 -->
+                <!-- 已选图片预览（支持多图） -->
                 <div id="imagePreviewContainer" class="hidden mb-3">
-                    <div class="flex items-center gap-3 p-3 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
-                        <img id="imagePreview" class="image-preview" alt="预览">
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs" style="color: var(--text-tertiary);">已选择图片</p>
-                            <p class="text-xs mt-1" style="color: var(--gold);">将使用 V3 模型进行识别</p>
+                    <div class="flex items-start gap-3 p-3 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                        <div id="imagePreviewList" class="flex gap-2 overflow-x-auto flex-1">
+                            <!-- 图片预览将动态插入这里 -->
                         </div>
-                        <button onclick="clearSelectedImage()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                        </button>
+                        <div class="flex flex-col items-end gap-2">
+                            <button onclick="clearSelectedImage()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                            <p id="imageCountBadge" class="text-xs px-2 py-0.5 rounded-full" style="background: var(--accent); color: white;">1</p>
+                        </div>
                     </div>
                 </div>
                 <div class="relative rounded-2xl border transition-all duration-300 focus-within:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color);" id="inputWrapper">
@@ -1207,7 +1208,7 @@
         let favorites = [];
         let currentFilterTag = 'all';
         let shareData = null;
-        let selectedImageBase64 = null;
+        let selectedImages = [];  // 改为数组支持多图
         let videoStream = null;
 
         // 知识图谱数据
@@ -2299,7 +2300,7 @@
 
         // ========== 图片上传功能 ==========
         function openImagePicker() {
-            if (selectedImageBase64) {
+            if (selectedImages.length > 0) {
                 clearSelectedImage();
                 return;
             }
@@ -2376,20 +2377,69 @@
         }
 
         async function handleImageSelected(base64) {
+            // 检查是否已存在
+            if (selectedImages.includes(base64)) {
+                showToast('该图片已选择');
+                return;
+            }
+            // 最多5张图
+            if (selectedImages.length >= 5) {
+                showToast('最多选择5张图片');
+                return;
+            }
+            
             // 压缩图片
             const compressed = await compressImage(base64, 1200);
-            selectedImageBase64 = compressed;
+            selectedImages.push(compressed);
             
-            // 显示预览
-            document.getElementById('imagePreview').src = compressed;
-            document.getElementById('imagePreviewContainer').classList.remove('hidden');
+            // 更新预览
+            updateImagePreview();
             
             // 更新上传按钮图标
             const btn = document.getElementById('imageUploadBtn');
             btn.innerHTML = '<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
             btn.style.color = 'var(--accent)';
             
-            showToast('图片已选择，可以开始提问');
+            showToast(`已选择 ${selectedImages.length} 张图片`);
+            
+            // 关闭选择器
+            closeImagePicker();
+            closeCamera();
+        }
+        
+        // 更新图片预览显示
+        function updateImagePreview() {
+            const container = document.getElementById('imagePreviewContainer');
+            const list = document.getElementById('imagePreviewList');
+            const badge = document.getElementById('imageCountBadge');
+            
+            if (selectedImages.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+            
+            container.classList.remove('hidden');
+            badge.textContent = selectedImages.length;
+            
+            // 清空并重新渲染
+            list.innerHTML = selectedImages.map((img, idx) => `
+                <div class="relative flex-shrink-0">
+                    <img src="${img}" class="image-preview rounded-lg border" style="border-color: var(--border-color); width: 80px; height: 80px; object-fit: cover;">
+                    <button onclick="removeImage(${idx})" class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs" style="background: var(--accent); color: white;">×</button>
+                </div>
+            `).join('');
+        }
+        
+        // 移除单张图片
+        function removeImage(index) {
+            selectedImages.splice(index, 1);
+            updateImagePreview();
+            
+            if (selectedImages.length === 0) {
+                const btn = document.getElementById('imageUploadBtn');
+                btn.innerHTML = '<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>';
+                btn.style.color = '';
+            }
         }
 
         function compressImage(base64, maxWidth) {
@@ -2417,9 +2467,9 @@
         }
 
         function clearSelectedImage() {
-            selectedImageBase64 = null;
+            selectedImages = [];
             document.getElementById('imagePreviewContainer').classList.add('hidden');
-            document.getElementById('imagePreview').src = '';
+            document.getElementById('imagePreviewList').innerHTML = '';
             
             // 恢复上传按钮图标
             const btn = document.getElementById('imageUploadBtn');
@@ -2427,15 +2477,26 @@
             btn.style.color = '';
         }
 
-        function appendImageMessage(base64Data) {
+        // 显示图片+文字消息
+        function appendImageAndTextMessage(images, text) {
             const container = document.getElementById('chatContainer');
             const wrapper = document.createElement('div');
             wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            
+            // 构建图片网格
+            const imageGrid = images.map(img => 
+                `<img src="${img}" class="rounded-lg border" style="border-color: var(--border-color); width: 100%; height: 100%; object-fit: cover; max-height: 150px;">`
+            ).join('');
+            
+            const textHtml = text ? `<p class="leading-relaxed text-sm sm:text-base mt-2" style="color: var(--text-primary);">${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : '';
+            
             wrapper.innerHTML = `
                 <div class="message-bubble">
                     <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
-                        <img src="${base64Data}" alt="上传的图片" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-bottom: 8px; display: block;">
-                        <p class="leading-relaxed text-sm sm:text-base" style="color: var(--text-primary);">请识别这张瑶绣图片</p>
+                        <div class="grid gap-2 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}" style="max-width: 300px;">
+                            ${imageGrid}
+                        </div>
+                        ${textHtml}
                     </div>
                 </div>
                 <div class="flex-shrink-0">
@@ -2514,7 +2575,7 @@
         function handleSendBtnClick(event) {
             if (isGenerating) {
                 stopGeneration();
-            } else if (selectedImageBase64) {
+            } else if (selectedImages.length > 0) {
                 sendMessageWithImage();
             } else {
                 sendMessageWithAnimation(event);
@@ -2523,10 +2584,14 @@
 
         // 发送带图片的消息
         async function sendMessageWithImage() {
-            if (!selectedImageBase64 || isGenerating) return;
+            if (selectedImages.length === 0 || isGenerating) return;
 
             // 保存图片数据（因为 clearSelectedImage 会清空它）
-            const imageData = selectedImageBase64;
+            const imagesData = [...selectedImages];
+            
+            // 获取输入框文字
+            const userInput = document.getElementById('userInput');
+            const textContent = userInput.value.trim();
 
             // R1 模型不支持图片，自动切换到 V3
             const modelSelect = document.getElementById('modelSelect');
@@ -2547,9 +2612,11 @@
             document.getElementById('msgCount').textContent = messageCount;
 
             // 添加带图片的用户消息
-            appendImageMessage(imageData);
+            appendImageAndTextMessage(imagesData, textContent);
             
             // 清空输入和预览
+            userInput.value = '';
+            userInput.style.height = 'auto';
             clearSelectedImage();
             
             isGenerating = true;
@@ -2561,6 +2628,14 @@
             let hasReceivedContent = false;
 
             controller = new AbortController();
+
+            // 构建 contentParts 支持多图
+            const contentParts = [
+                { type: 'text', text: textContent || '请识别这些瑶绣图片，分析其纹样、针法和配色特点。' }
+            ];
+            imagesData.forEach(img => {
+                contentParts.push({ type: 'image_url', image_url: { url: img } });
+            });
 
             try {
                 const response = await fetch(DIRECT_API_URL, {
@@ -2578,10 +2653,7 @@
                             },
                             {
                                 role: 'user',
-                                content: [
-                                    { type: 'text', text: '请识别这张图片中的瑶绣图案，分析其纹样、针法和配色特点。' },
-                                    { type: 'image_url', image_url: { url: imageData } }
-                                ]
+                                content: contentParts
                             }
                         ],
                         stream: true
