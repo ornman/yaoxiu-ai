@@ -104,9 +104,9 @@ export default {
   },
 };
 
-// 处理普通对话请求（Qwen 文字模型）
+// 处理普通对话请求（支持 DeepSeek 和 Qwen）
 async function handleChatRequest(body, env) {
-  const { message, model = 'qwen-turbo' } = body;
+  const { message, model = 'deepseek-chat' } = body;
 
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'Message is required' }), {
@@ -115,85 +115,146 @@ async function handleChatRequest(body, env) {
     });
   }
 
-  // 获取 Qwen API Key
-  const apiKey = CONFIG.USE_ENV_KEY 
-    ? (env.QWEN_API_KEY || CONFIG.QWEN_API_KEY)
-    : (CONFIG.QWEN_API_KEY || env.QWEN_API_KEY);
-    
-  if (!apiKey || apiKey.includes('your-api-key')) {
-    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // 模型映射（前端传来的 model 映射到 Qwen 模型）
-  const modelMap = {
-    'fast': 'qwen-turbo',      // 快速模式 -> qwen-turbo
-    'deep': 'qwen-plus',       // 深度模式 -> qwen-plus
-    'qwen-turbo': 'qwen-turbo',
-    'qwen-plus': 'qwen-plus',
-    'qwen-max': 'qwen-max',
-    'deepseek-chat': 'qwen-turbo',  // 兼容旧配置
-    'deepseek-reasoner': 'qwen-plus',
-  };
+  // 判断使用哪个服务商
+  const isDeepSeek = model.startsWith('deepseek');
   
-  const qwenModel = modelMap[model] || 'qwen-turbo';
-
-  // 调用 Qwen API（流式）
-  try {
-    const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: qwenModel,
-        input: {
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: message },
-          ],
-        },
-        parameters: {
-          result_format: 'message',
-          incremental_output: true,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      return new Response(JSON.stringify({ error: `Qwen API error: ${error}` }), {
-        status: response.status,
+  if (isDeepSeek) {
+    // ===== DeepSeek 模式 =====
+    const apiKey = CONFIG.USE_ENV_KEY 
+      ? (env.DEEPSEEK_API_KEY || CONFIG.DEEPSEEK_API_KEY)
+      : (CONFIG.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY);
+      
+    if (!apiKey || apiKey.includes('your-api-key')) {
+      return new Response(JSON.stringify({ error: 'DEEPSEEK_API_KEY not configured' }), {
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // 创建流式响应（Qwen 格式转换为兼容格式）
-    const stream = new TransformStream({
-      transform(chunk, controller) {
-        controller.enqueue(chunk);
-      },
-    });
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'user', content: message },
+          ],
+          stream: true,
+        }),
+      });
 
-    response.body.pipeTo(stream.writable);
+      if (!response.ok) {
+        const error = await response.text();
+        return new Response(JSON.stringify({ error: `DeepSeek API error: ${error}` }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    return new Response(stream.readable, {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
+      const stream = new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+        },
+      });
 
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+      response.body.pipeTo(stream.writable);
+
+      return new Response(stream.readable, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+  } else {
+    // ===== Qwen 模式 =====
+    const apiKey = CONFIG.USE_ENV_KEY 
+      ? (env.QWEN_API_KEY || CONFIG.QWEN_API_KEY)
+      : (CONFIG.QWEN_API_KEY || env.QWEN_API_KEY);
+      
+    if (!apiKey || apiKey.includes('your-api-key')) {
+      return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 模型映射
+    const modelMap = {
+      'qwen-turbo': 'qwen-turbo',
+      'qwen-plus': 'qwen-plus',
+      'qwen-max': 'qwen-max',
+    };
+    
+    const qwenModel = modelMap[model] || 'qwen-turbo';
+
+    try {
+      const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: qwenModel,
+          input: {
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: message },
+            ],
+          },
+          parameters: {
+            result_format: 'message',
+            incremental_output: true,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return new Response(JSON.stringify({ error: `Qwen API error: ${error}` }), {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const stream = new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+        },
+      });
+
+      response.body.pipeTo(stream.writable);
+
+      return new Response(stream.readable, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+
+    } catch (err) {
+      return new Response(JSON.stringify({ error: err.message }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 }
 
