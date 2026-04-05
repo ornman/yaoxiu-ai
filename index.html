@@ -2707,11 +2707,12 @@
         }
 
         // 发送带图片的消息（使用 Qwen-VL）
-        async function sendMessageWithImage() {
+        async function sendMessageWithImage(text = '') {
             if (selectedImages.length === 0 || isGenerating) return;
             
             const userInput = document.getElementById('userInput');
-            const textContent = userInput.value.trim();
+            // 优先使用传入的文字，否则从输入框获取
+            const textContent = text || userInput.value.trim();
             const imagesData = [...selectedImages];
             
             messageCount++;
@@ -2904,7 +2905,9 @@
             if (isGenerating) {
                 stopGeneration();
             } else if (selectedImages.length > 0) {
-                sendMessageWithImage();
+                // 同时发送图片和文字
+                const text = document.getElementById('userInput').value.trim();
+                sendMessageWithImage(text);
             } else {
                 sendMessageWithAnimation(event);
             }
