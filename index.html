@@ -2,7 +2,7 @@
 <html lang="zh-CN" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>瑶绣 · 瑶族刺绣知识问答</title>
     <meta name="version" content="2.1">
     <!-- CSP：基础安全防护，允许必要的外部资源 -->
@@ -389,6 +389,23 @@
         ::-webkit-scrollbar-thumb:hover {
             background: var(--accent);
         }
+        
+        /* ========== 移动端底部输入框固定 ========== */
+        @media screen and (max-width: 640px) {
+            .mobile-input-area {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+                background: var(--bg-primary);
+            }
+            #chatContainer {
+                padding-bottom: 120px !important;
+            }
+        }
+        
         .cursor-blink::after {
             content: '▊';
             color: var(--accent);
@@ -737,8 +754,8 @@
             </div>
         </div>
 
-        <!-- Input Area -->
-        <div class="glass border-t px-3 sm:px-6 py-3 sm:py-4" style="border-color: var(--border-color);">
+        <!-- Input Area - 移动端固定底部 -->
+        <div id="inputArea" class="glass border-t px-3 sm:px-6 py-3 sm:py-4 mobile-input-area" style="border-color: var(--border-color);">
             <div class="max-w-4xl mx-auto">
                 <!-- 已选图片预览（支持多图） -->
                 <div id="imagePreviewContainer" class="hidden mb-3">
