@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>瑶绣 · 瑶族刺绣知识问答</title>
     <meta name="version" content="2.1">
+    <!-- 安全加固：CSP 内容安全策略 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src https://api.yaoxiumax.top https://yaoembroidery-api.kdy233.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <!-- 安全加固：禁用 IE 兼容模式 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!-- 安全加固：禁用格式检测（防止手机号/邮箱自动识别） -->
+    <meta name="format-detection" content="telephone=no,email=no,address=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1208,10 +1214,120 @@
     </div>
 
     <script>
+        // ========== 安全工具函数 ==========
+        const SecurityUtils = {
+            // XSS 防护：转义 HTML 特殊字符
+            escapeHtml(text) {
+                if (typeof text !== 'string') return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            },
+            
+            // XSS 防护：安全的 innerHTML 插入（使用 DOMPurify 风格的简单实现）
+            safeSetHTML(element, html) {
+                if (!element) return;
+                // 使用 textContent + marked 解析后的净化
+                element.textContent = '';
+                if (html) {
+                    const temp = document.createElement('div');
+                    temp.innerHTML = html;
+                    // 移除危险标签和属性
+                    this.sanitizeElement(temp);
+                    element.appendChild(temp);
+                }
+            },
+            
+            // 净化 DOM 元素（移除危险内容）
+            sanitizeElement(element) {
+                const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea'];
+                const dangerousAttrs = ['onerror', 'onload', 'onclick', 'onmouseover', 'javascript:', 'data:text/html'];
+                
+                // 移除危险标签
+                dangerousTags.forEach(tag => {
+                    const nodes = element.getElementsByTagName(tag);
+                    for (let i = nodes.length - 1; i >= 0; i--) {
+                        nodes[i].remove();
+                    }
+                });
+                
+                // 移除危险属性
+                const allElements = element.getElementsByTagName('*');
+                for (let i = 0; i < allElements.length; i++) {
+                    const el = allElements[i];
+                    for (let j = el.attributes.length - 1; j >= 0; j--) {
+                        const attr = el.attributes[j];
+                        const attrName = attr.name.toLowerCase();
+                        const attrValue = attr.value.toLowerCase();
+                        
+                        // 移除 on* 事件处理器
+                        if (attrName.startsWith('on')) {
+                            el.removeAttribute(attr.name);
+                        }
+                        // 移除危险的 href/src
+                        else if ((attrName === 'href' || attrName === 'src') && 
+                                 (attrValue.startsWith('javascript:') || attrValue.startsWith('data:text/html'))) {
+                            el.removeAttribute(attr.name);
+                        }
+                    }
+                }
+            },
+            
+            // 输入验证：长度和字符检查
+            validateInput(text, maxLength = 2000) {
+                if (!text || typeof text !== 'string') {
+                    return { valid: false, error: '输入不能为空' };
+                }
+                if (text.length > maxLength) {
+                    return { valid: false, error: `输入长度不能超过 ${maxLength} 字符` };
+                }
+                // 检测控制字符
+                if (/[\x00-\x08\x0B-\x0C\x0E-\x1F]/.test(text)) {
+                    return { valid: false, error: '输入包含非法字符' };
+                }
+                return { valid: true, text: text.trim() };
+            },
+            
+            // 前端提示词注入检测
+            detectInjection(text) {
+                const patterns = [
+                    /ignore\s+(all\s+)?(previous|above|earlier)/i,
+                    /disregard\s+(all\s+)?(previous|above|earlier)/i,
+                    /forget\s+(everything|all|previous)/i,
+                    /system\s*prompt/i,
+                    /you\s+are\s+now/i,
+                    /from\s+now\s+on/i,
+                    /DAN\s*mode/i,
+                    /jailbreak/i,
+                ];
+                
+                for (const pattern of patterns) {
+                    if (pattern.test(text)) {
+                        console.warn('⚠️ 前端检测到潜在提示词注入');
+                        return true;
+                    }
+                }
+                return false;
+            },
+            
+            // 生成请求签名（简单版，增加篡改难度）
+            generateSignature(message, timestamp) {
+                const secret = 'yao-embroidery-2024'; // 简单的混淆密钥
+                const str = message + timestamp + secret;
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) {
+                    const char = str.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16);
+            }
+        };
+        
         // ========== 配置与状态 ==========
         // ✅ Worker 地址已内置，无需手动配置
         const DEFAULT_API_URL = 'https://api.yaoxiumax.top';  // ✅ 已绑定 Cloudflare Worker 自定义域名，国内访问无墙
-        const CONFIG_VERSION = '2.1';  // 配置版本，修改后强制刷新本地缓存
+        const CONFIG_VERSION = '2.1-secure';  // 配置版本，修改后强制刷新本地缓存
         
         // ===== 模型配置 =====
         // 支持 DeepSeek 和 Qwen 双模型，用户可自由切换：
@@ -1226,48 +1342,15 @@
         // 本地开发时可直连 DeepSeek（无需 Worker）
         const USE_DIRECT_API = false;  // 生产环境走 Worker
         
-        // 直连模式配置（开发时用）
-        const DIRECT_API_KEY = 'sk-3144bf0982b34c758559f05e340cc0bf';
+        // 直连模式配置（开发时用，生产环境禁止使用）
         const DIRECT_API_URL = 'https://api.deepseek.com/chat/completions';
+        // ⚠️ 安全警告：生产环境禁止在前端硬编码 API Key
+        // 如需本地开发直连，请在运行时通过安全方式输入
+        const DIRECT_API_KEY = localStorage.getItem('dev-api-key') || '';  // 仅本地开发使用
         
         // ===== 功能开关 =====
         const USE_QWEN_VL = true;  // 启用图片识别功能
         
-        // 测试 API Key 是否有效（在浏览器控制台运行: testQwenAPI()）
-        async function testQwenAPI() {
-            console.log('正在测试 Qwen-VL API...');
-            try {
-                const response = await fetch(QWEN_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + QWEN_API_KEY
-                    },
-                    body: JSON.stringify({
-                        model: 'qwen-vl-plus',
-                        input: {
-                            messages: [{
-                                role: 'user',
-                                content: [{ text: '你好' }]
-                            }]
-                        }
-                    })
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ API Key 有效！', data);
-                    return true;
-                } else {
-                    const error = await response.text();
-                    console.error('❌ API Key 无效:', response.status, error);
-                    return false;
-                }
-            } catch (err) {
-                console.error('❌ 请求失败:', err.message);
-                return false;
-            }
-        }
         // ========================
         
         let config = {
@@ -1569,6 +1652,14 @@
         }
 
         // ========== 配置管理 ==========
+        // 允许的 API 域名白名单
+        const ALLOWED_API_DOMAINS = [
+            'api.yaoxiumax.top',
+            'yaoembroidery-api.kdy233.workers.dev',
+            'localhost',
+            '127.0.0.1'
+        ];
+        
         function loadConfig() {
             const saved = localStorage.getItem('yao-config');
             const savedVersion = localStorage.getItem('yao-config-version');
@@ -1583,13 +1674,31 @@
             }
             
             if (saved) {
-                config = { ...config, ...JSON.parse(saved) };
-                
-                // 强制更新：如果缓存的是旧 Worker 地址，自动切换为新域名
-                if (config.apiUrl && config.apiUrl.includes('workers.dev')) {
-                    console.log('🔄 检测到旧 Worker 地址，自动更新为新域名');
+                try {
+                    const parsed = JSON.parse(saved);
+                    
+                    // 验证 API URL 安全性
+                    if (parsed.apiUrl) {
+                        const isAllowed = ALLOWED_API_DOMAINS.some(domain => 
+                            parsed.apiUrl.includes(domain)
+                        );
+                        if (!isAllowed) {
+                            console.warn('⚠️ 检测到非法 API 地址，已重置');
+                            parsed.apiUrl = DEFAULT_API_URL;
+                        }
+                    }
+                    
+                    config = { ...config, ...parsed };
+                    
+                    // 强制更新：如果缓存的是旧 Worker 地址，自动切换为新域名
+                    if (config.apiUrl && config.apiUrl.includes('workers.dev')) {
+                        console.log('🔄 检测到旧 Worker 地址，自动更新为新域名');
+                        config.apiUrl = DEFAULT_API_URL;
+                        saveConfig();
+                    }
+                } catch (e) {
+                    console.error('配置解析失败，使用默认配置');
                     config.apiUrl = DEFAULT_API_URL;
-                    saveConfig();
                 }
             }
         }
@@ -3002,7 +3111,22 @@
 
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
-            const content = userInput.value.trim();
+            const rawContent = userInput.value;
+            
+            // 前端安全验证
+            const validation = SecurityUtils.validateInput(rawContent, 2000);
+            if (!validation.valid) {
+                showToast('⚠️ ' + validation.error);
+                return;
+            }
+            
+            const content = validation.text;
+            
+            // 检测提示词注入
+            if (SecurityUtils.detectInjection(content)) {
+                showToast('⚠️ 检测到可疑输入，请正常提问');
+                return;
+            }
             
             // 如果有图片，调用图片发送函数
             if (selectedImages.length > 0) {
@@ -3120,10 +3244,17 @@
                     // Worker 模式：通过 Cloudflare Worker 调用
                     const apiUrl = config.apiUrl || DEFAULT_API_URL;
                     console.log('📡 请求地址:', apiUrl); // 调试用
+                    
+                    // 安全：添加时间戳和签名，增加请求篡改难度
+                    const timestamp = Date.now();
+                    const signature = SecurityUtils.generateSignature(content, timestamp);
+                    
                     response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
+                            'X-Timestamp': timestamp.toString(),
+                            'X-Signature': signature,
                             ...(config.apiKey && { 'X-API-Key': config.apiKey })
                         },
                         body: JSON.stringify({
