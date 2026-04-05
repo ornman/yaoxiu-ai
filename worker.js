@@ -9,16 +9,19 @@
  * 
  * API Key 配置方式（二选一）：
  * - 方式1：直接修改下方 CONFIG 中的 API_KEY（已为你填入）
- * - 方式2：在 Worker Settings > Variables 中添加 DEEPSEEK_API_KEY
+ * - 方式2：在 Worker Settings > Variables 中添加对应的环境变量
  */
 
 // ===== 配置区域 =====
 const CONFIG = {
-  // 直接填写 API Key（方式1）
-  API_KEY: 'sk-3144bf0982b34c758559f05e340cc0bf',
+  // DeepSeek API Key
+  DEEPSEEK_API_KEY: 'sk-3144bf0982b34c758559f05e340cc0bf',
   
-  // 是否使用环境变量覆盖（方式2）
-  USE_ENV_KEY: false,  // 改为 true 则优先使用环境变量的 DEEPSEEK_API_KEY
+  // 阿里云百炼 API Key（用于图片识别）
+  QWEN_API_KEY: 'sk-bf855dcf758d4fb5a81447acd6944b77',
+  
+  // 是否使用环境变量覆盖
+  USE_ENV_KEY: false,
 };
 // ==================
 
@@ -54,16 +57,16 @@ const SYSTEM_PROMPT = `你是「小瑶」，一位从小跟着阿妈学刺绣的
 - 禁止每句开头都用"（手指轻抚...）""（看着绣片...）"等重复套路
 - 保持专业、简洁、知识密度高`;
 
+// ===== CORS 响应头 =====
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 // ===== 请求处理 =====
 export default {
   async fetch(request, env, ctx) {
-    // CORS 响应头
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    };
-
     // 处理预检请求
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
@@ -88,76 +91,184 @@ export default {
       });
     }
 
-    const { message, model = 'deepseek-chat' } = body;
+    const { type, message, model, imageData, text } = body;
 
-    if (!message || typeof message !== 'string') {
-      return new Response(JSON.stringify({ error: 'Message is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 获取 API Key（优先顺序：环境变量 > 配置文件）
-    const apiKey = CONFIG.USE_ENV_KEY 
-      ? (env.DEEPSEEK_API_KEY || CONFIG.API_KEY)
-      : (CONFIG.API_KEY || env.DEEPSEEK_API_KEY);
-      
-    if (!apiKey || apiKey === 'sk-your-api-key-here') {
-      return new Response(JSON.stringify({ error: 'DEEPSEEK_API_KEY not configured. 请在 worker.js 中填写 CONFIG.API_KEY 或在环境变量中设置。' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // 调用 DeepSeek API（流式）
-    try {
-      const response = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: message },
-          ],
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        return new Response(JSON.stringify({ error: `DeepSeek API error: ${error}` }), {
-          status: response.status,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // 创建流式响应
-      const stream = new TransformStream({
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-        },
-      });
-
-      response.body.pipeTo(stream.writable);
-
-      return new Response(stream.readable, {
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
-      });
-
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // 根据请求类型处理
+    if (type === 'vision' || imageData) {
+      // 图片识别请求 -> 调用 Qwen-VL
+      return handleVisionRequest(body, env);
+    } else {
+      // 普通对话请求 -> 调用 DeepSeek
+      return handleChatRequest(body, env);
     }
   },
 };
+
+// 处理普通对话请求（DeepSeek）
+async function handleChatRequest(body, env) {
+  const { message, model = 'deepseek-chat' } = body;
+
+  if (!message || typeof message !== 'string') {
+    return new Response(JSON.stringify({ error: 'Message is required' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 获取 API Key
+  const apiKey = CONFIG.USE_ENV_KEY 
+    ? (env.DEEPSEEK_API_KEY || CONFIG.DEEPSEEK_API_KEY)
+    : (CONFIG.DEEPSEEK_API_KEY || env.DEEPSEEK_API_KEY);
+    
+  if (!apiKey || apiKey.includes('your-api-key')) {
+    return new Response(JSON.stringify({ error: 'DEEPSEEK_API_KEY not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 调用 DeepSeek API（流式）
+  try {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: message },
+        ],
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return new Response(JSON.stringify({ error: `DeepSeek API error: ${error}` }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 创建流式响应
+    const stream = new TransformStream({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      },
+    });
+
+    response.body.pipeTo(stream.writable);
+
+    return new Response(stream.readable, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
+
+// 处理图片识别请求（Qwen-VL）
+async function handleVisionRequest(body, env) {
+  const { imageData, text, model = 'qwen-vl-plus' } = body;
+
+  if (!imageData || !Array.isArray(imageData) || imageData.length === 0) {
+    return new Response(JSON.stringify({ error: 'Image data is required' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 获取 Qwen API Key
+  const apiKey = CONFIG.USE_ENV_KEY 
+    ? (env.QWEN_API_KEY || CONFIG.QWEN_API_KEY)
+    : (CONFIG.QWEN_API_KEY || env.QWEN_API_KEY);
+    
+  if (!apiKey || apiKey.includes('your-api-key')) {
+    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured' }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  // 构建 content
+  const content = [];
+  
+  // 添加所有图片
+  imageData.forEach(img => {
+    content.push({ image: img });
+  });
+  
+  // 添加提示文字
+  content.push({
+    text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。'
+  });
+
+  const requestBody = {
+    model: model,
+    input: {
+      messages: [{
+        role: 'user',
+        content: content
+      }]
+    },
+    parameters: {
+      result_format: 'message'
+    }
+  };
+
+  // 调用 Qwen-VL API
+  try {
+    const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      return new Response(JSON.stringify({ error: `Qwen-VL API error: ${error}` }), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // 直接返回响应（Qwen-VL 已经是流式格式）
+    const stream = new TransformStream({
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      },
+    });
+
+    response.body.pipeTo(stream.writable);
+
+    return new Response(stream.readable, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}

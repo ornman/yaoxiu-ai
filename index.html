@@ -953,8 +953,12 @@
                 </h3>
                 <div class="space-y-3">
                     <div>
-                        <label class="text-xs mb-1.5 block" style="color: var(--text-tertiary);">Worker URL</label>
+                        <label class="text-xs mb-1.5 block flex items-center gap-1" style="color: var(--text-tertiary);">
+                            Worker URL 
+                            <span class="px-1.5 py-0.5 rounded text-[10px]" style="background: var(--accent); color: white;">必需</span>
+                        </label>
                         <input type="text" id="settingsApiUrl" class="w-full px-3 py-2 rounded-lg border text-xs sm:text-sm focus:outline-none focus:ring-2" style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary);" placeholder="https://your-worker.workers.dev">
+                        <p class="text-xs mt-1.5" style="color: var(--gold);">⚠️ 图片识别必须通过 Worker 代理，请填写 Worker 地址</p>
                     </div>
                     <div>
                         <label class="text-xs mb-1.5 block" style="color: var(--text-tertiary);">API Key (可选)</label>
@@ -1172,19 +1176,20 @@
 
     <script>
         // ========== 配置与状态 ==========
+        // ⚠️ 重要：图片识别必须通过 Worker 代理，无法前端直连（CORS限制）
         const DEFAULT_API_URL = 'https://your-worker-name.your-subdomain.workers.dev';
         
         // ===== 本地开发配置 =====
-        // 如需本地直接调用 DeepSeek API（不经过 Worker），将 USE_DIRECT_API 设为 true
-        // 并在下方填写你的 DeepSeek API Key
+        // 文字对话：可以直连 DeepSeek (USE_DIRECT_API = true)
+        // 图片识别：必须通过 Worker 代理（浏览器 CORS 限制）
         const USE_DIRECT_API = true;  // 设为 true 启用本地直连模式
         const DIRECT_API_KEY = 'sk-3144bf0982b34c758559f05e340cc0bf';  // 填写你的 DS Key
         const DIRECT_API_URL = 'https://api.deepseek.com/chat/completions';  // DeepSeek API 地址
         
-        // ===== Qwen-VL 配置 =====
-        const USE_QWEN_VL = true;  // 设为 true 使用 Qwen-VL 进行图片识别
-        const QWEN_API_KEY = 'sk-bf855dcf758d4fb5a81447acd6944b77';  // 阿里云百炼 API Key
-        const QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
+        // ===== Qwen-VL 图片识别配置 =====
+        // ⚠️ 图片识别必须通过 Worker 代理，请在上方 DEFAULT_API_URL 中填写 Worker 地址
+        // Worker 代码已更新支持 Qwen-VL，请重新部署 worker.js
+        const USE_QWEN_VL = true;  // 设为 true 启用图片识别功能
         
         // 测试 API Key 是否有效（在浏览器控制台运行: testQwenAPI()）
         async function testQwenAPI() {
@@ -2667,47 +2672,35 @@
             }
         }
 
-        // 调用 Qwen-VL API 识别图片
+        // 调用 Qwen-VL API 识别图片（通过 Worker 代理）
         async function callQwenVL(images, text) {
-            // 构建 content - 先图片后文字（Qwen-VL 推荐顺序）
-            const content = [];
+            // 通过 Worker 代理发送请求，避免 CORS 问题
+            const apiUrl = config.apiUrl || DEFAULT_API_URL;
             
-            // 添加所有图片
-            images.forEach(img => {
-                content.push({ image: img });
-            });
+            if (apiUrl.includes('your-worker-name')) {
+                throw new Error('请先配置 Worker 代理地址（点击右上角设置）');
+            }
             
-            // 添加提示文字
-            content.push({
-                text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。'
-            });
+            console.log('通过 Worker 代理发送图片识别请求...', { worker: apiUrl });
             
-            const requestBody = {
-                model: 'qwen-vl-plus',
-                input: {
-                    messages: [{
-                        role: 'user',
-                        content: content
-                    }]
-                },
-                parameters: {
-                    result_format: 'message'
-                }
-            };
-            
-            const response = await fetch(QWEN_API_URL, {
+            const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: {
+                headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + QWEN_API_KEY,
-                    'X-DashScope-SSE': 'enable'
+                    ...(config.apiKey && { 'X-API-Key': config.apiKey })
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({
+                    type: 'vision',
+                    imageData: images,
+                    text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。',
+                    model: 'qwen-vl-plus'
+                }),
+                signal: controller.signal
             });
             
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error('Qwen-VL HTTP ' + response.status + ': ' + errorText);
+                throw new Error('识别服务错误 ' + response.status + ': ' + errorText);
             }
             
             return response;
