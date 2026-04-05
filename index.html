@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>瑶绣 · 瑶族刺绣知识问答</title>
+    <meta name="version" content="2.1">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1209,7 +1210,8 @@
     <script>
         // ========== 配置与状态 ==========
         // ✅ Worker 地址已内置，无需手动配置
-        const DEFAULT_API_URL = 'https://yaoembroidery-api.kdy233.workers.dev';
+        const DEFAULT_API_URL = 'https://api.yaoxiumax.top';  // ✅ 已绑定 Cloudflare Worker 自定义域名，国内访问无墙
+        const CONFIG_VERSION = '2.1';  // 配置版本，修改后强制刷新本地缓存
         
         // ===== 模型配置 =====
         // 支持 DeepSeek 和 Qwen 双模型，用户可自由切换：
@@ -1569,8 +1571,26 @@
         // ========== 配置管理 ==========
         function loadConfig() {
             const saved = localStorage.getItem('yao-config');
+            const savedVersion = localStorage.getItem('yao-config-version');
+            
+            // 版本不匹配或配置过期，重置配置
+            if (savedVersion !== CONFIG_VERSION) {
+                console.log('🔄 配置版本更新，重置为默认配置');
+                localStorage.setItem('yao-config-version', CONFIG_VERSION);
+                config.apiUrl = DEFAULT_API_URL;
+                saveConfig();
+                return;
+            }
+            
             if (saved) {
                 config = { ...config, ...JSON.parse(saved) };
+                
+                // 强制更新：如果缓存的是旧 Worker 地址，自动切换为新域名
+                if (config.apiUrl && config.apiUrl.includes('workers.dev')) {
+                    console.log('🔄 检测到旧 Worker 地址，自动更新为新域名');
+                    config.apiUrl = DEFAULT_API_URL;
+                    saveConfig();
+                }
             }
         }
 
@@ -3099,6 +3119,7 @@
                 } else {
                     // Worker 模式：通过 Cloudflare Worker 调用
                     const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                    console.log('📡 请求地址:', apiUrl); // 调试用
                     response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 
