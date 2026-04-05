@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>收藏/分享功能诊断</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --accent: #c41e3a;
+            --gold: #d4af37;
+            --bg-dark: #1a1a1a;
+            --bg-card: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+        }
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        .log-entry {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .log-success { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .log-error { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .log-warn { background: rgba(234, 179, 8, 0.15); color: #facc15; }
+        .test-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .message-bubble {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 3px solid var(--accent);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-2xl font-bold mb-4" style="color: var(--accent);">🔍 收藏/分享功能诊断</h1>
+        
+        <!-- 状态概览 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="test-card text-center">
+                <div class="text-2xl font-bold" id="favCountDisplay" style="color: var(--accent);">0</div>
+                <div class="text-sm text-gray-400">收藏数量</div>
+            </div>
+            <div class="test-card text-center">
+                <div class="text-2xl font-bold" id="storageStatus" style="color: var(--gold);">?</div>
+                <div class="text-sm text-gray-400">存储状态</div>
+            </div>
+            <div class="test-card text-center">
+                <div class="text-2xl font-bold" id="libStatus" style="color: #3b82f6;">?</div>
+                <div class="text-sm text-gray-400">依赖库</div>
+            </div>
+            <div class="test-card text-center">
+                <div class="text-2xl font-bold" id="lastAction" style="color: #22c55e;">-</div>
+                <div class="text-sm text-gray-400">最后操作</div>
+            </div>
+        </div>
+
+        <!-- 测试区域 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 左侧：模拟消息和操作 -->
+            <div>
+                <div class="test-card">
+                    <h3 class="font-bold mb-3">💬 模拟消息（带收藏/分享按钮）</h3>
+                    
+                    <div class="message-bubble">
+                        <div class="font-medium mb-2" style="color: var(--accent);">Q: 八角花纹有什么寓意？</div>
+                        <div class="text-sm text-gray-300 mb-3">八角花纹是瑶族刺绣中最具代表性的纹样之一，象征着太阳和光明，寓意着吉祥和幸福...</div>
+                        
+                        <!-- 操作按钮 -->
+                        <div class="flex items-center gap-2 pt-2 border-t" style="border-color: var(--border-color);">
+                            <button onclick="testAddToFavorites('八角花纹有什么寓意？', '八角花纹是瑶族刺绣中最具代表性的纹样之一...')" 
+                                    class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                    onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary');">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                </svg>
+                                收藏
+                            </button>
+                            <button onclick="testOpenShareModal('八角花纹有什么寓意？', '八角花纹是瑶族刺绣中最具代表性的纹样之一...')" 
+                                    class="share-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
+                                    onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
+                                    onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                                </svg>
+                                分享
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="message-bubble">
+                        <div class="font-medium mb-2" style="color: var(--accent);">Q: 瑶绣有哪些针法？</div>
+                        <div class="text-sm text-gray-300 mb-3">瑶绣主要采用挑花针法，包括十字挑、平挑、斜挑等多种技法...</div>
+                        
+                        <div class="flex items-center gap-2 pt-2 border-t" style="border-color: var(--border-color);">
+                            <button onclick="testAddToFavorites('瑶绣有哪些针法？', '瑶绣主要采用挑花针法...')" 
+                                    class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                    onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                                    onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary');">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                                </svg>
+                                收藏
+                            </button>
+                            <button onclick="testOpenShareModal('瑶绣有哪些针法？', '瑶绣主要采用挑花针法...')" 
+                                    class="share-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
+                                    onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
+                                    onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                                </svg>
+                                分享
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 快捷测试按钮 -->
+                <div class="test-card">
+                    <h3 class="font-bold mb-3">🧪 快捷测试</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="runDiagnostics()" class="px-4 py-2 rounded-lg text-sm font-medium" style="background: #3b82f6; color: white;">
+                            🔍 运行完整诊断
+                        </button>
+                        <button onclick="testStorage()" class="px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--gold); color: black;">
+                            💾 测试存储
+                        </button>
+                        <button onclick="clearFavorites()" class="px-4 py-2 rounded-lg text-sm font-medium" style="background: var(--border-color); color: white;">
+                            🗑️ 清空收藏
+                        </button>
+                        <button onclick="exportFavorites()" class="px-4 py-2 rounded-lg text-sm font-medium" style="background: #22c55e; color: white;">
+                            📤 导出收藏
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：日志和收藏列表 -->
+            <div>
+                <div class="test-card">
+                    <h3 class="font-bold mb-3">📋 收藏列表</h3>
+                    <div id="favoritesList" class="space-y-2 max-h-48 overflow-y-auto">
+                        <div class="text-gray-500 text-sm text-center py-4">暂无收藏</div>
+                    </div>
+                </div>
+                
+                <div class="test-card">
+                    <h3 class="font-bold mb-3">📝 操作日志</h3>
+                    <div id="logPanel" class="h-64 overflow-y-auto text-sm">
+                        <div class="log-entry log-info">页面加载完成，等待操作...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分享弹窗 -->
+    <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="rounded-lg p-6 max-w-sm w-full mx-4" style="background: var(--bg-card);">
+            <h3 class="text-lg font-bold mb-4">分享</h3>
+            <div id="shareCard" class="rounded-lg p-4 mb-4" style="background: var(--bg-dark);">
+                <div id="shareQuestion" class="font-medium mb-2" style="color: var(--accent);"></div>
+                <div id="shareAnswer" class="text-sm text-gray-400"></div>
+                <div class="mt-3 flex justify-center">
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="downloadShareCard()" class="flex-1 py-2 rounded-lg font-medium" style="background: var(--accent); color: white;">下载卡片</button>
+                <button onclick="closeShareModal()" class="flex-1 py-2 rounded-lg font-medium" style="background: var(--border-color); color: white;">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局状态 ==========
+        let favorites = [];
+        let shareData = null;
+
+        // ========== 日志工具 ==========
+        function log(message, type = 'info') {
+            const panel = document.getElementById('logPanel');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            entry.textContent = `[${time}] ${message}`;
+            panel.appendChild(entry);
+            panel.scrollTop = panel.scrollHeight;
+            console.log(`[${type}] ${message}`);
+        }
+
+        function updateLastAction(action) {
+            document.getElementById('lastAction').textContent = action;
+        }
+
+        // ========== 初始化检查 ==========
+        async function runDiagnostics() {
+            log('=== 开始运行诊断 ===', 'info');
+            
+            // 检查依赖库
+            let libOk = true;
+            if (typeof localforage === 'undefined') {
+                log('❌ localforage 未加载', 'error');
+                libOk = false;
+            } else {
+                log('✅ localforage 已加载', 'success');
+            }
+            
+            if (typeof QRCode === 'undefined') {
+                log('❌ QRCode 未加载', 'error');
+                libOk = false;
+            } else {
+                log('✅ QRCode 已加载', 'success');
+            }
+            
+            if (typeof html2canvas === 'undefined') {
+                log('❌ html2canvas 未加载', 'error');
+                libOk = false;
+            } else {
+                log('✅ html2canvas 已加载', 'success');
+            }
+            
+            document.getElementById('libStatus').textContent = libOk ? 'OK' : 'ERR';
+            document.getElementById('libStatus').style.color = libOk ? '#22c55e' : '#ef4444';
+            
+            // 测试存储
+            await testStorage();
+            
+            log('=== 诊断完成 ===', 'info');
+        }
+
+        async function testStorage() {
+            try {
+                await localforage.setItem('test', 'hello');
+                const value = await localforage.getItem('test');
+                if (value === 'hello') {
+                    log('✅ 存储测试通过', 'success');
+                    document.getElementById('storageStatus').textContent = 'OK';
+                    document.getElementById('storageStatus').style.color = '#22c55e';
+                } else {
+                    throw new Error('读取值不匹配');
+                }
+                await localforage.removeItem('test');
+            } catch (err) {
+                log(`❌ 存储测试失败: ${err.message}`, 'error');
+                document.getElementById('storageStatus').textContent = 'ERR';
+                document.getElementById('storageStatus').style.color = '#ef4444';
+            }
+        }
+
+        // ========== 收藏功能 ==========
+        async function loadFavorites() {
+            try {
+                const saved = await localforage.getItem('favorites');
+                if (saved) {
+                    favorites = saved;
+                    log(`加载了 ${favorites.length} 条收藏`, 'success');
+                } else {
+                    favorites = [];
+                    log('没有保存的收藏', 'info');
+                }
+                updateFavoritesList();
+            } catch (err) {
+                log(`加载收藏失败: ${err.message}`, 'error');
+            }
+        }
+
+        async function saveFavorites() {
+            try {
+                await localforage.setItem('favorites', favorites);
+                log('收藏已保存', 'success');
+                updateFavoritesList();
+            } catch (err) {
+                log(`保存收藏失败: ${err.message}`, 'error');
+            }
+        }
+
+        function testAddToFavorites(question, answer) {
+            log(`尝试收藏: "${question.substring(0, 20)}..."`, 'info');
+            
+            // 检查重复
+            const isDuplicate = favorites.some(f => f.question === question);
+            if (isDuplicate) {
+                log('⚠️ 该内容已收藏，跳过', 'warn');
+                updateLastAction('重复收藏');
+                return;
+            }
+            
+            const id = 'fav_' + Date.now();
+            const fav = {
+                id,
+                question,
+                answer: answer.substring(0, 100) + '...',
+                timestamp: Date.now()
+            };
+            
+            favorites.unshift(fav);
+            saveFavorites();
+            log('✅ 收藏成功', 'success');
+            updateLastAction('收藏成功');
+            
+            // 触发按钮动画
+            animateFavButton();
+        }
+
+        function animateFavButton() {
+            const btn = document.querySelector('.fav-btn:hover');
+            if (btn) {
+                btn.style.transform = 'scale(1.2)';
+                btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg> 已收藏';
+                setTimeout(() => {
+                    btn.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }
+
+        function updateFavoritesList() {
+            document.getElementById('favCountDisplay').textContent = favorites.length;
+            const container = document.getElementById('favoritesList');
+            
+            if (favorites.length === 0) {
+                container.innerHTML = '<div class="text-gray-500 text-sm text-center py-4">暂无收藏</div>';
+                return;
+            }
+            
+            container.innerHTML = favorites.map(f => `
+                <div class="p-3 rounded-lg text-sm" style="background: var(--bg-dark);">
+                    <div class="font-medium mb-1" style="color: var(--accent);">${f.question}</div>
+                    <div class="text-gray-400 text-xs">${new Date(f.timestamp).toLocaleString()}</div>
+                    <button onclick="deleteFavorite('${f.id}')" class="mt-2 text-xs text-red-400 hover:text-red-300">删除</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteFavorite(id) {
+            favorites = favorites.filter(f => f.id !== id);
+            await saveFavorites();
+            log('收藏已删除', 'info');
+            updateLastAction('删除收藏');
+        }
+
+        async function clearFavorites() {
+            if (!confirm('确定要清空所有收藏吗？')) return;
+            favorites = [];
+            await saveFavorites();
+            log('收藏已清空', 'info');
+            updateLastAction('清空收藏');
+        }
+
+        function exportFavorites() {
+            if (favorites.length === 0) {
+                log('暂无收藏可导出', 'warn');
+                return;
+            }
+            const data = {
+                version: '1.0',
+                exportTime: new Date().toISOString(),
+                favorites
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `瑶绣收藏_${new Date().toLocaleDateString()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            log('收藏已导出', 'success');
+            updateLastAction('导出收藏');
+        }
+
+        // ========== 分享功能 ==========
+        function testOpenShareModal(question, answer) {
+            log(`打开分享弹窗: "${question.substring(0, 20)}..."`, 'info');
+            
+            shareData = { question, answer };
+            document.getElementById('shareQuestion').textContent = 'Q: ' + question;
+            document.getElementById('shareAnswer').textContent = answer.substring(0, 100) + '...';
+            
+            // 生成二维码
+            const qrcodeDiv = document.getElementById('qrcode');
+            qrcodeDiv.innerHTML = '';
+            try {
+                new QRCode(qrcodeDiv, {
+                    text: window.location.href,
+                    width: 96,
+                    height: 96,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                log('✅ 二维码生成成功', 'success');
+            } catch (err) {
+                log(`❌ 二维码生成失败: ${err.message}`, 'error');
+            }
+            
+            document.getElementById('shareModal').classList.remove('hidden');
+            updateLastAction('打开分享');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.add('hidden');
+            log('分享弹窗已关闭', 'info');
+        }
+
+        async function downloadShareCard() {
+            const card = document.getElementById('shareCard');
+            log('开始生成分享卡片...', 'info');
+            
+            try {
+                const canvas = await html2canvas(card, {
+                    scale: 2,
+                    backgroundColor: null,
+                    useCORS: true
+                });
+                const link = document.createElement('a');
+                link.download = `瑶绣_${new Date().getTime()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                log('✅ 卡片已保存', 'success');
+                updateLastAction('下载卡片');
+            } catch (err) {
+                log(`❌ 保存失败: ${err.message}`, 'error');
+            }
+        }
+
+        // ========== 初始化 ==========
+        window.addEventListener('load', () => {
+            log('页面加载完成', 'info');
+            loadFavorites();
+            runDiagnostics();
+        });
+    </script>
+</body>
+</html>
