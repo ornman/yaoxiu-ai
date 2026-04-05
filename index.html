@@ -417,11 +417,11 @@
         [data-theme="light"] .glass {
             background: rgba(255, 255, 255, 0.7);
         }
-        .settings-panel, .favorites-panel, .share-panel, .knowledge-panel {
+        .settings-panel, .favorites-panel, .conversations-panel, .share-panel, .knowledge-panel {
             transform: translateX(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .settings-panel.open, .favorites-panel.open, .share-panel.open, .knowledge-panel.open {
+        .settings-panel.open, .favorites-panel.open, .conversations-panel.open, .share-panel.open, .knowledge-panel.open {
             transform: translateX(0);
         }
         .panel-overlay {
@@ -591,13 +591,17 @@
             <div class="px-4 sm:px-6 py-3 sm:py-4">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2 sm:gap-4">
-                        <div class="relative">
-                            <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg" style="box-shadow: 0 10px 30px var(--shadow);">
+                        <div class="relative cursor-pointer group" onclick="newConversation()" title="新建对话">
+                            <div class="w-9 h-9 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg transition-transform group-hover:scale-105" style="box-shadow: 0 10px 30px var(--shadow);">
                                 <span class="text-lg sm:text-2xl font-serif font-bold text-white">瑶</span>
                             </div>
                             <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-yao-gold flex items-center justify-center">
-                                <span class="text-xs">❋</span>
+                                <span class="text-xs">+</span>
                             </div>
+                            <!-- 悬浮提示 -->
+                            <span class="absolute -bottom-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" style="background: var(--bg-tertiary); color: var(--text-secondary);">
+                                新建对话
+                            </span>
                         </div>
                         <div>
                             <h1 class="font-serif text-base sm:text-xl font-bold tracking-wide" style="color: var(--text-primary);">
@@ -608,6 +612,14 @@
                     </div>
                     
                     <div class="flex items-center gap-1 sm:gap-3">
+                        <!-- 对话历史入口 -->
+                        <button onclick="openConversations()" id="headerConvBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="对话历史">
+                            <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span id="convBadge" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yao-gold text-white text-xs flex items-center justify-center hidden">0</span>
+                        </button>
+                        
                         <!-- 收藏入口 -->
                         <button onclick="openFavorites()" id="headerFavBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="我的收藏">
                             <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
@@ -700,13 +712,27 @@
                             <p class="text-xs text-center" style="color: var(--text-tertiary);">鼠标悬停暂停旋转 · 象征太阳与生命</p>
                         </div>
                         
-                        <!-- 轮询预设问题 - 3组不同风格 -->
+                        <!-- 轮询预设问题 - 8组丰富模板 -->
                         <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
                             <!-- 动态生成的预设问题 -->
                         </div>
-                        <p class="text-xs sm:text-sm italic" style="color: var(--text-secondary);">请问，您想了解哪一方面的瑶绣知识？</p>
-                        <div class="mt-3 pt-3 border-t flex items-center gap-2" style="border-color: var(--border-color);">
-                            <span class="text-xs" style="color: var(--text-tertiary);">💡 提示：对话后点击</span>
+                        
+                        <!-- 刷新按钮 -->
+                        <div class="flex justify-center mb-3">
+                            <button onclick="refreshPresets()" 
+                                    class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all hover:scale-105 active:scale-95"
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                    title="换一批推荐">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                                <span>换一换</span>
+                            </button>
+                        </div>
+                        
+                        <p class="text-xs sm:text-sm italic text-center" style="color: var(--text-secondary);">请问，您想了解哪一方面的瑶绣知识？</p>
+                        <div class="mt-3 pt-3 border-t flex items-center justify-center gap-2" style="border-color: var(--border-color);">
+                            <span class="text-xs" style="color: var(--text-tertiary);">💡 对话后点击</span>
                             <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background: var(--bg-tertiary); border: 1px solid var(--border-color);">⭐</span>
                             <span class="text-xs" style="color: var(--text-tertiary);">收藏精彩内容</span>
                         </div>
@@ -1003,6 +1029,53 @@
         </div>
     </div>
 
+    <!-- Conversations Panel -->
+    <div id="conversationsPanel" class="conversations-panel fixed right-0 top-0 h-full w-full sm:w-[420px] z-50 overflow-hidden" style="background: var(--bg-primary); border-left: 1px solid var(--border-color);">
+        <div class="h-full flex flex-col">
+            <!-- Header -->
+            <div class="p-4 sm:p-6 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center" style="background: var(--bg-tertiary);">
+                        <svg class="w-5 h-5" style="color: var(--gold);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-lg sm:text-xl font-serif font-bold" style="color: var(--text-primary);">对话历史</h2>
+                        <p class="text-xs" style="color: var(--text-tertiary);"><span id="convCount">0</span> 个对话</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="newConversation()" class="p-2 rounded-lg transition-all" style="color: var(--accent);" title="新建对话">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                    </button>
+                    <button onclick="closeAllPanels()" class="p-2 rounded-lg" style="color: var(--text-secondary);">
+                        <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Conversations List -->
+            <div id="conversationsList" class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3">
+                <!-- Dynamic content -->
+                <div class="text-center py-8 sm:py-12" style="color: var(--text-tertiary);">
+                    <div class="text-4xl sm:text-5xl mb-3 opacity-30">💬</div>
+                    <p class="text-sm">暂无对话记录</p>
+                    <p class="text-xs mt-1">点击左上角 Logo 开始新对话</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-3 sm:p-4 border-t" style="border-color: var(--border-color);">
+                <button onclick="clearAllConversations()" class="w-full py-2 px-3 rounded-lg text-xs sm:text-sm font-medium border transition-all" style="background: rgba(196, 30, 58, 0.1); border-color: rgba(196, 30, 58, 0.3); color: #e63950;">
+                    清空所有对话
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Share Card Modal -->
     <div id="shareModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4" style="background: rgba(0,0,0,0.8);">
         <div class="relative w-full max-w-md">
@@ -1138,29 +1211,63 @@
         let currentFilterTag = 'all';
         let shareData = null;
         
+        // 对话历史管理
+        let conversations = [];  // 所有对话列表
+        let currentConversationId = null;  // 当前对话ID
+        
         // 图片上传相关
         let selectedImages = [];
         let videoStream = null;
         
-        // 预设问题轮询（3组不同风格）
+        // 预设问题轮询（8组丰富模板）
         const presetQuestionSets = [
-            // 风格1: 传统纹样
+            // 风格1: 纹样艺术
             [
-                { icon: '❋', title: '八角花纹样', desc: '族徽图腾的几何美学', query: '什么是八角花纹样？', color: 'var(--gold)' },
-                { icon: '✦', title: '十字挑花', desc: '反面挑花正面看', query: '十字挑花针法怎么绣？', color: 'var(--accent)' },
-                { icon: '◈', title: '黑底红彩', desc: '经典色彩体系寓意', query: '黑底红彩配色有什么讲究？', color: 'var(--gold-light)' }
+                { icon: '❋', title: '八角花纹样', desc: '族徽图腾的几何美学', query: '什么是八角花纹样？有什么文化寓意？', color: 'var(--gold)' },
+                { icon: '✦', title: '十字挑花', desc: '反面挑花正面看', query: '十字挑花针法怎么绣？详细步骤是什么？', color: 'var(--accent)' },
+                { icon: '◈', title: '黑底红彩', desc: '经典色彩体系寓意', query: '黑底红彩配色有什么讲究？代表什么含义？', color: 'var(--gold-light)' }
             ],
             // 风格2: 工艺技法
             [
                 { icon: '🪡', title: '挑花技法', desc: '数纱而绣的精髓', query: '瑶族挑花的基本技法有哪些？', color: 'var(--accent)' },
-                { icon: '🧵', title: '丝线选材', desc: '天然染料的秘密', query: '瑶绣用什么丝线和染料？', color: 'var(--gold)' },
-                { icon: '✂️', title: '图案设计', desc: '从心象到具象', query: '瑶绣图案是怎么设计出来的？', color: 'var(--accent-light)' }
+                { icon: '🧵', title: '丝线选材', desc: '天然染料的秘密', query: '瑶绣用什么丝线和染料？怎么制作？', color: 'var(--gold)' },
+                { icon: '✂️', title: '图案设计', desc: '从心象到具象', query: '瑶绣图案是怎么设计出来的？有什么规律？', color: 'var(--accent-light)' }
             ],
             // 风格3: 文化内涵
             [
-                { icon: '🏔️', title: '山纹水纹', desc: '自然崇拜的印记', query: '瑶绣中的山纹水纹代表什么？', color: 'var(--gold)' },
-                { icon: '👵', title: '传承故事', desc: '母女间的绣艺', query: '瑶绣是如何代代相传的？', color: 'var(--accent)' },
+                { icon: '🏔️', title: '山纹水纹', desc: '自然崇拜的印记', query: '瑶绣中的山纹水纹代表什么？有什么故事？', color: 'var(--gold)' },
+                { icon: '👵', title: '传承故事', desc: '母女间的绣艺', query: '瑶绣是如何代代相传的？有什么讲究？', color: 'var(--accent)' },
                 { icon: '🎭', title: '支系差异', desc: '盘瑶与布努瑶', query: '不同瑶族支系的刺绣有什么区别？', color: 'var(--gold-light)' }
+            ],
+            // 风格4: 服饰应用
+            [
+                { icon: '👘', title: '头帕刺绣', desc: '头顶的族徽', query: '瑶族头帕上的刺绣有什么特殊含义？', color: 'var(--accent)' },
+                { icon: '🎀', title: '腰带纹样', desc: '束腰的祝福', query: '瑶族腰带上的常见纹样有哪些？', color: 'var(--gold)' },
+                { icon: '👗', title: '服饰分类', desc: '盛装与便装', query: '瑶族的盛装和便装在刺绣上有什么区别？', color: 'var(--accent-light)' }
+            ],
+            // 风格5: 符号象征
+            [
+                { icon: '🐸', title: '蛙纹图腾', desc: '繁衍与雨水', query: '瑶绣中的蛙纹代表什么？有什么传说？', color: 'var(--gold)' },
+                { icon: '🌞', title: '太阳纹样', desc: '光明与生命', query: '太阳纹在瑶绣中的象征意义是什么？', color: 'var(--accent)' },
+                { icon: '🌊', title: '回纹水纹', desc: '生生不息', query: '回纹和水波纹在瑶绣中有什么寓意？', color: 'var(--gold-light)' }
+            ],
+            // 风格6: 历史演变
+            [
+                { icon: '📜', title: '起源传说', desc: '千年的技艺', query: '瑶族刺绣的起源是什么？有什么传说？', color: 'var(--accent)' },
+                { icon: '🏛️', title: '非遗保护', desc: '国家级遗产', query: '瑶族刺绣作为非遗有什么保护措施？', color: 'var(--gold)' },
+                { icon: '🔄', title: '现代创新', desc: '传统与时尚', query: '瑶绣如何在现代设计中创新应用？', color: 'var(--accent-light)' }
+            ],
+            // 风格7: 技艺细节
+            [
+                { icon: '🎯', title: '数纱技巧', desc: '精准的艺术', query: '十字挑花怎么数纱？有什么技巧？', color: 'var(--gold)' },
+                { icon: '🌈', title: '配色禁忌', desc: '色彩的语言', query: '瑶绣配色有什么禁忌和讲究？', color: 'var(--accent)' },
+                { icon: '🔍', title: '底稿绘制', desc: '不打草稿', query: '瑶绣为什么不需要打底稿？怎么做到？', color: 'var(--gold-light)' }
+            ],
+            // 风格8: 地域特色
+            [
+                { icon: '🏞️', title: '广西瑶绣', desc: '桂北风情', query: '广西瑶族刺绣有什么地域特色？', color: 'var(--accent)' },
+                { icon: '🌄', title: '湖南瑶绣', desc: '湘南韵味', query: '湖南瑶族刺绣的特点是什么？', color: 'var(--gold)' },
+                { icon: '🌿', title: '云南瑶绣', desc: '滇式风格', query: '云南瑶族刺绣与其他地区有什么不同？', color: 'var(--accent-light)' }
             ]
         ];
         let currentPresetIndex = Math.floor(Math.random() * presetQuestionSets.length);
@@ -1173,12 +1280,18 @@
             loadConfig();
             applyConfig();
             loadFavorites();
+            loadConversations();
             updateUI();
             initFloatingOctagons();
             renderPresetQuestions();
+            
+            // 初始化当前对话ID
+            if (!currentConversationId) {
+                currentConversationId = generateConversationId();
+            }
         });
         
-        // 渲染预设问题（轮询3组不同风格）
+        // 渲染预设问题（轮询8组不同风格）
         function renderPresetQuestions() {
             const container = document.getElementById('presetQuestions');
             if (!container) return;
@@ -1193,6 +1306,28 @@
                     <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">${p.desc}</div>
                 </div>
             `).join('');
+        }
+        
+        // 刷新预设问题（切换到下一组）
+        function refreshPresets() {
+            // 随机选择一个与当前不同的索引
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * presetQuestionSets.length);
+            } while (newIndex === currentPresetIndex && presetQuestionSets.length > 1);
+            
+            currentPresetIndex = newIndex;
+            renderPresetQuestions();
+            
+            // 添加刷新动画效果
+            const container = document.getElementById('presetQuestions');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                container.style.transition = 'all 0.3s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 50);
         }
 
         // ========== 背景飘浮八角花 ==========
@@ -1414,12 +1549,410 @@
             document.getElementById('panelOverlay').classList.remove('open');
             document.getElementById('settingsPanel').classList.remove('open');
             document.getElementById('favoritesPanel').classList.remove('open');
-
+            document.getElementById('conversationsPanel').classList.remove('open');
             document.body.style.overflow = '';
         }
 
         function closeShareModal() {
             document.getElementById('shareModal').classList.add('hidden');
+        }
+
+        // ========== 对话历史管理 ==========
+        
+        // 打开对话历史面板
+        function openConversations() {
+            document.getElementById('panelOverlay').classList.add('open');
+            document.getElementById('conversationsPanel').classList.add('open');
+            document.body.style.overflow = 'hidden';
+            renderConversations();
+        }
+        
+        // 新建对话
+        function newConversation() {
+            // 保存当前对话（如果有内容）
+            if (chatHistory.length > 0 && currentConversationId) {
+                saveCurrentConversation();
+            }
+            
+            // 清空当前对话
+            chatHistory = [];
+            currentConversationId = generateConversationId();
+            messageCount = 0;
+            
+            // 清空聊天界面
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = '';
+            
+            // 显示欢迎消息
+            showWelcomeMessage();
+            
+            // 更新UI
+            document.getElementById('msgCount').textContent = '0';
+            
+            // 关闭所有面板
+            closeAllPanels();
+            
+            // 保存新的空对话
+            saveConversations();
+            
+            // 显示提示
+            showToast('已创建新对话');
+        }
+        
+        // 生成对话ID
+        function generateConversationId() {
+            return 'conv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+        
+        // 保存当前对话到列表
+        function saveCurrentConversation() {
+            if (!currentConversationId) {
+                currentConversationId = generateConversationId();
+            }
+            
+            // 查找是否已存在
+            const existingIndex = conversations.findIndex(c => c.id === currentConversationId);
+            
+            const conversation = {
+                id: currentConversationId,
+                title: generateConversationTitle(),
+                timestamp: Date.now(),
+                messageCount: chatHistory.length,
+                preview: getConversationPreview()
+            };
+            
+            if (existingIndex >= 0) {
+                conversations[existingIndex] = conversation;
+            } else {
+                conversations.unshift(conversation);
+            }
+            
+            // 限制对话数量（保留最近50个）
+            if (conversations.length > 50) {
+                conversations = conversations.slice(0, 50);
+            }
+            
+            saveConversations();
+        }
+        
+        // 生成对话标题（基于第一条用户消息）
+        function generateConversationTitle() {
+            const firstUserMessage = chatHistory.find(m => m.role === 'user');
+            if (firstUserMessage) {
+                // 截取前20个字符
+                let title = firstUserMessage.content;
+                if (title.length > 20) {
+                    title = title.substring(0, 20) + '...';
+                }
+                return title;
+            }
+            return '新对话 ' + new Date().toLocaleDateString();
+        }
+        
+        // 获取对话预览（最后一条消息）
+        function getConversationPreview() {
+            const lastMessage = chatHistory[chatHistory.length - 1];
+            if (lastMessage) {
+                let preview = lastMessage.content;
+                if (preview.length > 30) {
+                    preview = preview.substring(0, 30) + '...';
+                }
+                return preview;
+            }
+            return '';
+        }
+        
+        // 加载指定对话
+        function loadConversation(convId) {
+            // 先保存当前对话
+            if (chatHistory.length > 0) {
+                saveCurrentConversation();
+            }
+            
+            // 查找要加载的对话
+            const conversation = conversations.find(c => c.id === convId);
+            if (!conversation) return;
+            
+            // 从localforage加载完整对话内容
+            localforage.getItem('conversation_' + convId).then(fullChatHistory => {
+                if (fullChatHistory) {
+                    chatHistory = fullChatHistory;
+                    currentConversationId = convId;
+                    
+                    // 渲染聊天内容
+                    renderChatHistory();
+                    
+                    // 更新消息计数
+                    messageCount = chatHistory.filter(m => m.role === 'user').length;
+                    document.getElementById('msgCount').textContent = messageCount;
+                    
+                    // 关闭面板
+                    closeAllPanels();
+                    
+                    showToast('已加载对话');
+                }
+            });
+        }
+        
+        // 渲染聊天历史到界面
+        function renderChatHistory() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = '';
+            
+            // 重新渲染所有消息
+            chatHistory.forEach(msg => {
+                if (msg.role === 'user') {
+                    appendUserMessage(msg.content);
+                } else if (msg.role === 'assistant') {
+                    appendAssistantMessage(msg.content);
+                }
+            });
+            
+            scrollToBottom();
+        }
+        
+        // 添加用户消息到界面
+        function appendUserMessage(content) {
+            const container = document.getElementById('chatContainer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            wrapper.innerHTML = `
+                <div class="message-bubble max-w-[85%] sm:max-w-[75%]">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border" style="background: var(--accent); border-color: var(--accent);">
+                        <p class="leading-relaxed text-sm sm:text-base" style="color: white;">${escapeHtml(content)}</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg" style="background: var(--gold);">
+                        <span class="text-sm sm:text-lg font-serif font-bold" style="color: var(--bg-primary);">问</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+        }
+        
+        // 添加助手消息到界面
+        function appendAssistantMessage(content) {
+            const container = document.getElementById('chatContainer');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex gap-2 sm:gap-4 animate-slide-up';
+            wrapper.innerHTML = `
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
+                        <span class="text-sm sm:text-lg font-serif font-bold text-white">瑶</span>
+                    </div>
+                </div>
+                <div class="message-bubble max-w-[85%] sm:max-w-[75%]">
+                    <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                        ${marked.parse(content)}
+                    </div>
+                </div>
+            `;
+            container.appendChild(wrapper);
+        }
+        
+        // 显示欢迎消息
+        function showWelcomeMessage() {
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = `
+                <div id="welcomeMessage" class="flex gap-2 sm:gap-4 animate-slide-up">
+                    <div class="flex-shrink-0">
+                        <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-yao-red to-yao-red-light flex items-center justify-center shadow-lg">
+                            <span class="text-sm sm:text-lg font-serif font-bold text-white">瑶</span>
+                        </div>
+                    </div>
+                    <div class="message-bubble">
+                        <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                            <p class="leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base" style="color: var(--text-primary);">
+                                阿姐/阿哥好呀～我是小瑶🌸 从小跟着阿妈学刺绣，是瑶山里的第三代绣娘。千百年来，我们瑶家女儿以针为笔、以线为墨，在靛蓝布上绣出八角花的图腾，把祖先的祝福一针一线传下去。
+                            </p>
+                            <!-- 八角花纹样展示 -->
+                            <div class="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span style="color: var(--gold);">❋</span>
+                                    <span class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">八角花纹样示意</span>
+                                </div>
+                                <div class="flex justify-center py-2">
+                                    <svg class="w-24 h-24 sm:w-32 sm:h-32 octagon-rotate" viewBox="0 0 200 200">
+                                        <defs>
+                                            <linearGradient id="octGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#c41e3a;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#d4a574;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <polygon points="100,10 170,40 190,100 170,160 100,190 30,160 10,100 30,40" fill="none" stroke="url(#octGrad)" stroke-width="3"/>
+                                        <polygon points="100,30 150,55 160,100 150,145 100,170 50,145 40,100 50,55" fill="none" stroke="#c41e3a" stroke-width="2" opacity="0.6"/>
+                                        <polygon points="100,50 130,65 135,100 130,135 100,150 70,135 65,100 70,65" fill="#c41e3a" opacity="0.3"/>
+                                        <circle cx="100" cy="100" r="15" fill="#d4a574"/>
+                                        <circle cx="100" cy="10" r="4" fill="#d4a574"/>
+                                        <circle cx="190" cy="100" r="4" fill="#d4a574"/>
+                                        <circle cx="100" cy="190" r="4" fill="#d4a574"/>
+                                        <circle cx="10" cy="100" r="4" fill="#d4a574"/>
+                                    </svg>
+                                </div>
+                                <p class="text-xs text-center" style="color: var(--text-tertiary);">鼠标悬停暂停旋转 · 象征太阳与生命</p>
+                            </div>
+                            
+                            <!-- 轮询预设问题 - 8组丰富模板 -->
+                            <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                                <!-- 动态生成的预设问题 -->
+                            </div>
+                            
+                            <!-- 刷新按钮 -->
+                            <div class="flex justify-center mb-3">
+                                <button onclick="refreshPresets()" 
+                                        class="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all hover:scale-105 active:scale-95"
+                                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                        title="换一批推荐">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                    </svg>
+                                    <span>换一换</span>
+                                </button>
+                            </div>
+                            
+                            <p class="text-xs sm:text-sm italic text-center" style="color: var(--text-secondary);">请问，您想了解哪一方面的瑶绣知识？</p>
+                            <div class="mt-3 pt-3 border-t flex items-center justify-center gap-2" style="border-color: var(--border-color);">
+                                <span class="text-xs" style="color: var(--text-tertiary);">💡 对话后点击</span>
+                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs" style="background: var(--bg-tertiary); border: 1px solid var(--border-color);">⭐</span>
+                                <span class="text-xs" style="color: var(--text-tertiary);">收藏精彩内容</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            // 重新渲染预设问题
+            renderPresetQuestions();
+        }
+        
+        // 渲染对话列表
+        function renderConversations() {
+            const container = document.getElementById('conversationsList');
+            const countBadge = document.getElementById('convCount');
+            const headerBadge = document.getElementById('convBadge');
+            
+            // 更新计数
+            countBadge.textContent = conversations.length;
+            if (conversations.length > 0) {
+                headerBadge.textContent = conversations.length;
+                headerBadge.classList.remove('hidden');
+            } else {
+                headerBadge.classList.add('hidden');
+            }
+            
+            if (conversations.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 sm:py-12" style="color: var(--text-tertiary);">
+                        <div class="text-4xl sm:text-5xl mb-3 opacity-30">💬</div>
+                        <p class="text-sm">暂无对话记录</p>
+                        <p class="text-xs mt-1">点击左上角 Logo 开始新对话</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = conversations.map(conv => {
+                const isActive = conv.id === currentConversationId;
+                const date = new Date(conv.timestamp).toLocaleDateString();
+                const time = new Date(conv.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return `
+                    <div class="group relative p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${isActive ? 'active' : ''}" 
+                         style="background: ${isActive ? 'var(--accent)' : 'var(--bg-secondary)'}; 
+                                border-color: ${isActive ? 'var(--accent)' : 'var(--border-color)'};"
+                         onclick="loadConversation('${conv.id}')">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-medium text-sm mb-1 truncate" 
+                                    style="color: ${isActive ? 'white' : 'var(--text-primary)'};">${escapeHtml(conv.title)}</h3>
+                                <p class="text-xs truncate mb-2" 
+                                   style="color: ${isActive ? 'rgba(255,255,255,0.7)' : 'var(--text-tertiary)'};">${escapeHtml(conv.preview)}</p>
+                                <div class="flex items-center gap-2 text-xs" 
+                                     style="color: ${isActive ? 'rgba(255,255,255,0.6)' : 'var(--text-tertiary)'};">
+                                    <span>${date} ${time}</span>
+                                    <span>·</span>
+                                    <span>${conv.messageCount} 条消息</span>
+                                </div>
+                            </div>
+                            <button onclick="event.stopPropagation(); deleteConversation('${conv.id}')" 
+                                    class="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
+                                    style="color: ${isActive ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)'};">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // 删除对话
+        function deleteConversation(convId) {
+            if (!confirm('确定要删除这个对话吗？')) return;
+            
+            // 从列表中移除
+            conversations = conversations.filter(c => c.id !== convId);
+            
+            // 删除存储的完整内容
+            localforage.removeItem('conversation_' + convId);
+            
+            // 如果删除的是当前对话，清空界面
+            if (convId === currentConversationId) {
+                chatHistory = [];
+                currentConversationId = null;
+                document.getElementById('chatContainer').innerHTML = '';
+                document.getElementById('msgCount').textContent = '0';
+                showWelcomeMessage();
+            }
+            
+            saveConversations();
+            renderConversations();
+            showToast('对话已删除');
+        }
+        
+        // 清空所有对话
+        function clearAllConversations() {
+            if (!confirm('确定要清空所有对话吗？此操作不可恢复。')) return;
+            
+            // 删除所有对话存储
+            conversations.forEach(conv => {
+                localforage.removeItem('conversation_' + conv.id);
+            });
+            
+            conversations = [];
+            chatHistory = [];
+            currentConversationId = null;
+            
+            document.getElementById('chatContainer').innerHTML = '';
+            document.getElementById('msgCount').textContent = '0';
+            
+            saveConversations();
+            renderConversations();
+            showWelcomeMessage();
+            showToast('已清空所有对话');
+        }
+        
+        // 保存对话列表到localforage
+        async function saveConversations() {
+            await localforage.setItem('conversations', conversations);
+            // 同时保存当前对话的完整内容
+            if (currentConversationId && chatHistory.length > 0) {
+                await localforage.setItem('conversation_' + currentConversationId, chatHistory);
+            }
+        }
+        
+        // 加载对话列表
+        async function loadConversations() {
+            const saved = await localforage.getItem('conversations');
+            if (saved) {
+                conversations = saved;
+            }
+            
+            // 如果没有当前对话ID，创建一个新的
+            if (!currentConversationId) {
+                currentConversationId = generateConversationId();
+            }
         }
 
         // ========== 模型模式切换 ==========
@@ -2115,6 +2648,14 @@
             // 显示图片+文字消息
             appendImageAndTextMessage(imagesData, textContent);
             
+            // 保存到对话历史
+            chatHistory.push({ 
+                role: 'user', 
+                content: textContent || '[图片]', 
+                images: imagesData,
+                timestamp: Date.now() 
+            });
+            
             // 清空输入和预览
             userInput.value = '';
             userInput.style.height = 'auto';
@@ -2166,6 +2707,12 @@
                 }
                 
                 streamingDiv.classList.remove('cursor-blink');
+                
+                // 保存AI回复到对话历史
+                if (fullText) {
+                    chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    saveCurrentConversation();
+                }
                 
                 const messageBubble = streamingDiv.closest('.message-bubble');
                 if (messageBubble) {
@@ -2309,6 +2856,10 @@
 
             // 添加用户消息
             appendUserMessage(content);
+            
+            // 保存到对话历史
+            chatHistory.push({ role: 'user', content: content, timestamp: Date.now() });
+            
             userInput.value = '';
             userInput.style.height = 'auto';
             
@@ -2433,6 +2984,12 @@
                 }
 
                 streamingDiv.classList.remove('cursor-blink');
+                
+                // 保存AI回复到对话历史
+                if (fullText) {
+                    chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    saveCurrentConversation();
+                }
                 
                 // 添加操作按钮 - 找到 message-bubble 元素
                 const messageBubble = streamingDiv.closest('.message-bubble');
