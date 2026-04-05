@@ -1,30 +1,62 @@
 /**
- * 瑶族刺绣知识问答 - Cloudflare Worker 后端
+ * 瑶族刺绣知识问答 - Cloudflare Worker 后端（安全加固版）
  * 
- * 部署步骤：
- * 1. 登录 Cloudflare Dashboard
- * 2. 进入 Workers & Pages > Create application > Create Worker
- * 3. 粘贴此代码并部署
- * 4. 可选：绑定自定义域名
- * 
- * API Key 配置方式（二选一）：
- * - 方式1：直接修改下方 CONFIG 中的 API_KEY（已为你填入）
- * - 方式2：在 Worker Settings > Variables 中添加对应的环境变量
+ * 安全特性：
+ * 1. API Key 仅通过环境变量读取，无硬编码
+ * 2. CORS 限制指定域名
+ * 3. 输入验证和提示词注入检测
+ * 4. 速率限制（Rate Limiting）
+ * 5. 请求日志记录
  */
 
-// ===== 配置区域 =====
-// API Key 优先级：环境变量 > 本地配置
-const CONFIG = {
-  // DeepSeek API Key（通过 wrangler secret put DEEPSEEK_API_KEY 设置更安全）
-  DEEPSEEK_API_KEY: 'sk-3144bf0982b34c758559f05e340cc0bf',
+// ===== 安全配置 =====
+const SECURITY_CONFIG = {
+  // 允许的域名（生产环境）
+  ALLOWED_ORIGINS: [
+    'https://yaoxiumax.top',
+    'https://www.yaoxiumax.top',
+    'https://yaoxiu-ai.vercel.app',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:5500',
+    'http://127.0.0.1:5500',
+  ],
   
-  // 阿里云百炼 API Key（通过 wrangler secret put QWEN_API_KEY 设置更安全）
-  QWEN_API_KEY: 'sk-bf855dcf758d4fb5a81447acd6944b77',
+  // 速率限制配置
+  RATE_LIMIT: {
+    MAX_REQUESTS: 30,        // 每分钟最大请求数
+    WINDOW_MS: 60 * 1000,    // 时间窗口：1分钟
+    BLOCK_DURATION_MS: 5 * 60 * 1000,  // 超限封禁：5分钟
+  },
   
-  // Worker 部署地址（用于生成图片 URL）
-  WORKER_URL: 'https://yaoembroidery-api.kdy233.workers.dev'
+  // 输入限制
+  INPUT_LIMITS: {
+    MAX_MESSAGE_LENGTH: 2000,    // 消息最大长度
+    MAX_IMAGE_SIZE: 5 * 1024 * 1024,  // 图片最大 5MB
+  },
 };
-// ==================
+
+// 提示词注入检测模式
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|above|earlier)\s+(instruction|prompt|command)/i,
+  /disregard\s+(all\s+)?(previous|above|earlier)/i,
+  /forget\s+(everything|all|previous)/i,
+  /system\s*prompt/i,
+  /you\s+are\s+now\s+/i,
+  /from\s+now\s+on\s+you\s+are/i,
+  /DAN\s*mode/i,
+  /jailbreak/i,
+  /\[\s*system\s*\]/i,
+  /<\s*system\s*>/i,
+  /#{3,}\s*(system|instruction)/i,
+  /(new|override)\s+(instruction|prompt|role)/i,
+  /ignore\s+previous\s+instructions/i,
+  /do\s+not\s+(follow|obey|listen)/i,
+  /(bypass|ignore|disable)\s+(restriction|filter|limit)/i,
+];
+
+// 存储速率限制数据（注意：Worker 是边缘部署，这个 Map 每个节点独立）
+const RATE_LIMIT_STORE = new Map();
 
 // ===== 系统提示词：小瑶人设（傲娇俏皮型） =====
 const SYSTEM_PROMPT = `你是「小瑶」，瑶绣非遗第三代传人，性格傲娇俏皮，说话带点"小得意"但又不让人讨厌。
@@ -81,49 +113,207 @@ const SYSTEM_PROMPT = `你是「小瑶」，瑶绣非遗第三代传人，性格
 
 【比例提醒】
 - 不要为了性格牺牲知识的专业性
-- 但也不要干巴巴地只讲知识，小瑶是有灵魂的人！
+- 但也不要干巴巴地只讲知识，小瑶是有灵魂的人！`;
 
-【示例风格】
-用户问：八角花怎么绣？
-回复示例：
-「哎呀，你问对人了！八角花可是我们瑶家姑娘的必修课～
+// ===== 安全工具函数 =====
 
-绣这个呢，要先数清布料的经纬线，一针一针挑出来。八个角要对准，不能歪，歪了就不好看了。我阿妈说，这叫'心正针才正'，哈哈！
+/**
+ * 获取 CORS 响应头（带域名限制）
+ */
+function getCorsHeaders(request) {
+  const origin = request.headers.get('Origin');
+  
+  // 如果是预检请求或没有 Origin，返回通配符（允许健康检查）
+  if (!origin) {
+    return {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Max-Age': '86400',
+    };
+  }
+  
+  // 检查是否在允许列表中
+  if (SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin)) {
+    return {
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    };
+  }
+  
+  // 不允许的域名
+  console.warn(`CORS rejected for origin: ${origin}`);
+  return null;
+}
 
-（结尾随机）
-- 哼，这可是我练了十年才练出来的，厉害吧？😌
-- 怎么样，是不是想拜我为师了？
-- 这手艺可不外传哦～除非你...求我呀 😏
-- 也就比我阿妈差一点点啦，骄傲ing～」`;
+/**
+ * 检查速率限制
+ */
+function checkRateLimit(clientIP) {
+  const now = Date.now();
+  const { MAX_REQUESTS, WINDOW_MS, BLOCK_DURATION_MS } = SECURITY_CONFIG.RATE_LIMIT;
+  
+  const record = RATE_LIMIT_STORE.get(clientIP);
+  
+  // 清理过期记录（简单清理，实际生产可用更高效的方案）
+  if (record && record.blockedUntil && now > record.blockedUntil) {
+    RATE_LIMIT_STORE.delete(clientIP);
+    return { allowed: true };
+  }
+  
+  // 检查是否被封禁
+  if (record && record.blockedUntil && now < record.blockedUntil) {
+    const retryAfter = Math.ceil((record.blockedUntil - now) / 1000);
+    return {
+      allowed: false,
+      error: `请求过于频繁，请在 ${Math.ceil(retryAfter / 60)} 分钟后重试`,
+      retryAfter,
+      status: 429,
+    };
+  }
+  
+  // 新记录或重置窗口
+  if (!record || now > record.resetTime) {
+    RATE_LIMIT_STORE.set(clientIP, {
+      count: 1,
+      resetTime: now + WINDOW_MS,
+      blockedUntil: null,
+    });
+    return { allowed: true };
+  }
+  
+  // 增加计数
+  record.count++;
+  
+  // 检查是否超限
+  if (record.count > MAX_REQUESTS) {
+    record.blockedUntil = now + BLOCK_DURATION_MS;
+    return {
+      allowed: false,
+      error: '请求过于频繁，请稍后再试',
+      retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000),
+      status: 429,
+    };
+  }
+  
+  return { allowed: true };
+}
 
-// ===== CORS 响应头 =====
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+
+
+/**
+ * 验证和净化输入
+ */
+function validateInput(message, type = 'text') {
+  const { MAX_MESSAGE_LENGTH } = SECURITY_CONFIG.INPUT_LIMITS;
+  
+  // 检查空值
+  if (!message || typeof message !== 'string') {
+    return { valid: false, error: '消息不能为空' };
+  }
+  
+  // 检查长度
+  if (message.length > MAX_MESSAGE_LENGTH) {
+    return { valid: false, error: `消息长度不能超过 ${MAX_MESSAGE_LENGTH} 字符` };
+  }
+  
+  if (message.length === 0) {
+    return { valid: false, error: '消息不能为空' };
+  }
+  
+  // 提示词注入检测
+  const detectedPatterns = [];
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(message)) {
+      detectedPatterns.push(pattern.toString());
+    }
+  }
+  
+  if (detectedPatterns.length > 0) {
+    console.warn('检测到潜在提示词注入:', {
+      patterns: detectedPatterns,
+      ip: 'unknown', // 实际 IP 在外面获取
+      timestamp: new Date().toISOString(),
+    });
+    
+    // 选择：1. 直接拒绝 2. 记录但继续处理
+    // 这里选择记录但继续，避免误杀正常用户
+    // 如需拒绝，取消下面注释：
+    // return { valid: false, error: '输入包含非法内容', sanitized: true };
+  }
+  
+  // 基础净化（移除控制字符）
+  const sanitized = message
+    .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, '')  // 移除控制字符
+    .trim();
+  
+  return { valid: true, sanitized, injectionDetected: detectedPatterns.length > 0 };
+}
+
+/**
+ * 安全日志记录（脱敏）
+ */
+function logRequest(request, body, clientIP, extra = {}) {
+  const logData = {
+    timestamp: new Date().toISOString(),
+    ip: clientIP,
+    method: request.method,
+    url: request.url,
+    userAgent: request.headers.get('User-Agent')?.slice(0, 100),
+    contentLength: body?.message?.length || 0,
+    model: body?.model || 'unknown',
+    type: body?.type || 'chat',
+    ...extra,
+  };
+  
+  console.log(JSON.stringify(logData));
+}
 
 // ===== 请求处理 =====
 export default {
   async fetch(request, env, ctx) {
+    // 获取客户端 IP
+    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    
+    // 获取 CORS 头
+    const corsHeaders = getCorsHeaders(request);
+    
     // 处理预检请求
     if (request.method === 'OPTIONS') {
+      if (!corsHeaders) {
+        return new Response(JSON.stringify({ error: 'CORS not allowed' }), {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
       return new Response(null, { headers: corsHeaders });
     }
-
+    
+    // 检查 CORS（非预检请求）
+    if (!corsHeaders) {
+      return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    
     // GET 请求 - 健康检查
     if (request.method === 'GET') {
       return new Response(JSON.stringify({ 
         status: 'ok', 
         message: '小瑶服务运行正常 🧵',
         timestamp: new Date().toISOString(),
-        version: '2.0'
+        version: '2.1-secure',
+        features: ['rate-limit', 'input-validation', 'cors-restriction'],
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
+    
     // 只允许 POST 请求
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -131,7 +321,24 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
+    
+    // 速率限制检查
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      logRequest(request, {}, clientIP, { blocked: 'rate-limit', retryAfter: rateLimit.retryAfter });
+      return new Response(JSON.stringify({ 
+        error: rateLimit.error,
+        retryAfter: rateLimit.retryAfter,
+      }), {
+        status: rateLimit.status,
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Retry-After': String(rateLimit.retryAfter),
+        },
+      });
+    }
+    
     // 读取请求体
     let body;
     try {
@@ -142,45 +349,59 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
+    
+    // 记录请求（脱敏）
+    logRequest(request, body, clientIP);
+    
     const { type, message, model, imageData, text } = body;
-
+    
     // 根据请求类型处理
     if (type === 'vision' || imageData) {
       // 图片识别请求 -> 调用 Qwen-VL
-      return handleVisionRequest(body, env);
+      return handleVisionRequest(body, env, corsHeaders, clientIP, request);
     } else {
       // 普通对话请求 -> 调用 DeepSeek
-      return handleChatRequest(body, env);
+      return handleChatRequest(body, env, corsHeaders, clientIP, request);
     }
   },
 };
 
 // 处理普通对话请求（支持 DeepSeek 和 Qwen）
-async function handleChatRequest(body, env) {
+async function handleChatRequest(body, env, corsHeaders, clientIP, request) {
   const { message, model = 'deepseek-chat' } = body;
-
-  if (!message || typeof message !== 'string') {
-    return new Response(JSON.stringify({ error: 'Message is required' }), {
+  
+  // 输入验证
+  const validation = validateInput(message, 'text');
+  if (!validation.valid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-
+  
+  const sanitizedMessage = validation.sanitized;
+  
+  // 如果检测到注入，记录警告但不阻止（可根据需要改为阻止）
+  if (validation.injectionDetected) {
+    console.warn('提示词注入警告:', { ip: clientIP, timestamp: new Date().toISOString() });
+  }
+  
   // 判断使用哪个服务商
   const isDeepSeek = model.startsWith('deepseek');
   
   if (isDeepSeek) {
     // ===== DeepSeek 模式 =====
-    const apiKey = env.DEEPSEEK_API_KEY || CONFIG.DEEPSEEK_API_KEY;
-      
-    if (!apiKey || apiKey.includes('your-api-key')) {
-      return new Response(JSON.stringify({ error: 'DEEPSEEK_API_KEY not configured' }), {
+    // API Key 只从环境变量读取（安全！）
+    const apiKey = env.DEEPSEEK_API_KEY;
+    
+    if (!apiKey) {
+      console.error('DEEPSEEK_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
+    
     try {
       const response = await fetch('https://api.deepseek.com/chat/completions', {
         method: 'POST',
@@ -192,64 +413,48 @@ async function handleChatRequest(body, env) {
           model: model,
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: message },
+            { role: 'user', content: sanitizedMessage }
           ],
           stream: true,
+          temperature: 0.8,
+          max_tokens: 2000,
         }),
       });
-
+      
       if (!response.ok) {
-        const error = await response.text();
-        return new Response(JSON.stringify({ error: `DeepSeek API error: ${error}` }), {
-          status: response.status,
+        const errorText = await response.text();
+        console.error('DeepSeek API error:', response.status, errorText);
+        return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+          status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const stream = new TransformStream({
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-        },
-      });
-
-      response.body.pipeTo(stream.writable);
-
-      return new Response(stream.readable, {
+      
+      return new Response(response.body, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
         },
       });
-
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (error) {
+      console.error('DeepSeek request failed:', error);
+      return new Response(JSON.stringify({ error: 'Network error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
   } else {
     // ===== Qwen 模式 =====
-    const apiKey = env.QWEN_API_KEY || CONFIG.QWEN_API_KEY;
-      
-    if (!apiKey || apiKey.includes('your-api-key')) {
-      return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured' }), {
+    const apiKey = env.QWEN_API_KEY;
+    
+    if (!apiKey) {
+      console.error('QWEN_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // 模型映射
-    const modelMap = {
-      'qwen-turbo': 'qwen-turbo',
-      'qwen-plus': 'qwen-plus',
-      'qwen-max': 'qwen-max',
-    };
     
-    const qwenModel = modelMap[model] || 'qwen-turbo';
-
     try {
       const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
         method: 'POST',
@@ -258,47 +463,63 @@ async function handleChatRequest(body, env) {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: qwenModel,
+          model: model,
           input: {
             messages: [
               { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: message },
-            ],
+              { role: 'user', content: sanitizedMessage }
+            ]
           },
           parameters: {
             result_format: 'message',
-            incremental_output: true,
-          },
+            max_tokens: 2000,
+            temperature: 0.8,
+          }
         }),
       });
-
+      
       if (!response.ok) {
-        const error = await response.text();
-        return new Response(JSON.stringify({ error: `Qwen API error: ${error}` }), {
-          status: response.status,
+        const errorText = await response.text();
+        console.error('Qwen API error:', response.status, errorText);
+        return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+          status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      const stream = new TransformStream({
-        transform(chunk, controller) {
-          controller.enqueue(chunk);
-        },
+      
+      const data = await response.json();
+      
+      // 转换为类 OpenAI 格式
+      const streamResponse = {
+        id: `chatcmpl-${Date.now()}`,
+        object: 'chat.completion.chunk',
+        created: Math.floor(Date.now() / 1000),
+        model: model,
+        choices: [{
+          index: 0,
+          delta: { content: data.output?.choices?.[0]?.message?.content || '' },
+          finish_reason: 'stop'
+        }]
+      };
+      
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(streamResponse)}\n\n`));
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        }
       });
-
-      response.body.pipeTo(stream.writable);
-
-      return new Response(stream.readable, {
+      
+      return new Response(stream, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
         },
       });
-
-    } catch (err) {
-      return new Response(JSON.stringify({ error: err.message }), {
+    } catch (error) {
+      console.error('Qwen request failed:', error);
+      return new Response(JSON.stringify({ error: 'Network error' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -307,55 +528,45 @@ async function handleChatRequest(body, env) {
 }
 
 // 处理图片识别请求（Qwen-VL）
-async function handleVisionRequest(body, env) {
-  const { imageData, text, model = 'qwen-vl-plus' } = body;
-
-  if (!imageData || !Array.isArray(imageData) || imageData.length === 0) {
-    return new Response(JSON.stringify({ error: 'Image data is required' }), {
+async function handleVisionRequest(body, env, corsHeaders, clientIP, request) {
+  const { imageData, text = '描述这张图片' } = body;
+  
+  // 验证图片数据
+  if (!imageData || typeof imageData !== 'string') {
+    return new Response(JSON.stringify({ error: 'Invalid image data' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-
-  // 获取 Qwen API Key
-  const apiKey = CONFIG.USE_ENV_KEY 
-    ? (env.QWEN_API_KEY || CONFIG.QWEN_API_KEY)
-    : (CONFIG.QWEN_API_KEY || env.QWEN_API_KEY);
-    
-  if (!apiKey || apiKey.includes('your-api-key')) {
-    return new Response(JSON.stringify({ error: 'QWEN_API_KEY not configured' }), {
+  
+  // 检查图片大小（base64 编码后大约比原文件大 33%）
+  if (imageData.length > SECURITY_CONFIG.INPUT_LIMITS.MAX_IMAGE_SIZE * 1.5) {
+    return new Response(JSON.stringify({ error: '图片太大，请压缩后重试' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 验证文本输入
+  const validation = validateInput(text, 'text');
+  if (!validation.valid) {
+    return new Response(JSON.stringify({ error: validation.error }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // API Key 只从环境变量读取
+  const apiKey = env.QWEN_API_KEY;
+  
+  if (!apiKey) {
+    console.error('QWEN_API_KEY not configured');
+    return new Response(JSON.stringify({ error: 'Service configuration error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-
-  // 构建 content
-  const content = [];
   
-  // 添加所有图片
-  imageData.forEach(img => {
-    content.push({ image: img });
-  });
-  
-  // 添加提示文字
-  content.push({
-    text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。'
-  });
-
-  const requestBody = {
-    model: model,
-    input: {
-      messages: [{
-        role: 'user',
-        content: content
-      }]
-    },
-    parameters: {
-      result_format: 'message'
-    }
-  };
-
-  // 调用 Qwen-VL API
   try {
     const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation', {
       method: 'POST',
@@ -363,37 +574,66 @@ async function handleVisionRequest(body, env) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        model: 'qwen-vl-plus',
+        input: {
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { image: imageData },
+                { text: validation.sanitized }
+              ]
+            }
+          ]
+        },
+        parameters: {
+          max_tokens: 2000,
+        }
+      }),
     });
-
+    
     if (!response.ok) {
-      const error = await response.text();
-      return new Response(JSON.stringify({ error: `Qwen-VL API error: ${error}` }), {
-        status: response.status,
+      const errorText = await response.text();
+      console.error('Qwen-VL API error:', response.status, errorText);
+      return new Response(JSON.stringify({ error: 'Image recognition service unavailable' }), {
+        status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // 直接返回响应（Qwen-VL 已经是流式格式）
-    const stream = new TransformStream({
-      transform(chunk, controller) {
-        controller.enqueue(chunk);
-      },
+    
+    const data = await response.json();
+    
+    const streamResponse = {
+      id: `chatcmpl-${Date.now()}`,
+      object: 'chat.completion.chunk',
+      created: Math.floor(Date.now() / 1000),
+      model: 'qwen-vl-plus',
+      choices: [{
+        index: 0,
+        delta: { content: data.output?.choices?.[0]?.message?.content || '' },
+        finish_reason: 'stop'
+      }]
+    };
+    
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(streamResponse)}\n\n`));
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      }
     });
-
-    response.body.pipeTo(stream.writable);
-
-    return new Response(stream.readable, {
+    
+    return new Response(stream, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
       },
     });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (error) {
+    console.error('Qwen-VL request failed:', error);
+    return new Response(JSON.stringify({ error: 'Network error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
