@@ -1176,20 +1176,25 @@
 
     <script>
         // ========== 配置与状态 ==========
-        // ⚠️ 重要：图片识别必须通过 Worker 代理，无法前端直连（CORS限制）
+        // ⚠️ 全部走 Qwen 模型（阿里百炼），不再使用 DeepSeek
         const DEFAULT_API_URL = 'https://yaoembroidery-api.kdy233.workers.dev';
         
-        // ===== 本地开发配置 =====
-        // 文字对话：可以直连 DeepSeek (USE_DIRECT_API = true)
-        // 图片识别：必须通过 Worker 代理（浏览器 CORS 限制）
-        const USE_DIRECT_API = true;  // 设为 true 启用本地直连模式
-        const DIRECT_API_KEY = 'sk-3144bf0982b34c758559f05e340cc0bf';  // 填写你的 DS Key
-        const DIRECT_API_URL = 'https://api.deepseek.com/chat/completions';  // DeepSeek API 地址
+        // ===== 模型配置 =====
+        // 全部请求通过 Worker 代理，支持：
+        // - qwen-turbo: 快速模式， cheapest
+        // - qwen-plus: 均衡模式，质量更好
+        // - qwen-max: 最强模式
+        // - qwen-vl-plus: 图文混合模式
         
-        // ===== Qwen-VL 图片识别配置 =====
-        // ⚠️ 图片识别必须通过 Worker 代理，请在上方 DEFAULT_API_URL 中填写 Worker 地址
-        // Worker 代码已更新支持 Qwen-VL，请重新部署 worker.js
-        const USE_QWEN_VL = true;  // 设为 true 启用图片识别功能
+        // 本地开发时如需直连，可改为 true（但图片仍需 Worker）
+        const USE_DIRECT_API = false;  // 全部走 Worker，统一使用 Qwen
+        
+        // 以下配置在 USE_DIRECT_API = false 时不使用
+        const DIRECT_API_KEY = 'sk-3144bf0982b34c758559f05e340cc0bf';
+        const DIRECT_API_URL = 'https://api.deepseek.com/chat/completions';
+        
+        // ===== 功能开关 =====
+        const USE_QWEN_VL = true;  // 启用图片识别功能
         
         // 测试 API Key 是否有效（在浏览器控制台运行: testQwenAPI()）
         async function testQwenAPI() {
@@ -2706,12 +2711,11 @@
             return response;
         }
 
-        // 发送带图片的消息（使用 Qwen-VL）
+        // 发送消息（全部走 Qwen-VL，支持图文混合）
         async function sendMessageWithImage(text = '') {
             if (selectedImages.length === 0 || isGenerating) return;
             
             const userInput = document.getElementById('userInput');
-            // 优先使用传入的文字，否则从输入框获取
             const textContent = text || userInput.value.trim();
             const imagesData = [...selectedImages];
             
@@ -2742,28 +2746,25 @@
             let fullText = '';
             
             controller = new AbortController();
-            
-            // 设置超时（60秒，图片识别可能需要更长时间）
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                console.log('图片识别请求超时，已取消');
             }, 60000);
             
             try {
-                console.log('开始图片识别...');
+                console.log('使用 Qwen-VL 处理图文...');
                 
-                // 使用 Qwen-VL 识别图片
+                // 直接使用 Qwen-VL 处理图文（不再经过 DeepSeek）
                 const response = await callQwenVL(imagesData, textContent);
                 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('图片识别 API 错误:', response.status, errorText);
-                    throw new Error(`识别服务错误 ${response.status}: ${errorText || '请检查 API 配置'}`);
+                    console.error('Qwen-VL API 错误:', response.status, errorText);
+                    throw new Error(`服务错误 ${response.status}: ${errorText || '请检查配置'}`);
                 }
                 
                 clearTimeout(timeoutId);
-                console.log('收到图片识别响应，开始读取...');
                 
+                // 流式读取 Qwen-VL 回答
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 
@@ -2793,14 +2794,14 @@
                             }
                             scrollToBottom();
                         } catch (e) {
-                            console.error('解析响应数据出错:', e, data);
+                            console.error('解析响应出错:', e, data);
                         }
                     }
                 }
                 
                 streamingDiv.classList.remove('cursor-blink');
                 
-                // 保存AI回复到对话历史
+                // 保存到对话历史
                 if (fullText) {
                     chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
                     saveCurrentConversation();
@@ -2808,19 +2809,20 @@
                 
                 const messageBubble = streamingDiv.closest('.message-bubble');
                 if (messageBubble) {
-                    addMessageActions(messageBubble, '[图片识别] ' + (textContent || '识别瑶绣图片'), fullText);
+                    addMessageActions(messageBubble, textContent || '[图片识别]', fullText);
                 }
                 
             } catch (err) {
-                console.error('图片识别出错:', err);
+                console.error('发送消息出错:', err);
                 clearTimeout(timeoutId);
                 
                 if (err.name === 'AbortError') {
                     streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
                 } else {
                     streamingDiv.innerHTML = `<div style="color: #ef4444; padding: 0.5rem;">
-                        <p class="font-medium">识别失败</p>
+                        <p class="font-medium">请求失败</p>
                         <p class="text-sm mt-1">${escapeHtml(err.message || '网络连接失败')}</p>
+                        <button onclick="retryLastMessage()" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
                     </div>`;
                 }
             } finally {
