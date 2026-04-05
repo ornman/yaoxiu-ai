@@ -632,20 +632,7 @@
                             </span>
                         </button>
                         
-                        <!-- 深度思考/快速切换 -->
-                        <div class="flex items-center gap-1 p-1 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
-                            <button id="modeFast" onclick="setModelMode('fast')" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1" style="background: var(--accent); color: white;">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                                <span class="hidden sm:inline">快速</span>
-                                <span class="sm:hidden">快</span>
-                            </button>
-                            <button id="modeDeep" onclick="setModelMode('deep')" class="px-2 sm:px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1" style="color: var(--text-secondary);">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
-                                <span class="hidden sm:inline">深度</span>
-                                <span class="sm:hidden">深</span>
-                            </button>
-                        </div>
-                        <!-- 隐藏的 model select 用于存储值 -->
+                        <!-- 模型选择器已移至输入框下方 -->
                         <select id="modelSelect" class="hidden">
                             <option value="deepseek-chat" selected>V3</option>
                             <option value="deepseek-reasoner">R1</option>
@@ -793,9 +780,50 @@
                         <span class="hidden sm:inline">·</span>
                         <span class="hidden sm:inline">Shift + Enter 换行</span>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full animate-pulse" style="background: var(--accent);"></span>
-                        <span>小瑶正在绣锦 ✨</span>
+                    
+                    <!-- 模型切换按钮 -->
+                    <div class="relative">
+                        <button onclick="toggleModelDropdown()" id="modelToggleBtn"
+                                class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all hover:bg-white/5"
+                                style="background: var(--bg-tertiary); border: 1px solid var(--border-color);">
+                            <span id="currentModelLabel" class="font-medium" style="color: var(--text-secondary);">快速</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        
+                        <!-- 模型选择下拉菜单 -->
+                        <div id="modelDropdown" class="hidden absolute right-0 bottom-full mb-2 w-40 rounded-xl border shadow-xl overflow-hidden z-50"
+                             style="background: var(--bg-secondary); border-color: var(--border-color);">
+                            <div class="p-2 space-y-1">
+                                <button onclick="setModelMode('fast')" id="dropdownFast" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left"
+                                        style="background: var(--accent); color: white;">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <div class="font-medium">快速回复</div>
+                                        <div class="opacity-70 text-[10px]">V3 模型 · 即时响应</div>
+                                    </div>
+                                    <svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                <button onclick="setModelMode('deep')" id="dropdownDeep" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left"
+                                        style="color: var(--text-secondary);">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <div class="font-medium">深度思考</div>
+                                        <div class="opacity-70 text-[10px]">R1 模型 · 逻辑推理</div>
+                                    </div>
+                                    <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1958,29 +1986,80 @@
         // ========== 模型模式切换 ==========
         let currentModelMode = 'fast'; // 'fast' or 'deep'
         
+        // 切换模型下拉菜单显示/隐藏
+        function toggleModelDropdown() {
+            const dropdown = document.getElementById('modelDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+                // 点击外部关闭
+                setTimeout(() => {
+                    document.addEventListener('click', closeModelDropdownOnClickOutside, { once: true });
+                }, 0);
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+        
+        // 点击外部关闭模型下拉菜单
+        function closeModelDropdownOnClickOutside(event) {
+            const dropdown = document.getElementById('modelDropdown');
+            const toggleBtn = document.getElementById('modelToggleBtn');
+            
+            if (!dropdown.contains(event.target) && !toggleBtn.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            } else {
+                // 如果点击的是内部元素，继续监听
+                document.addEventListener('click', closeModelDropdownOnClickOutside, { once: true });
+            }
+        }
+        
         function setModelMode(mode) {
             currentModelMode = mode;
             const modelSelect = document.getElementById('modelSelect');
-            const modeFastBtn = document.getElementById('modeFast');
-            const modeDeepBtn = document.getElementById('modeDeep');
+            const dropdownFast = document.getElementById('dropdownFast');
+            const dropdownDeep = document.getElementById('dropdownDeep');
+            const currentModelLabel = document.getElementById('currentModelLabel');
             
             if (mode === 'fast') {
                 // 快速模式 - V3
                 modelSelect.value = 'deepseek-chat';
-                modeFastBtn.style.background = 'var(--accent)';
-                modeFastBtn.style.color = 'white';
-                modeDeepBtn.style.background = 'transparent';
-                modeDeepBtn.style.color = 'var(--text-secondary)';
-                showToast('已切换：快速回复模式');
+                
+                // 更新下拉菜单样式
+                dropdownFast.style.background = 'var(--accent)';
+                dropdownFast.style.color = 'white';
+                dropdownFast.querySelector('.check-icon').classList.remove('hidden');
+                
+                dropdownDeep.style.background = 'transparent';
+                dropdownDeep.style.color = 'var(--text-secondary)';
+                dropdownDeep.querySelector('.check-icon').classList.add('hidden');
+                
+                // 更新按钮标签
+                currentModelLabel.textContent = '快速';
+                
+                showToast('已切换：快速回复模式 (V3)');
             } else {
                 // 深度思考模式 - R1
                 modelSelect.value = 'deepseek-reasoner';
-                modeDeepBtn.style.background = 'var(--accent)';
-                modeDeepBtn.style.color = 'white';
-                modeFastBtn.style.background = 'transparent';
-                modeFastBtn.style.color = 'var(--text-secondary)';
-                showToast('已切换：深度思考模式');
+                
+                // 更新下拉菜单样式
+                dropdownDeep.style.background = 'var(--accent)';
+                dropdownDeep.style.color = 'white';
+                dropdownDeep.querySelector('.check-icon').classList.remove('hidden');
+                
+                dropdownFast.style.background = 'transparent';
+                dropdownFast.style.color = 'var(--text-secondary)';
+                dropdownFast.querySelector('.check-icon').classList.add('hidden');
+                
+                // 更新按钮标签
+                currentModelLabel.textContent = '深度';
+                
+                showToast('已切换：深度思考模式 (R1)');
             }
+            
+            // 关闭下拉菜单
+            document.getElementById('modelDropdown').classList.add('hidden');
         }
         
         // ========== 主题设置 ==========
