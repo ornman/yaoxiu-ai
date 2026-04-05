@@ -2670,9 +2670,26 @@
             
             controller = new AbortController();
             
+            // 设置超时（60秒，图片识别可能需要更长时间）
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.log('图片识别请求超时，已取消');
+            }, 60000);
+            
             try {
+                console.log('开始图片识别...');
+                
                 // 使用 Qwen-VL 识别图片
                 const response = await callQwenVL(imagesData, textContent);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('图片识别 API 错误:', response.status, errorText);
+                    throw new Error(`识别服务错误 ${response.status}: ${errorText || '请检查 API 配置'}`);
+                }
+                
+                clearTimeout(timeoutId);
+                console.log('收到图片识别响应，开始读取...');
                 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -2702,7 +2719,9 @@
                                 });
                             }
                             scrollToBottom();
-                        } catch (e) {}
+                        } catch (e) {
+                            console.error('解析响应数据出错:', e, data);
+                        }
                     }
                 }
                 
@@ -2720,12 +2739,19 @@
                 }
                 
             } catch (err) {
+                console.error('图片识别出错:', err);
+                clearTimeout(timeoutId);
+                
                 if (err.name === 'AbortError') {
-                    streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                    streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
                 } else {
-                    streamingDiv.innerHTML = `<div style="color: #ef4444;">识别失败：${escapeHtml(err.message)}</div>`;
+                    streamingDiv.innerHTML = `<div style="color: #ef4444; padding: 0.5rem;">
+                        <p class="font-medium">识别失败</p>
+                        <p class="text-sm mt-1">${escapeHtml(err.message || '网络连接失败')}</p>
+                    </div>`;
                 }
             } finally {
+                clearTimeout(timeoutId);
                 isGenerating = false;
                 document.getElementById('sendBtn').disabled = false;
                 updateSendBtnState();
@@ -2854,6 +2880,9 @@
             messageCount++;
             document.getElementById('msgCount').textContent = messageCount;
 
+            // 保存用户消息（用于重试）
+            lastUserMessage = content;
+            
             // 添加用户消息
             appendUserMessage(content);
             
@@ -2873,6 +2902,12 @@
             let hasReceivedContent = false;
 
             controller = new AbortController();
+            
+            // 设置超时（30秒）
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.log('请求超时，已取消');
+            }, 30000);
 
             try {
                 let response;
@@ -2882,6 +2917,8 @@
                     if (DIRECT_API_KEY.includes('your-deepseek-api-key')) {
                         throw new Error('请先在代码中填写 DIRECT_API_KEY');
                     }
+                    
+                    console.log('开始发送请求...', { model: document.getElementById('modelSelect').value });
                     
                     const model = document.getElementById('modelSelect').value;
                     response = await fetch(DIRECT_API_URL, {
@@ -2903,6 +2940,8 @@
                         }),
                         signal: controller.signal
                     });
+                    
+                    console.log('收到响应:', response.status, response.ok);
                 } else {
                     // Worker 模式：通过 Cloudflare Worker 调用
                     const apiUrl = config.apiUrl || DEFAULT_API_URL;
@@ -2921,8 +2960,13 @@
                 }
 
                 if (!response.ok) {
-                    throw new Error('HTTP ' + response.status);
+                    const errorText = await response.text();
+                    console.error('API 错误响应:', response.status, errorText);
+                    throw new Error(`HTTP ${response.status}: ${errorText || '未知错误'}`);
                 }
+
+                clearTimeout(timeoutId); // 清除超时
+                console.log('开始读取流式响应...');
 
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -2998,16 +3042,37 @@
                 }
 
             } catch (err) {
+                console.error('发送消息出错:', err);
+                clearTimeout(timeoutId); // 确保清除超时
+                
                 if (err.name === 'AbortError') {
-                    streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                    if (streamingDiv.innerHTML.includes('正在思考')) {
+                        streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
+                    } else {
+                        streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                    }
                 } else {
-                    streamingDiv.innerHTML = `<div style="color: #ef4444;">出错了：${escapeHtml(err.message)}</div>`;
+                    streamingDiv.innerHTML = `<div style="color: #ef4444; padding: 0.5rem;">
+                        <p class="font-medium">出错了</p>
+                        <p class="text-sm mt-1">${escapeHtml(err.message || '网络连接失败，请检查网络后重试')}</p>
+                        <button onclick="retryLastMessage()" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
+                    </div>`;
                 }
             } finally {
+                clearTimeout(timeoutId); // 确保清除超时
                 isGenerating = false;
                 document.getElementById('sendBtn').disabled = false;
                 updateSendBtnState();
                 controller = null;
+            }
+        }
+        
+        // 重试最后一条消息
+        let lastUserMessage = '';
+        function retryLastMessage() {
+            if (lastUserMessage) {
+                document.getElementById('userInput').value = lastUserMessage;
+                sendMessage();
             }
         }
 
@@ -3067,9 +3132,10 @@
             const actions = document.createElement('div');
             actions.className = 'message-actions flex items-center gap-2 mt-2 pt-2 border-t';
             actions.style.borderColor = 'var(--border-color)';
+            
+            // 使用 data 属性存储数据，避免引号问题
             actions.innerHTML = `
-                <button onclick="addToFavorites('${escapeHtml(question)}', '${escapeHtml(answer)}')" 
-                        class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                <button class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
                         style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
                         onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
                         onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'">
@@ -3078,8 +3144,7 @@
                     </svg>
                     收藏
                 </button>
-                <button onclick="openShareModal('${escapeHtml(question)}', '${escapeHtml(answer)}', ${messageCount})" 
-                        class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                <button class="share-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
                         style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
                         onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
                         onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');">
@@ -3089,6 +3154,18 @@
                     分享
                 </button>
             `;
+            
+            // 绑定点击事件（使用闭包避免引号问题）
+            const favBtn = actions.querySelector('.fav-btn');
+            const shareBtn = actions.querySelector('.share-btn');
+            
+            favBtn.addEventListener('click', function() {
+                addToFavorites(question, answer);
+            });
+            
+            shareBtn.addEventListener('click', function() {
+                openShareModal(question, answer, messageCount);
+            });
             
             // 添加到气泡底部
             bubble.appendChild(actions);
