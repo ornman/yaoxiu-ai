@@ -2940,6 +2940,13 @@
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
             const content = userInput.value.trim();
+            
+            // 如果有图片，调用图片发送函数
+            if (selectedImages.length > 0) {
+                sendMessageWithImage(content);
+                return;
+            }
+            
             if (!content || isGenerating) return;
 
             // 检查配置
