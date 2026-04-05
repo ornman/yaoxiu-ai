@@ -2788,6 +2788,12 @@
             try {
                 console.log('使用 Qwen-VL 处理图文...');
                 
+                // 显示自动切换提示
+                const currentModelLabel = document.getElementById('currentModelLabel').textContent;
+                if (!currentModelLabel.includes('VL')) {
+                    showToast(`已自动切换至 Qwen-VL 图文模式`);
+                }
+                
                 // 直接使用 Qwen-VL 处理图文（不再经过 DeepSeek）
                 const response = await callQwenVL(imagesData, textContent);
                 
