@@ -54,6 +54,22 @@
             <p class="text-sm" style="color: var(--text-secondary);">测试视觉语言模型 API 调用是否正常</p>
         </div>
 
+        <!-- CORS Warning -->
+        <div class="rounded-xl p-4 mb-4" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3);">
+            <div class="flex items-start gap-3">
+                <span class="text-lg">⚠️</span>
+                <div class="text-sm" style="color: #f5f5f5;">
+                    <p class="font-medium mb-1">关于 CORS 跨域问题</p>
+                    <p class="opacity-80">浏览器安全限制，前端无法直接调用阿里云 API。请使用以下方案之一：</p>
+                    <ul class="mt-2 space-y-1 text-xs opacity-70 list-disc list-inside">
+                        <li><strong>方案1（推荐）：</strong>使用 Cloudflare Worker 代理</li>
+                        <li><strong>方案2：</strong>安装浏览器 CORS 扩展（如 CORS Unblock）</li>
+                        <li><strong>方案3：</strong>在 index.html 中直接测试（已配置代理）</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <!-- API Key Input -->
         <div class="rounded-xl p-4 sm:p-6 mb-6" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
             <h2 class="font-medium mb-4 flex items-center gap-2">
@@ -75,6 +91,22 @@
                         <option value="qwen-vl-plus">qwen-vl-plus (推荐，性价比高)</option>
                         <option value="qwen-vl-max">qwen-vl-max (最强能力)</option>
                     </select>
+                </div>
+                <div>
+                    <label class="block text-xs mb-1.5" style="color: var(--text-secondary);">请求方式</label>
+                    <select id="requestMode" class="w-full px-3 py-2 rounded-lg text-sm focus:outline-none"
+                            style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);"
+                            onchange="toggleProxyUrl()">
+                        <option value="direct">直接请求（需安装 CORS 扩展）</option>
+                        <option value="proxy">通过 Worker 代理（推荐）</option>
+                    </select>
+                </div>
+                <div id="proxyUrlContainer" class="hidden">
+                    <label class="block text-xs mb-1.5" style="color: var(--text-secondary);">Worker 代理地址</label>
+                    <input type="text" id="proxyUrl" placeholder="https://your-worker.xxx.workers.dev" 
+                           class="w-full px-3 py-2 rounded-lg text-sm focus:outline-none"
+                           style="background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary);">
+                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">Cloudflare Worker 地址，用于代理请求</p>
                 </div>
             </div>
         </div>
@@ -137,6 +169,17 @@
     <script>
         const QWEN_API_URL = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation';
         let currentImageBase64 = null;
+        
+        // 切换代理地址输入框显示
+        function toggleProxyUrl() {
+            const mode = document.getElementById('requestMode').value;
+            const container = document.getElementById('proxyUrlContainer');
+            if (mode === 'proxy') {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
 
         // 日志输出
         function log(message, type = 'info') {
@@ -253,6 +296,8 @@
         async function runTest() {
             const apiKey = document.getElementById('apiKey').value.trim();
             const model = document.getElementById('modelSelect').value;
+            const requestMode = document.getElementById('requestMode').value;
+            const proxyUrl = document.getElementById('proxyUrl').value.trim();
 
             if (!apiKey) {
                 alert('请输入 API Key');
@@ -269,6 +314,11 @@
                 return;
             }
 
+            if (requestMode === 'proxy' && !proxyUrl) {
+                alert('请输入 Worker 代理地址');
+                return;
+            }
+
             const btn = document.getElementById('testBtn');
             btn.disabled = true;
             btn.textContent = '⏳ 测试中...';
@@ -276,38 +326,72 @@
 
             log('🚀 开始测试阿里百炼 Qwen-VL API');
             log(`🔧 模型: ${model}`);
+            log(`📡 请求方式: ${requestMode === 'proxy' ? 'Worker 代理' : '直接请求'}`);
             log(`📊 图片大小: ${(currentImageBase64.length * 0.75 / 1024).toFixed(1)}KB (Base64)`);
 
             const startTime = Date.now();
 
             try {
-                // 构建请求体
-                const requestBody = {
-                    model: model,
-                    input: {
-                        messages: [{
-                            role: 'user',
-                            content: [
-                                { image: currentImageBase64 },
-                                { text: '请描述这张图片的内容。' }
-                            ]
-                        }]
-                    },
-                    parameters: {
-                        result_format: 'message'
-                    }
-                };
+                let response;
 
-                log('📤 发送请求...', 'info');
+                if (requestMode === 'proxy') {
+                    // 通过 Worker 代理
+                    log('📤 通过 Worker 代理发送请求...', 'info');
+                    
+                    response = await fetch(proxyUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            message: JSON.stringify({
+                                model: model,
+                                input: {
+                                    messages: [{
+                                        role: 'user',
+                                        content: [
+                                            { image: currentImageBase64 },
+                                            { text: '请描述这张图片的内容。' }
+                                        ]
+                                    }]
+                                },
+                                parameters: {
+                                    result_format: 'message'
+                                }
+                            }),
+                            model: model
+                        })
+                    });
+                } else {
+                    // 直接请求（需要 CORS 扩展）
+                    log('📤 直接发送请求（需要 CORS 扩展）...', 'info');
+                    
+                    // 构建请求体
+                    const requestBody = {
+                        model: model,
+                        input: {
+                            messages: [{
+                                role: 'user',
+                                content: [
+                                    { image: currentImageBase64 },
+                                    { text: '请描述这张图片的内容。' }
+                                ]
+                            }]
+                        },
+                        parameters: {
+                            result_format: 'message'
+                        }
+                    };
 
-                const response = await fetch(QWEN_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${apiKey}`
-                    },
-                    body: JSON.stringify(requestBody)
-                });
+                    response = await fetch(QWEN_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                }
 
                 const latency = Date.now() - startTime;
                 log(`⏱️ 响应时间: ${latency}ms`);
