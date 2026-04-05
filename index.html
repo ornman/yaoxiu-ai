@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>瑶绣 · 瑶族刺绣知识问答</title>
     <meta name="version" content="2.1">
-    <!-- 安全加固：CSP 内容安全策略 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src https://api.yaoxiumax.top https://yaoembroidery-api.kdy233.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self';">
+    <!-- CSP：基础安全防护，允许必要的外部资源 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' *.tailwindcss.com *.jsdelivr.net *.cloudflare.com *.googleapis.com *.gstatic.com; img-src 'self' data: blob: *; connect-src *; object-src 'none';">
     <!-- 安全加固：禁用 IE 兼容模式 -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- 安全加固：禁用格式检测（防止手机号/邮箱自动识别） -->
@@ -1214,66 +1214,20 @@
     </div>
 
     <script>
-        // ========== 安全工具函数 ==========
+        // ========== 安全工具函数（精简版） ==========
         const SecurityUtils = {
             // XSS 防护：转义 HTML 特殊字符
             escapeHtml(text) {
                 if (typeof text !== 'string') return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
             },
             
-            // XSS 防护：安全的 innerHTML 插入（使用 DOMPurify 风格的简单实现）
-            safeSetHTML(element, html) {
-                if (!element) return;
-                // 使用 textContent + marked 解析后的净化
-                element.textContent = '';
-                if (html) {
-                    const temp = document.createElement('div');
-                    temp.innerHTML = html;
-                    // 移除危险标签和属性
-                    this.sanitizeElement(temp);
-                    element.appendChild(temp);
-                }
-            },
-            
-            // 净化 DOM 元素（移除危险内容）
-            sanitizeElement(element) {
-                const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'textarea'];
-                const dangerousAttrs = ['onerror', 'onload', 'onclick', 'onmouseover', 'javascript:', 'data:text/html'];
-                
-                // 移除危险标签
-                dangerousTags.forEach(tag => {
-                    const nodes = element.getElementsByTagName(tag);
-                    for (let i = nodes.length - 1; i >= 0; i--) {
-                        nodes[i].remove();
-                    }
-                });
-                
-                // 移除危险属性
-                const allElements = element.getElementsByTagName('*');
-                for (let i = 0; i < allElements.length; i++) {
-                    const el = allElements[i];
-                    for (let j = el.attributes.length - 1; j >= 0; j--) {
-                        const attr = el.attributes[j];
-                        const attrName = attr.name.toLowerCase();
-                        const attrValue = attr.value.toLowerCase();
-                        
-                        // 移除 on* 事件处理器
-                        if (attrName.startsWith('on')) {
-                            el.removeAttribute(attr.name);
-                        }
-                        // 移除危险的 href/src
-                        else if ((attrName === 'href' || attrName === 'src') && 
-                                 (attrValue.startsWith('javascript:') || attrValue.startsWith('data:text/html'))) {
-                            el.removeAttribute(attr.name);
-                        }
-                    }
-                }
-            },
-            
-            // 输入验证：长度和字符检查
+            // 简单的输入验证
             validateInput(text, maxLength = 2000) {
                 if (!text || typeof text !== 'string') {
                     return { valid: false, error: '输入不能为空' };
@@ -1281,36 +1235,8 @@
                 if (text.length > maxLength) {
                     return { valid: false, error: `输入长度不能超过 ${maxLength} 字符` };
                 }
-                // 检测控制字符
-                if (/[\x00-\x08\x0B-\x0C\x0E-\x1F]/.test(text)) {
-                    return { valid: false, error: '输入包含非法字符' };
-                }
                 return { valid: true, text: text.trim() };
-            },
-            
-            // 前端提示词注入检测
-            detectInjection(text) {
-                const patterns = [
-                    /ignore\s+(all\s+)?(previous|above|earlier)/i,
-                    /disregard\s+(all\s+)?(previous|above|earlier)/i,
-                    /forget\s+(everything|all|previous)/i,
-                    /system\s*prompt/i,
-                    /you\s+are\s+now/i,
-                    /from\s+now\s+on/i,
-                    /DAN\s*mode/i,
-                    /jailbreak/i,
-                ];
-                
-                for (const pattern of patterns) {
-                    if (pattern.test(text)) {
-                        console.warn('⚠️ 前端检测到潜在提示词注入');
-                        return true;
-                    }
-                }
-                return false;
-            },
-            
-
+            }
         };
         
         // ========== 配置与状态 ==========
@@ -1641,14 +1567,6 @@
         }
 
         // ========== 配置管理 ==========
-        // 允许的 API 域名白名单
-        const ALLOWED_API_DOMAINS = [
-            'api.yaoxiumax.top',
-            'yaoembroidery-api.kdy233.workers.dev',
-            'localhost',
-            '127.0.0.1'
-        ];
-        
         function loadConfig() {
             const saved = localStorage.getItem('yao-config');
             const savedVersion = localStorage.getItem('yao-config-version');
@@ -1665,18 +1583,6 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    
-                    // 验证 API URL 安全性
-                    if (parsed.apiUrl) {
-                        const isAllowed = ALLOWED_API_DOMAINS.some(domain => 
-                            parsed.apiUrl.includes(domain)
-                        );
-                        if (!isAllowed) {
-                            console.warn('⚠️ 检测到非法 API 地址，已重置');
-                            parsed.apiUrl = DEFAULT_API_URL;
-                        }
-                    }
-                    
                     config = { ...config, ...parsed };
                     
                     // 强制更新：如果缓存的是旧 Worker 地址，自动切换为新域名
@@ -3110,12 +3016,6 @@
             }
             
             const content = validation.text;
-            
-            // 检测提示词注入
-            if (SecurityUtils.detectInjection(content)) {
-                showToast('⚠️ 检测到可疑输入，请正常提问');
-                return;
-            }
             
             // 如果有图片，调用图片发送函数
             if (selectedImages.length > 0) {
