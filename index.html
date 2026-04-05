@@ -1366,6 +1366,15 @@
 
         // ========== 初始化 ==========
         document.addEventListener('DOMContentLoaded', () => {
+            // 配置 marked.js 渲染选项
+            marked.setOptions({
+                breaks: true,           // 支持单换行符转换为 <br>
+                gfm: true,              // 启用 GitHub Flavored Markdown
+                headerIds: false,       // 不自动生成标题ID
+                mangle: false,          // 不转义内联HTML
+                sanitize: false         // 不清理HTML（我们用自己的escapeHtml）
+            });
+            
             initStorage();
             loadConfig();
             applyConfig();
