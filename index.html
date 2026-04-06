@@ -1953,8 +1953,8 @@
                     <p class="text-sm mb-2" style="color: var(--text-secondary);">今日剩余次数</p>
                     <div class="flex items-center justify-center gap-1">
                         <span id="drawCount" class="text-3xl font-bold" style="color: var(--gold);">3</span>
-                        <span class="text-lg" style="color: var(--text-tertiary);">/ 3</span>
                     </div>
+                    <p class="text-xs mt-1" style="color: var(--text-tertiary);">基础 <span id="drawBaseCount">3</span> 次 + 奖励 <span id="drawBonusCount">0</span> 次</p>
                 </div>
                 <!-- 盲盒卡片 -->
                 <div class="flex justify-center mb-6">
@@ -2264,7 +2264,7 @@
                 
                 // 签到奖励
                 LevelSystem.addXP(20);
-                BlindBoxSystem.addDrawCount(1);
+                BlindBoxSystem.addBonusDraw(1);
                 
                 this.render();
                 showToast(`签到成功！连续${streak}天 ✨`);
@@ -2298,31 +2298,64 @@
 
         // 盲盒系统
         const BlindBoxSystem = {
-            getDailyDraws() {
+            // 获取今日基础次数（每天重置为3次）
+            getDailyBaseDraws() {
                 const today = new Date().toDateString();
                 const savedDate = localStorage.getItem('yao-draw-date');
                 if (savedDate !== today) {
                     localStorage.setItem('yao-draw-date', today);
-                    localStorage.setItem('yao-draw-count', '3');
+                    localStorage.setItem('yao-draw-base', '3');
+                    localStorage.setItem('yao-draw-bonus', '0'); // 对话获得的额外次数
                     return 3;
                 }
-                return parseInt(localStorage.getItem('yao-draw-count') || '3');
+                return parseInt(localStorage.getItem('yao-draw-base') || '3');
             },
             
-            addDrawCount(count) {
-                const current = this.getDailyDraws();
-                localStorage.setItem('yao-draw-count', (current + count).toString());
+            // 获取对话奖励次数
+            getBonusDraws() {
+                const today = new Date().toDateString();
+                const savedDate = localStorage.getItem('yao-draw-date');
+                if (savedDate !== today) {
+                    return 0;
+                }
+                return parseInt(localStorage.getItem('yao-draw-bonus') || '0');
+            },
+            
+            // 获取总次数
+            getTotalDraws() {
+                return this.getDailyBaseDraws() + this.getBonusDraws();
+            },
+            
+            // 添加对话奖励次数
+            addBonusDraw(count) {
+                const current = this.getBonusDraws();
+                localStorage.setItem('yao-draw-bonus', (current + count).toString());
                 this.render();
             },
             
+            // 使用抽奖次数
             useDraw() {
-                const current = this.getDailyDraws();
-                if (current > 0) {
-                    localStorage.setItem('yao-draw-count', (current - 1).toString());
+                // 优先使用基础次数
+                const baseCount = this.getDailyBaseDraws();
+                if (baseCount > 0) {
+                    localStorage.setItem('yao-draw-base', (baseCount - 1).toString());
+                    this.render();
+                    return true;
+                }
+                // 基础次数用完，使用奖励次数
+                const bonusCount = this.getBonusDraws();
+                if (bonusCount > 0) {
+                    localStorage.setItem('yao-draw-bonus', (bonusCount - 1).toString());
                     this.render();
                     return true;
                 }
                 return false;
+            },
+            
+            // 获取已使用次数
+            getUsedCount() {
+                const baseUsed = 3 - this.getDailyBaseDraws();
+                return baseUsed > 0 ? baseUsed : 0;
             },
             
             randomRarity() {
@@ -2335,7 +2368,7 @@
             
             draw() {
                 if (!this.useDraw()) {
-                    showToast('今日次数已用完，继续对话可获得更多机会');
+                    showToast('次数已用完，继续对话可获得更多机会');
                     return null;
                 }
                 
@@ -2354,14 +2387,21 @@
             },
             
             render() {
-                const count = this.getDailyDraws();
+                const totalCount = this.getTotalDraws();
+                const baseCount = this.getDailyBaseDraws();
+                const bonusCount = this.getBonusDraws();
                 const countEl = document.getElementById('drawCount');
                 const badge = document.getElementById('blindboxBadge');
+                const baseCountEl = document.getElementById('drawBaseCount');
+                const bonusCountEl = document.getElementById('drawBonusCount');
                 
-                if (countEl) countEl.textContent = count;
+                if (countEl) countEl.textContent = totalCount;
+                if (baseCountEl) baseCountEl.textContent = baseCount;
+                if (bonusCountEl) bonusCountEl.textContent = bonusCount;
                 if (badge) {
-                    badge.textContent = count;
-                    badge.classList.toggle('hidden', count === 0);
+                    badge.textContent = totalCount;
+                    // 总次数为0时显示红点提示
+                    badge.classList.toggle('hidden', totalCount > 0);
                 }
             }
         };
@@ -2671,7 +2711,7 @@
                 const chatCount = parseInt(localStorage.getItem(`yao-chat-${today}`) || '0');
                 if (chatCount < 5) {
                     localStorage.setItem(`yao-chat-${today}`, (chatCount + 1).toString());
-                    BlindBoxSystem.addDrawCount(1);
+                    BlindBoxSystem.addBonusDraw(1);
                 }
             };
         }
