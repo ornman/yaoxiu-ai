@@ -919,17 +919,9 @@
             gap: 12px;
             margin-bottom: 16px;
         }
-        .growth-level-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 16px;
-            color: white;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        .growth-level-emoji {
+            font-size: 32px;
+            line-height: 1;
         }
         .growth-level-info {
             flex: 1;
@@ -1020,50 +1012,6 @@
             margin-left: auto;
             margin-right: 8px;
         }
-        
-        /* 成长界面签到日历 */
-        .growth-checkin-calendar {
-            margin-bottom: 12px;
-        }
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            font-size: 13px;
-        }
-        .calendar-title {
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-        .calendar-streak {
-            color: var(--gold);
-            font-weight: 600;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: 500;
-            background: var(--bg-tertiary);
-            color: var(--text-tertiary);
-        }
-        .calendar-day.checked {
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--bg-primary);
-        }
-        .calendar-day.today {
-            border: 2px solid var(--accent);
-        }
-
         /* 签到条 */
         .checkin-bar {
             display: flex;
@@ -1330,7 +1278,7 @@
                             <!-- 个人成长下拉菜单 -->
                             <div id="growthMenu" class="growth-dropdown hidden">
                                 <div class="growth-header">
-                                    <div class="growth-level-icon" id="growthMenuIcon">初</div>
+                                    <div class="growth-level-emoji" id="growthMenuEmoji">🌱</div>
                                     <div class="growth-level-info">
                                         <span class="growth-level-name" id="growthMenuName">学徒</span>
                                         <div class="growth-progress-bar">
@@ -1357,23 +1305,7 @@
                                     </div>
                                 </div>
                                 <div class="growth-divider"></div>
-                                <!-- 签到日历 -->
-                                <div class="growth-checkin-calendar">
-                                    <div class="calendar-header">
-                                        <span class="calendar-title">📅 签到日历</span>
-                                        <span class="calendar-streak">🔥 <span id="growthCheckinStreak">0</span>天</span>
-                                    </div>
-                                    <div class="calendar-grid" id="growthCalendarGrid">
-                                        <!-- 动态生成 -->
-                                    </div>
-                                </div>
-                                <div class="growth-divider"></div>
                                 <div class="growth-links">
-                                    <button onclick="openConversations(); closeGrowthMenu();" class="growth-link">
-                                        <span>💬 对话历史</span>
-                                        <span class="growth-link-badge" id="growthConvCount">0</span>
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                                    </button>
                                     <button onclick="openCollectionModal(); closeGrowthMenu();" class="growth-link">
                                         <span>📖 我的秀谱</span>
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -1435,7 +1367,7 @@
             <button class="checkin-btn" id="checkinBtn" onclick="handleCheckin()">
                 今日签到
             </button>
-            <button class="checkin-delete-btn" id="checkinDeleteBtn" onclick="deleteCheckinRecord()" title="清除签到记录">
+            <button class="checkin-delete-btn" id="checkinDeleteBtn" onclick="hideCheckinBar()" title="隐藏签到提示">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
             </button>
         </div>
@@ -2218,14 +2150,14 @@
         // 等级系统
         const LevelSystem = {
             levels: [
-                { name: '学徒', icon: '初', minXP: 0, color: '#95a5a6' },
-                { name: '绣娘', icon: '入', minXP: 100, color: '#3498db' },
-                { name: '巧手', icon: '进', minXP: 300, color: '#2ecc71' },
-                { name: '能手', icon: '熟', minXP: 600, color: '#9b59b6' },
-                { name: '师傅', icon: '精', minXP: 1000, color: '#e74c3c' },
-                { name: '大师', icon: '专', minXP: 1500, color: '#f39c12' },
-                { name: '传人', icon: '传', minXP: 2200, color: '#1abc9c' },
-                { name: '宗师', icon: '宗', minXP: 3000, color: '#d4a574' }
+                { name: '学徒', icon: '初', emoji: '🌱', minXP: 0, color: '#95a5a6' },
+                { name: '绣娘', icon: '入', emoji: '🧵', minXP: 100, color: '#3498db' },
+                { name: '巧手', icon: '进', emoji: '🐿', minXP: 300, color: '#2ecc71' },
+                { name: '能手', icon: '熟', emoji: '🧘', minXP: 600, color: '#9b59b6' },
+                { name: '师傅', icon: '精', emoji: '🎨', minXP: 1000, color: '#e74c3c' },
+                { name: '大师', icon: '专', emoji: '🏆', minXP: 1500, color: '#f39c12' },
+                { name: '传人', icon: '传', emoji: '👑', minXP: 2200, color: '#1abc9c' },
+                { name: '宗师', icon: '宗', emoji: '✨', minXP: 3000, color: '#d4a574' }
             ],
             
             getCurrentLevel() {
@@ -2674,8 +2606,7 @@
             const nextLevel = LevelSystem.levels[level.index + 1];
             
             // 更新等级信息
-            document.getElementById('growthMenuIcon').textContent = level.icon;
-            document.getElementById('growthMenuIcon').style.background = `linear-gradient(135deg, ${level.color}, ${level.color}dd)`;
+            document.getElementById('growthMenuEmoji').textContent = level.emoji;
             document.getElementById('growthMenuName').textContent = level.name;
             document.getElementById('growthMenuProgress').style.width = progress + '%';
             document.getElementById('growthMenuProgress').style.background = `linear-gradient(90deg, ${level.color}, ${level.color}dd)`;
@@ -2712,96 +2643,12 @@
                 if (count) totalChats += parseInt(count);
             }
             document.getElementById('growthChats').textContent = `${totalChats} 次`;
-            
-            // 更新对话数量徽章
-            document.getElementById('growthConvCount').textContent = conversations.length;
-            
-            // 更新签到日历
-            updateGrowthCalendar();
         }
         
-        // 更新成长界面签到日历
-        function updateGrowthCalendar() {
-            const grid = document.getElementById('growthCalendarGrid');
-            if (!grid) return;
-            
-            const streak = parseInt(localStorage.getItem('yao-streak') || '0');
-            document.getElementById('growthCheckinStreak').textContent = streak;
-            
-            const today = new Date();
-            const currentMonth = today.getMonth();
-            const currentYear = today.getFullYear();
-            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-            const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-            
-            let html = '';
-            
-            // 添加月份标签
-            const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
-            for (const day of weekDays) {
-                html += `<div class="calendar-day" style="font-size: 10px; background: transparent;">${day}</div>`;
-            }
-            
-            // 添加空白格子
-            for (let i = 0; i < firstDayOfMonth; i++) {
-                html += '<div class="calendar-day" style="background: transparent;"></div>';
-            }
-            
-            // 获取签到记录
-            const checkinDates = new Set();
-            for (let i = 0; i < 30; i++) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toDateString();
-                const lastCheckin = localStorage.getItem('yao-last-checkin');
-                if (lastCheckin) {
-                    const lastDate = new Date(parseInt(lastCheckin));
-                    const streakDays = parseInt(localStorage.getItem('yao-streak') || '0');
-                    // 检查连续签到的日期
-                    for (let j = 0; j < streakDays; j++) {
-                        const checkDate = new Date();
-                        checkDate.setDate(checkDate.getDate() - j);
-                        checkinDates.add(checkDate.toDateString());
-                    }
-                }
-            }
-            
-            // 添加日期
-            for (let day = 1; day <= daysInMonth; day++) {
-                const date = new Date(currentYear, currentMonth, day);
-                const isToday = day === today.getDate();
-                const isChecked = checkinDates.has(date.toDateString());
-                const isFuture = date > today;
-                
-                let className = 'calendar-day';
-                if (isChecked) className += ' checked';
-                if (isToday) className += ' today';
-                if (isFuture) className += ' future';
-                
-                const style = isFuture ? 'opacity: 0.3;' : '';
-                html += `<div class="${className}" style="${style}">${day}</div>`;
-            }
-            
-            grid.innerHTML = html;
-        }
-        
-        // 删除签到记录
-        function deleteCheckinRecord() {
-            if (!confirm('确定要清除所有签到记录吗？\n这将重置连续签到天数。')) return;
-            
-            localStorage.removeItem('yao-last-checkin');
-            localStorage.removeItem('yao-streak');
-            localStorage.removeItem('yao-checkin-date');
-            
-            // 重置UI
-            document.getElementById('streakDays').textContent = '0';
-            const btn = document.getElementById('checkinBtn');
-            btn.disabled = false;
-            btn.textContent = '今日签到';
-            btn.classList.remove('checked');
-            
-            showToast('签到记录已清除');
-            CheckinSystem.render();
+        // 隐藏签到提示条
+        function hideCheckinBar() {
+            document.getElementById('checkinBar').style.display = 'none';
+            showToast('已隐藏签到提示');
         }
 
         function handleCheckin() {
