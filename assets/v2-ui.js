@@ -1,202 +1,249 @@
 /**
- * 瑶绣 v2.0.0 UI 组件
- * 盲盒弹窗、等级展示、签到系统
+ * 瑶绣 v2.0.0 UI 组件 - 修复版
+ * 简化交互，修复盲盒bug
  */
 
-// ========== 盲盒弹窗组件 ==========
+// ========== 盲盒弹窗组件（修复版） ==========
 const BlindBoxModal = {
-  isOpen: false,
   isDrawing: false,
+  hasDrawn: false, // 标记本次弹窗是否已抽过
   
   open() {
+    const remaining = V2System.blindBox.getDailyDraws();
+    
+    // 重置状态
+    this.isDrawing = false;
+    this.hasDrawn = false;
+    
+    if (remaining <= 0) {
+      this.showLimitModal();
+      return;
+    }
+    
+    this.render();
+  },
+  
+  close() {
+    const modal = document.getElementById('blindBoxModal');
+    if (modal) {
+      modal.style.opacity = '0';
+      setTimeout(() => modal.remove(), 300);
+    }
+    this.isDrawing = false;
+    this.hasDrawn = false;
+  },
+  
+  render() {
+    const remaining = V2System.blindBox.getDailyDraws();
+    const maxDraws = V2System.blindBox.getMaxDailyDraws();
+    const stats = V2System.blindBox.getStats();
+    
+    // 移除已存在的弹窗
+    const existing = document.getElementById('blindBoxModal');
+    if (existing) existing.remove();
+    
+    const html = `
+      <div id="blindBoxModal" class="blindbox-modal" style="opacity: 0; transition: opacity 0.3s;">
+        <div class="blindbox-backdrop" onclick="BlindBoxModal.close()"></div>
+        <div class="blindbox-container">
+          <button class="blindbox-close" onclick="BlindBoxModal.close()">×</button>
+          
+          <div class="blindbox-header">
+            <h2>🎁 得纹样</h2>
+            <p class="blindbox-subtitle">今日 ${remaining}/${maxDraws} 次机会</p>
+          </div>
+          
+          <!-- 抽卡前状态 -->
+          <div id="drawStage" class="draw-stage">
+            <div class="mystery-box" onclick="BlindBoxModal.draw()">
+              <div class="box-glow"></div>
+              <span class="box-icon">🎁</span>
+              <p class="box-hint">点击拆开</p>
+            </div>
+          </div>
+          
+          <!-- 抽卡后状态（隐藏） -->
+          <div id="resultStage" class="result-stage" style="display: none;">
+            <div class="pattern-showcase" id="patternShowcase"></div>
+          </div>
+          
+          <!-- 操作按钮 -->
+          <div class="blindbox-actions">
+            <button id="primaryBtn" class="btn-primary" onclick="BlindBoxModal.handlePrimary()">
+              拆开
+            </button>
+            <button class="btn-secondary" onclick="BlindBoxModal.close()">
+              稍后再说
+            </button>
+          </div>
+          
+          <!-- 统计 -->
+          <div class="blindbox-stats">
+            <span>已收集 ${stats.totalCollected} 个纹样</span>
+            <button class="link-btn" onclick="BlindBoxModal.close(); PatternCollection.open();">
+              查看绣谱 →
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', html);
+    
+    // 触发淡入动画
+    requestAnimationFrame(() => {
+      const modal = document.getElementById('blindBoxModal');
+      if (modal) modal.style.opacity = '1';
+    });
+  },
+  
+  // 处理主按钮点击
+  handlePrimary() {
+    if (this.hasDrawn) {
+      // 已经抽过了，关闭弹窗
+      this.close();
+    } else {
+      // 还没抽，执行抽卡
+      this.draw();
+    }
+  },
+  
+  async draw() {
+    if (this.isDrawing || this.hasDrawn) return;
+    
     const remaining = V2System.blindBox.getDailyDraws();
     if (remaining <= 0) {
       this.showLimitModal();
       return;
     }
     
-    this.isOpen = true;
-    this.render();
-    this.animateEntrance();
-  },
-  
-  close() {
-    this.isOpen = false;
-    const modal = document.getElementById('blindBoxModal');
-    if (modal) {
-      modal.remove();
-    }
-  },
-  
-  render() {
-    const remaining = V2System.blindBox.getDailyDraws();
-    const maxDraws = V2System.blindBox.getMaxDailyDraws();
-    
-    const html = `
-      <div id="blindBoxModal" class="blindbox-modal">
-        <div class="blindbox-backdrop" onclick="BlindBoxModal.close()"></div>
-        <div class="blindbox-container">
-          <button class="blindbox-close" onclick="BlindBoxModal.close()">×</button>
-          
-          <div class="blindbox-header">
-            <h2>得纹样</h2>
-            <p class="blindbox-subtitle">每日 ${maxDraws} 次机会，今日剩余 <span class="remaining-count">${remaining}</span> 次</p>
-          </div>
-          
-          <div class="blindbox-stage">
-            <div class="mystery-box" id="mysteryBox">
-              <div class="box-body">
-                <span class="box-icon">🎁</span>
-                <div class="box-glow"></div>
-              </div>
-              <div class="box-lid">
-                <span class="lid-icon">✨</span>
-              </div>
-            </div>
-            
-            <div class="pattern-result" id="patternResult" style="display: none;">
-              <div class="pattern-card" id="resultCard">
-                <div class="pattern-svg" id="resultSvg"></div>
-                <div class="pattern-info">
-                  <span class="rarity-badge" id="rarityBadge"></span>
-                  <h3 class="pattern-name" id="patternName"></h3>
-                  <p class="pattern-theme" id="patternTheme"></p>
-                  <p class="pattern-desc" id="patternDesc"></p>
-                  <p class="pattern-quote" id="patternQuote"></p>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="blindbox-actions">
-            <button class="draw-btn" id="drawBtn" onclick="BlindBoxModal.draw()" ${remaining <= 0 ? 'disabled' : ''}>
-              <span class="btn-text">${remaining > 0 ? '拆开' : '今日次数已用完'}</span>
-            </button>
-            
-            <button class="share-btn" id="shareBtn" onclick="BlindBoxModal.share()" style="display: none;">
-              <span>分享给好友 +1次</span>
-            </button>
-          </div>
-          
-          <div class="blindbox-history">
-            <p>已收集 <strong>${V2System.blindBox.getStats().totalCollected}</strong> 个纹样</p>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    // 移除已存在的弹窗
-    const existing = document.getElementById('blindBoxModal');
-    if (existing) existing.remove();
-    
-    document.body.insertAdjacentHTML('beforeend', html);
-  },
-  
-  animateEntrance() {
-    const box = document.getElementById('mysteryBox');
-    if (box) {
-      box.style.animation = 'boxFloat 3s ease-in-out infinite';
-    }
-  },
-  
-  async draw() {
-    if (this.isDrawing) return;
-    
-    const remaining = V2System.blindBox.getDailyDraws();
-    if (remaining <= 0) return;
-    
     this.isDrawing = true;
     
-    // 动画阶段1：盒子抖动
-    const box = document.getElementById('mysteryBox');
-    const resultDiv = document.getElementById('patternResult');
-    const drawBtn = document.getElementById('drawBtn');
+    const drawStage = document.getElementById('drawStage');
+    const resultStage = document.getElementById('resultStage');
+    const primaryBtn = document.getElementById('primaryBtn');
     
-    drawBtn.disabled = true;
-    box.style.animation = 'boxShake 0.5s ease-in-out';
+    // 禁用按钮
+    if (primaryBtn) {
+      primaryBtn.disabled = true;
+      primaryBtn.textContent = '开启中...';
+    }
+    
+    // 盒子动画
+    const box = drawStage.querySelector('.mystery-box');
+    if (box) {
+      box.style.animation = 'boxShake 0.5s ease-in-out, boxGlow 0.5s ease-in-out';
+    }
     
     await this.wait(500);
     
-    // 动画阶段2：光芒爆发
-    box.style.animation = 'boxOpen 0.8s ease-out forwards';
-    
-    await this.wait(400);
-    
-    // 执行抽卡逻辑
+    // 执行抽卡
     const result = V2System.blindBox.draw();
     
-    await this.wait(400);
-    
-    // 显示结果
-    box.style.display = 'none';
-    resultDiv.style.display = 'block';
-    resultDiv.style.animation = 'cardReveal 0.6s ease-out';
-    
-    // 填充结果数据
-    document.getElementById('resultSvg').innerHTML = result.svg;
-    document.getElementById('rarityBadge').textContent = this.getRarityLabel(result.rarity);
-    document.getElementById('rarityBadge').className = `rarity-badge rarity-${result.rarity}`;
-    document.getElementById('patternName').textContent = result.name;
-    document.getElementById('patternTheme').textContent = result.theme;
-    document.getElementById('patternDesc').textContent = result.description;
-    document.getElementById('patternQuote').textContent = `「${result.quote}」`;
-    
-    // 更新剩余次数
-    const newRemaining = V2System.blindBox.getDailyDraws();
-    document.querySelector('.remaining-count').textContent = newRemaining;
-    
-    // 更新按钮
-    if (newRemaining > 0) {
-      drawBtn.innerHTML = '<span class="btn-text">再拆一次</span>';
-      drawBtn.disabled = false;
-    } else {
-      drawBtn.innerHTML = '<span class="btn-text">今日次数已用完</span>';
-      drawBtn.disabled = true;
-      document.getElementById('shareBtn').style.display = 'block';
+    // 隐藏抽卡区，显示结果
+    if (drawStage) drawStage.style.display = 'none';
+    if (resultStage) {
+      resultStage.style.display = 'block';
+      resultStage.innerHTML = this.createResultHTML(result);
+      resultStage.style.animation = 'fadeInUp 0.5s ease-out';
     }
     
-    // 更新等级显示
-    LevelBadge.update();
+    // 更新按钮
+    const newRemaining = V2System.blindBox.getDailyDraws();
+    if (primaryBtn) {
+      primaryBtn.disabled = false;
+      primaryBtn.textContent = newRemaining > 0 ? '再拆一个' : '知道了';
+    }
     
-    // 稀有纹样触发分享提示
+    // 更新header次数
+    const subtitle = document.querySelector('.blindbox-subtitle');
+    if (subtitle) {
+      subtitle.textContent = `今日 ${newRemaining}/${V2System.blindBox.getMaxDailyDraws()} 次机会`;
+    }
+    
+    // 更新统计
+    const statsEl = document.querySelector('.blindbox-stats span');
+    if (statsEl) {
+      const stats = V2System.blindBox.getStats();
+      statsEl.textContent = `已收集 ${stats.totalCollected} 个纹样`;
+    }
+    
+    // 更新等级
+    if (window.LevelBadge) LevelBadge.update();
+    
+    // 更新盲盒入口按钮的数字
+    this.updateEntryButton();
+    
+    // 稀有纹样提示
     if (result.rarity !== 'common') {
-      this.showRarePrompt(result);
+      setTimeout(() => {
+        const rarityNames = { rare: '节庆纹', epic: '秘传纹', legendary: '祖灵纹' };
+        if (window.showToast) {
+          showToast(`✨ 得到了${rarityNames[result.rarity]}！`);
+        }
+      }, 600);
     }
     
     this.isDrawing = false;
+    this.hasDrawn = true;
   },
   
-  getRarityLabel(rarity) {
-    const labels = {
+  createResultHTML(result) {
+    const rarityColors = {
+      common: '#9ca3af',
+      rare: '#3b82f6',
+      epic: '#a855f7',
+      legendary: '#f59e0b'
+    };
+    
+    const rarityNames = {
       common: '日用纹',
       rare: '节庆纹',
       epic: '秘传纹',
       legendary: '祖灵纹'
     };
-    return labels[rarity] || rarity;
+    
+    return `
+      <div class="result-card rarity-${result.rarity}">
+        <div class="result-glow" style="background: ${rarityColors[result.rarity]}"></div>
+        <div class="result-svg">${result.svg}</div>
+        <div class="result-info">
+          <span class="result-rarity" style="background: ${rarityColors[result.rarity]}">
+            ${rarityNames[result.rarity]}
+          </span>
+          <h3 class="result-name">${result.name}</h3>
+          <p class="result-theme">${result.theme}</p>
+          <p class="result-desc">${result.description}</p>
+          <blockquote class="result-quote">「${result.quote}」</blockquote>
+        </div>
+      </div>
+    `;
   },
   
-  showRarePrompt(result) {
-    setTimeout(() => {
-      const prompts = {
-        rare: '得到了节庆纹！分享给你的朋友吧～',
-        epic: '得到了秘传纹！太幸运了！',
-        legendary: '传说！得到了祖灵纹！这是极少数人才能见到的纹样！'
-      };
-      
-      if (window.showToast) {
-        showToast(prompts[result.rarity] || '得到了稀有纹样！');
-      }
-    }, 1000);
+  updateEntryButton() {
+    const entryBtn = document.getElementById('blindBoxEntry');
+    if (entryBtn) {
+      const remaining = V2System.blindBox.getDailyDraws();
+      const countEl = entryBtn.querySelector('.blindbox-count');
+      if (countEl) countEl.textContent = remaining;
+    }
   },
   
   showLimitModal() {
     const html = `
-      <div class="limit-modal" onclick="this.remove()">
-        <div class="limit-content">
-          <p>今日次数已用完</p>
-          <p class="limit-hint">分享给好友可额外获得抽卡机会</p>
-          <button onclick="BlindBoxModal.share(); document.querySelector('.limit-modal').remove()">立即分享</button>
+      <div id="limitModal" class="limit-modal" onclick="this.remove()">
+        <div class="limit-content" onclick="event.stopPropagation()">
+          <div class="limit-icon">📅</div>
+          <h3>今日次数已用完</h3>
+          <p>明天再来，或者分享给好友获得额外机会</p>
+          <div class="limit-actions">
+            <button class="btn-primary" onclick="BlindBoxModal.share(); document.getElementById('limitModal').remove()">
+              分享给好友
+            </button>
+            <button class="btn-secondary" onclick="document.getElementById('limitModal').remove()">
+              我知道了
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -204,20 +251,17 @@ const BlindBoxModal = {
   },
   
   share() {
-    // 分享逻辑
     if (navigator.share) {
       navigator.share({
         title: '小瑶的绣绷',
-        text: '我在收集瑶族纹样，来一起发现传统文化的美丽',
+        text: '我在收集瑶族纹样，每一个背后都有动人的故事',
         url: window.location.href
       });
     } else {
-      // 复制链接
       navigator.clipboard.writeText(window.location.href);
-      if (window.showToast) showToast('链接已复制，分享给好友吧～');
+      if (window.showToast) showToast('链接已复制');
     }
     
-    // 记录分享
     let shareCount = parseInt(localStorage.getItem('yao-share-count') || '0');
     localStorage.setItem('yao-share-count', (shareCount + 1).toString());
   },
@@ -227,64 +271,62 @@ const BlindBoxModal = {
   }
 };
 
-// ========== 等级徽章组件 ==========
+// ========== 简化的等级徽章 ==========
 const LevelBadge = {
   init() {
     this.render();
-    this.update();
   },
   
   render() {
-    const existing = document.getElementById('levelBadge');
-    if (existing) existing.remove();
+    // 插入到header的合适位置
+    const header = document.querySelector('header .flex.items-center.justify-between');
+    if (!header) return;
+    
+    const rightSection = header.querySelector('.flex.items-center.gap-1, .flex.items-center.gap-3');
+    if (!rightSection) return;
+    
+    // 检查是否已存在
+    if (document.getElementById('levelBadge')) return;
+    
+    const levelInfo = V2System.level.getLevelInfo();
     
     const html = `
-      <div id="levelBadge" class="level-badge-container" onclick="LevelModal.open()">
-        <div class="level-icon" id="levelIcon">🌱</div>
-        <div class="level-info">
-          <span class="level-title" id="levelTitle">好奇学徒</span>
-          <div class="level-progress-bar">
-            <div class="level-progress-fill" id="levelProgressFill" style="width: 0%"></div>
+      <div id="levelBadge" class="level-badge" onclick="LevelModal.open()">
+        <span class="level-icon">${levelInfo.current.icon}</span>
+        <div class="level-text">
+          <span class="level-title">${levelInfo.current.title}</span>
+          <div class="level-bar">
+            <div class="level-fill" style="width: ${V2System.level.getProgress()}%"></div>
           </div>
         </div>
       </div>
     `;
     
-    // 插入到 header
-    const header = document.querySelector('header');
-    if (header) {
-      const container = header.querySelector('.flex.items-center.gap-1');
-      if (container) {
-        container.insertAdjacentHTML('beforeend', html);
-      }
-    }
+    // 插入到最前面
+    rightSection.insertAdjacentHTML('afterbegin', html);
   },
   
   update() {
+    const badge = document.getElementById('levelBadge');
+    if (!badge) return;
+    
     const levelInfo = V2System.level.getLevelInfo();
-    const progress = V2System.level.getProgress();
-    
-    const iconEl = document.getElementById('levelIcon');
-    const titleEl = document.getElementById('levelTitle');
-    const fillEl = document.getElementById('levelProgressFill');
-    
-    if (iconEl) iconEl.textContent = levelInfo.current.icon;
-    if (titleEl) titleEl.textContent = levelInfo.current.title;
-    if (fillEl) fillEl.style.width = `${progress}%`;
+    badge.querySelector('.level-icon').textContent = levelInfo.current.icon;
+    badge.querySelector('.level-title').textContent = levelInfo.current.title;
+    badge.querySelector('.level-fill').style.width = `${V2System.level.getProgress()}%`;
   }
 };
 
-// ========== 等级详情弹窗 ==========
+// ========== 简化的等级弹窗 ==========
 const LevelModal = {
   open() {
     const levelInfo = V2System.level.getLevelInfo();
     const stats = V2System.blindBox.getStats();
     
     const html = `
-      <div id="levelModal" class="level-modal">
-        <div class="level-backdrop" onclick="LevelModal.close()"></div>
-        <div class="level-container">
-          <button class="level-close" onclick="LevelModal.close()">×</button>
+      <div id="levelModal" class="level-modal" onclick="LevelModal.close()">
+        <div class="level-container" onclick="event.stopPropagation()">
+          <button class="modal-close" onclick="LevelModal.close()">×</button>
           
           <div class="level-header">
             <div class="level-big-icon">${levelInfo.current.icon}</div>
@@ -292,50 +334,39 @@ const LevelModal = {
             <p>等级 ${levelInfo.current.level}</p>
           </div>
           
-          <div class="level-progress-section">
-            <div class="progress-label">
-              <span>升级进度</span>
-              <span>${levelInfo.progress}%</span>
+          <div class="level-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${V2System.level.getProgress()}%"></div>
             </div>
-            <div class="progress-bar-large">
-              <div class="progress-fill-large" style="width: ${levelInfo.progress}%"></div>
-            </div>
-            ${levelInfo.next ? `<p class="next-level-hint">距离「${levelInfo.next.title}」还差一步</p>` : ''}
+            <span>${V2System.level.getProgress()}%</span>
           </div>
           
-          <div class="level-stats">
+          <div class="stats-grid">
             <div class="stat-item">
-              <span class="stat-value">${stats.totalCollected}</span>
-              <span class="stat-label">收集纹样</span>
+              <strong>${stats.totalCollected}</strong>
+              <span>纹样</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">${stats.legendaryCount}</span>
-              <span class="stat-label">祖灵纹</span>
+              <strong>${stats.legendaryCount}</strong>
+              <span>祖灵</span>
             </div>
             <div class="stat-item">
-              <span class="stat-value">${V2System.checkin.getStreak()}</span>
-              <span class="stat-label">连续签到</span>
+              <strong>${V2System.checkin.getStreak()}</strong>
+              <span>连续</span>
             </div>
           </div>
           
-          <div class="level-rewards">
-            <h3>当前特权</h3>
-            <ul>
-              ${levelInfo.current.rewards.map(r => `<li>✓ ${r}</li>`).join('')}
-            </ul>
-            ${levelInfo.next ? `
-              <h3>下一级奖励</h3>
-              <ul class="next-rewards">
+          ${levelInfo.next ? `
+            <div class="next-level">
+              <p>距离「${levelInfo.next.title}」还需：</p>
+              <ul>
                 ${levelInfo.next.rewards.map(r => `<li>○ ${r}</li>`).join('')}
               </ul>
-            ` : ''}
-          </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
-    
-    const existing = document.getElementById('levelModal');
-    if (existing) existing.remove();
     
     document.body.insertAdjacentHTML('beforeend', html);
   },
@@ -346,109 +377,105 @@ const LevelModal = {
   }
 };
 
-// ========== 签到组件 ==========
+// ========== 简化的签到组件 ==========
 const CheckinComponent = {
   init() {
     this.render();
-    this.checkToday();
   },
   
   render() {
-    const existing = document.getElementById('checkinComponent');
-    if (existing) existing.remove();
+    // 插入到header下方
+    const header = document.querySelector('header');
+    if (!header) return;
     
-    const streak = V2System.checkin.getStreak();
+    // 检查是否已存在
+    if (document.getElementById('checkinBar')) return;
+    
     const isChecked = V2System.checkin.isCheckedToday();
+    const streak = V2System.checkin.getStreak();
     
     const html = `
-      <div id="checkinComponent" class="checkin-banner ${isChecked ? 'checked' : ''}">
+      <div id="checkinBar" class="checkin-bar ${isChecked ? 'checked' : ''}">
         <div class="checkin-content">
           <span class="checkin-icon">📅</span>
           <span class="checkin-text">
             ${isChecked 
-              ? `已连续签到 ${streak} 天，明天继续～` 
+              ? `已签到，连续${streak}天` 
               : `今日未签到，签到获得抽卡机会`
             }
           </span>
-          ${!isChecked ? `<button class="checkin-btn-small" onclick="CheckinComponent.doCheckin()">签到</button>` : ''}
+          ${!isChecked ? `<button onclick="CheckinComponent.checkin()">签到</button>` : ''}
         </div>
       </div>
     `;
     
-    // 插入到 chatContainer 前面
-    const chatContainer = document.getElementById('chatContainer');
-    if (chatContainer) {
-      chatContainer.insertAdjacentHTML('beforebegin', html);
-    }
+    header.insertAdjacentHTML('afterend', html);
   },
   
-  doCheckin() {
+  checkin() {
     const result = V2System.checkin.checkin();
     if (result.success) {
       this.render();
-      LevelBadge.update();
+      if (window.LevelBadge) LevelBadge.update();
       
-      // 显示奖励
       const rewards = result.rewards.map(r => r.desc).join('、');
-      if (window.showToast) {
-        showToast(`签到成功！${rewards}`);
-      }
+      if (window.showToast) showToast(`签到成功！${rewards}`);
       
-      // 连续7天特殊提示
-      if (result.streak === 7) {
-        setTimeout(() => {
-          if (window.showToast) showToast('🎉 连续7天签到成就达成！');
-        }, 1500);
-      }
-    }
-  },
-  
-  checkToday() {
-    // 每天首次打开时检查
-    const today = new Date().toDateString();
-    const lastCheck = localStorage.getItem('yao-last-app-open');
-    if (lastCheck !== today) {
-      localStorage.setItem('yao-last-app-open', today);
-      // 可以在这里显示每日问候
+      // 更新盲盒入口数字
+      BlindBoxModal.updateEntryButton();
     }
   }
 };
 
-// ========== 纹样收藏册组件 ==========
+// ========== 简化的收藏册 ==========
 const PatternCollection = {
   open() {
     const patterns = V2System.blindBox.getUnlockedPatternDetails();
     const stats = V2System.blindBox.getStats();
     
+    const rarityNames = {
+      common: '日用',
+      rare: '节庆',
+      epic: '秘传',
+      legendary: '祖灵'
+    };
+    
     const html = `
-      <div id="patternCollection" class="collection-modal">
-        <div class="collection-backdrop" onclick="PatternCollection.close()"></div>
-        <div class="collection-container">
-          <button class="collection-close" onclick="PatternCollection.close()">×</button>
+      <div id="patternCollection" class="collection-modal" onclick="PatternCollection.close()">
+        <div class="collection-container" onclick="event.stopPropagation()">
+          <button class="modal-close" onclick="PatternCollection.close()">×</button>
           
           <div class="collection-header">
-            <h2>我的绣谱</h2>
+            <h2>📚 我的绣谱</h2>
             <p>已收集 ${stats.totalCollected} 个纹样</p>
           </div>
           
           <div class="collection-filters">
-            <button class="filter-btn active" onclick="PatternCollection.filter('all')">全部</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('common')">日用</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('rare')">节庆</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('epic')">秘传</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('legendary')">祖灵</button>
+            <button class="filter-btn active" onclick="PatternCollection.filter('all', this)">全部</button>
+            <button class="filter-btn" onclick="PatternCollection.filter('common', this)">日用</button>
+            <button class="filter-btn" onclick="PatternCollection.filter('rare', this)">节庆</button>
+            <button class="filter-btn" onclick="PatternCollection.filter('epic', this)">秘传</button>
+            <button class="filter-btn" onclick="PatternCollection.filter('legendary', this)">祖灵</button>
           </div>
           
-          <div class="collection-grid" id="collectionGrid">
-            ${patterns.map(p => this.createPatternCard(p)).join('')}
-            ${patterns.length === 0 ? '<p class="empty-hint">还没有收集到纹样，去"得纹样"看看吧～</p>' : ''}
+          <div class="collection-grid">
+            ${patterns.length === 0 
+              ? '<div class="empty-state">还没有收集到纹样，去"得纹样"看看吧～</div>'
+              : patterns.map(p => `
+                <div class="pattern-item rarity-${p.rarity}" data-rarity="${p.rarity}">
+                  <div class="pattern-preview">${p.svg}</div>
+                  <div class="pattern-meta">
+                    <span class="meta-rarity">${rarityNames[p.rarity]}</span>
+                    <h4>${p.name}</h4>
+                    <p>${p.theme}</p>
+                  </div>
+                </div>
+              `).join('')
+            }
           </div>
         </div>
       </div>
     `;
-    
-    const existing = document.getElementById('patternCollection');
-    if (existing) existing.remove();
     
     document.body.insertAdjacentHTML('beforeend', html);
   },
@@ -458,33 +485,14 @@ const PatternCollection = {
     if (modal) modal.remove();
   },
   
-  createPatternCard(pattern) {
-    return `
-      <div class="collection-card rarity-${pattern.rarity}" data-rarity="${pattern.rarity}">
-        <div class="card-svg">${pattern.svg}</div>
-        <div class="card-info">
-          <span class="card-rarity">${BlindBoxModal.getRarityLabel(pattern.rarity)}</span>
-          <h4>${pattern.name}</h4>
-          <p class="card-theme">${pattern.theme}</p>
-          <p class="card-quote">「${pattern.quote}」</p>
-        </div>
-      </div>
-    `;
-  },
-  
-  filter(rarity) {
-    const cards = document.querySelectorAll('.collection-card');
-    const buttons = document.querySelectorAll('.filter-btn');
+  filter(rarity, btn) {
+    // 更新按钮状态
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
     
-    buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    
-    cards.forEach(card => {
-      if (rarity === 'all' || card.dataset.rarity === rarity) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
-      }
+    // 过滤显示
+    document.querySelectorAll('.pattern-item').forEach(item => {
+      item.style.display = (rarity === 'all' || item.dataset.rarity === rarity) ? 'block' : 'none';
     });
   }
 };
