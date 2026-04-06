@@ -1,0 +1,11 @@
+# Cloudflare Worker 配置
+name = "yaoembroidery-api"
+main = "worker.js"
+compatibility_date = "2026-04-06"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+# 环境变量需要在 Cloudflare Dashboard 中设置：
+# - MOONSHOT_API_KEY
