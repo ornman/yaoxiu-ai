@@ -360,14 +360,17 @@ export default {
     // 记录请求（脱敏）
     logRequest(request, body, clientIP);
     
-    const { type, message, model, imageData, text } = body;
+    const { type, message, model, imageData, text, messages } = body;
     
     // 根据请求类型处理
     if (type === 'vision' || imageData) {
       // 图片识别请求 -> 调用 Qwen-VL
       return handleVisionRequest(body, env, corsHeaders, clientIP, request);
+    } else if (type === 'chat-context' && messages) {
+      // 带上下文的对话请求（新方式）
+      return handleChatWithContext(body, env, corsHeaders, clientIP, request);
     } else {
-      // 普通对话请求 -> 调用 DeepSeek
+      // 普通对话请求 -> 调用 DeepSeek（旧方式，兼容）
       return handleChatRequest(body, env, corsHeaders, clientIP, request);
     }
   },
@@ -534,20 +537,211 @@ async function handleChatRequest(body, env, corsHeaders, clientIP, request) {
   }
 }
 
+// 处理带上下文的对话请求（新方式）
+async function handleChatWithContext(body, env, corsHeaders, clientIP, request) {
+  const { messages, model = 'deepseek-chat' } = body;
+  
+  // 验证消息格式
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return new Response(JSON.stringify({ error: 'Invalid messages format' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
+  // 验证最后一条用户消息（用于日志和安全检查）
+  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  if (lastUserMessage) {
+    const validation = validateInput(lastUserMessage.content, 'text');
+    if (!validation.valid) {
+      return new Response(JSON.stringify({ error: validation.error }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+  
+  // 判断使用哪个服务商
+  const isDeepSeek = model.startsWith('deepseek');
+  
+  if (isDeepSeek) {
+    // ===== DeepSeek 模式（带上下文） =====
+    const apiKey = env.DEEPSEEK_API_KEY;
+    
+    if (!apiKey) {
+      console.error('DEEPSEEK_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    try {
+      const response = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,  // 直接使用前端传来的完整上下文
+          stream: true,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('DeepSeek API error:', response.status, errorText);
+        return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // 流式响应直接透传
+      return new Response(response.body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+        },
+      });
+      
+    } catch (error) {
+      console.error('DeepSeek request failed:', error);
+      return new Response(JSON.stringify({ error: 'Network error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+  } else {
+    // ===== Qwen 模式（带上下文） =====
+    const apiKey = env.QWEN_API_KEY;
+    
+    if (!apiKey) {
+      console.error('QWEN_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'Service configuration error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    try {
+      // 转换消息格式为 Qwen 格式
+      const qwenMessages = messages.map(m => ({
+        role: m.role === 'system' ? 'system' : (m.role === 'user' ? 'user' : 'assistant'),
+        content: m.content
+      }));
+      
+      const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          input: {
+            messages: qwenMessages
+          },
+          parameters: {
+            result_format: 'message',
+            incremental_output: true,
+          }
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Qwen API error:', response.status, errorText);
+        return new Response(JSON.stringify({ error: 'AI service temporarily unavailable' }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // 将 Qwen 响应转换为 OpenAI 流式格式
+      const encoder = new TextEncoder();
+      const reader = response.body.getReader();
+      
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) {
+                controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+                controller.close();
+                break;
+              }
+              
+              const text = new TextDecoder().decode(value);
+              const lines = text.split('\n').filter(line => line.trim());
+              
+              for (const line of lines) {
+                try {
+                  const data = JSON.parse(line);
+                  const content = data.output?.choices?.[0]?.message?.content || '';
+                  
+                  if (content) {
+                    const streamResponse = {
+                      id: `chatcmpl-${Date.now()}`,
+                      object: 'chat.completion.chunk',
+                      created: Math.floor(Date.now() / 1000),
+                      model: model,
+                      choices: [{
+                        index: 0,
+                        delta: { content: content },
+                        finish_reason: null
+                      }]
+                    };
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify(streamResponse)}\n\n`));
+                  }
+                } catch (e) {
+                  // 忽略解析错误
+                }
+              }
+            }
+          } catch (error) {
+            controller.error(error);
+          }
+        }
+      });
+      
+      return new Response(stream, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+        },
+      });
+      
+    } catch (error) {
+      console.error('Qwen request failed:', error);
+      return new Response(JSON.stringify({ error: 'Network error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+}
+
 // 处理图片识别请求（Qwen-VL）
 async function handleVisionRequest(body, env, corsHeaders, clientIP, request) {
   const { imageData, text = '描述这张图片' } = body;
   
-  // 验证图片数据
-  if (!imageData || typeof imageData !== 'string') {
+  // 验证图片数据 - 支持单图（字符串）或多图（数组）
+  const images = Array.isArray(imageData) ? imageData : (imageData ? [imageData] : []);
+  if (images.length === 0) {
     return new Response(JSON.stringify({ error: 'Invalid image data' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
   
-  // 检查图片大小（base64 编码后大约比原文件大 33%）
-  if (imageData.length > SECURITY_CONFIG.INPUT_LIMITS.MAX_IMAGE_SIZE * 1.5) {
+  // 检查每张图片大小（base64 编码后大约比原文件大 33%）
+  const totalSize = images.reduce((sum, img) => sum + (img?.length || 0), 0);
+  if (totalSize > SECURITY_CONFIG.INPUT_LIMITS.MAX_IMAGE_SIZE * 1.5) {
     return new Response(JSON.stringify({ error: '图片太大，请压缩后重试' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -588,7 +782,7 @@ async function handleVisionRequest(body, env, corsHeaders, clientIP, request) {
             {
               role: 'user',
               content: [
-                { image: imageData },
+                ...images.map(img => ({ image: img })),
                 { text: validation.sanitized }
               ]
             }

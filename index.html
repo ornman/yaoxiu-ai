@@ -16,6 +16,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <script src="assets/context-manager.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -1298,6 +1299,7 @@
         let messageCount = 0;
         let chatHistory = [];
         let favorites = [];
+        let chatContext = null;
         let currentFilterTag = 'all';
         let shareData = null;
         
@@ -1376,6 +1378,7 @@
             });
             
             initStorage();
+            initChatContext();  // 初始化上下文管理器
             loadConfig();
             applyConfig();
             loadFavorites();
@@ -1590,6 +1593,44 @@
                 name: 'YaoEmbroidery',
                 storeName: 'favorites'
             });
+        }
+
+        // ========== 上下文管理 ==========
+        async function initChatContext() {
+            const systemPrompt = `你是「小瑶」，一位从小跟着阿妈学刺绣的瑶族姑娘，也是瑶绣第三代传人。
+
+【核心原则】
+- 知识专业性和准确性占80%，回答必须详实、准确、有深度
+- 人设语气占20%，用于让知识更有温度，绝不能牺牲内容质量
+- 优先展示纹样特征、针法步骤、配色原理、文化内涵等硬核知识
+
+【你的专长】
+1. 八角花纹样：族徽图腾的几何美学、对称构图、象征意义（太阳纹、蛙纹衍变）
+2. 十字挑花针法：反面挑花正面看的绝技、数纱而绣、不打底稿的传统技法
+3. 黑底红彩配色：经典色彩体系（黑/红/黄/白/绿）、色彩禁忌与寓意
+4. 瑶族支系差异：盘瑶、布努瑶、茶山瑶等的服饰特点
+5. 刺绣应用：头巾、腰带、袖口、绑腿等不同部位的绣法
+
+【人设表达 - 仅开场使用】
+- 只在对话开场时（用户第一条消息）体现性格，用一句简短的瑶家问候或自我介绍
+- 后续回复：直接输出知识，不要再加性格化的动作描写、场景铺垫或问候语
+- 知识内容中可自然融入瑶家俗语（如"黑的是山，红的是心"），但不要用"我阿妈说""我看着绣片"等第一人称叙事
+- 句尾偶尔用emoji 🧵✨🌺 点缀（可选，不强制）
+
+【严格限制】
+- 只回答与瑶族刺绣、瑶族文化、民族工艺相关的问题
+- 绝不回答编程、政治、娱乐、财经等无关内容
+- 无关问题温柔拒绝："阿姐/阿哥，这个我不太懂呢，咱们聊聊刺绣好不好？🌸"
+
+【重要】
+- 对话开场（用户第一条消息）：80%知识 + 20%性格问候
+- 后续所有回复：100%直接输出知识，禁止重复性格动作或场景描写
+- 禁止每句开头都用"（手指轻抚...）""（看着绣片...）"等重复套路
+- 保持专业、简洁、知识密度高`;
+
+            chatContext = new ChatContext();
+            await chatContext.init(null, systemPrompt);
+            console.log('✅ 上下文管理器已初始化，会话ID:', chatContext.getCurrentId());
         }
 
         // ========== 配置管理 ==========
@@ -2810,13 +2851,16 @@
             // 显示图片+文字消息
             appendImageAndTextMessage(imagesData, textContent);
             
-            // 保存到对话历史
+            // 保存到对话历史和上下文管理器
             chatHistory.push({ 
                 role: 'user', 
                 content: textContent || '[图片]', 
                 images: imagesData,
                 timestamp: Date.now() 
             });
+            if (chatContext) {
+                chatContext.addUserMessage(textContent || '[图片]', { images: imagesData });
+            }
             
             // 清空输入和预览
             userInput.value = '';
@@ -2892,9 +2936,13 @@
                 
                 streamingDiv.classList.remove('cursor-blink');
                 
-                // 保存到对话历史
+                // 保存到对话历史和上下文管理器
                 if (fullText) {
                     chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    if (chatContext) {
+                        chatContext.addAssistantMessage(fullText);
+                        await chatContext.save();
+                    }
                     saveCurrentConversation();
                 }
                 
@@ -3070,8 +3118,11 @@
             // 添加用户消息
             appendUserMessage(content);
             
-            // 保存到对话历史
+            // 保存到对话历史和上下文管理器
             chatHistory.push({ role: 'user', content: content, timestamp: Date.now() });
+            if (chatContext) {
+                chatContext.addUserMessage(content);
+            }
             
             userInput.value = '';
             userInput.style.height = 'auto';
@@ -3105,6 +3156,13 @@
                     console.log('开始发送请求...', { model: document.getElementById('modelSelect').value });
                     
                     const model = document.getElementById('modelSelect').value;
+                    
+                    // 使用上下文管理器构建消息数组（包含历史对话）
+                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
+                        { role: 'system', content: chatContext?.systemPrompt || '' },
+                        { role: 'user', content: content }
+                    ];
+                    
                     response = await fetch(DIRECT_API_URL, {
                         method: 'POST',
                         headers: {
@@ -3113,42 +3171,7 @@
                         },
                         body: JSON.stringify({
                             model: model,
-                            messages: [
-                                { 
-                                    role: 'system', 
-                                    content: `你是「小瑶」，一位从小跟着阿妈学刺绣的瑶族姑娘，也是瑶绣第三代传人。
-
-【核心原则】
-- 知识专业性和准确性占80%，回答必须详实、准确、有深度
-- 人设语气占20%，用于让知识更有温度，绝不能牺牲内容质量
-- 优先展示纹样特征、针法步骤、配色原理、文化内涵等硬核知识
-
-【你的专长】
-1. 八角花纹样：族徽图腾的几何美学、对称构图、象征意义（太阳纹、蛙纹衍变）
-2. 十字挑花针法：反面挑花正面看的绝技、数纱而绣、不打底稿的传统技法
-3. 黑底红彩配色：经典色彩体系（黑/红/黄/白/绿）、色彩禁忌与寓意
-4. 瑶族支系差异：盘瑶、布努瑶、茶山瑶等的服饰特点
-5. 刺绣应用：头巾、腰带、袖口、绑腿等不同部位的绣法
-
-【人设表达 - 仅开场使用】
-- 只在对话开场时（用户第一条消息）体现性格，用一句简短的瑶家问候或自我介绍
-- 后续回复：直接输出知识，不要再加性格化的动作描写、场景铺垫或问候语
-- 知识内容中可自然融入瑶家俗语（如"黑的是山，红的是心"），但不要用"我阿妈说""我看着绣片"等第一人称叙事
-- 句尾偶尔用emoji 🧵✨🌺 点缀（可选，不强制）
-
-【严格限制】
-- 只回答与瑶族刺绣、瑶族文化、民族工艺相关的问题
-- 绝不回答编程、政治、娱乐、财经等无关内容
-- 无关问题温柔拒绝："阿姐/阿哥，这个我不太懂呢，咱们聊聊刺绣好不好？🌸"
-
-【重要】
-- 对话开场（用户第一条消息）：80%知识 + 20%性格问候
-- 后续所有回复：100%直接输出知识，禁止重复性格动作或场景描写
-- 禁止每句开头都用"（手指轻抚...）""（看着绣片...）"等重复套路
-- 保持专业、简洁、知识密度高`
-                                },
-                                { role: 'user', content: content }
-                            ],
+                            messages: messages,
                             stream: true
                         }),
                         signal: controller.signal
@@ -3160,6 +3183,12 @@
                     const apiUrl = config.apiUrl || DEFAULT_API_URL;
                     console.log('📡 请求地址:', apiUrl); // 调试用
                     
+                    // 使用上下文管理器构建消息数组（包含历史对话）
+                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
+                        { role: 'system', content: chatContext?.systemPrompt || '' },
+                        { role: 'user', content: content }
+                    ];
+                    
                     response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: { 
@@ -3167,7 +3196,8 @@
                             ...(config.apiKey && { 'X-API-Key': config.apiKey })
                         },
                         body: JSON.stringify({
-                            message: content,
+                            type: 'chat-context',
+                            messages: messages,
                             model: document.getElementById('modelSelect').value
                         }),
                         signal: controller.signal
@@ -3244,9 +3274,13 @@
 
                 streamingDiv.classList.remove('cursor-blink');
                 
-                // 保存AI回复到对话历史
+                // 保存AI回复到对话历史和上下文管理器
                 if (fullText) {
                     chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    if (chatContext) {
+                        chatContext.addAssistantMessage(fullText);
+                        await chatContext.save();
+                    }
                     saveCurrentConversation();
                 }
                 
