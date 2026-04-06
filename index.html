@@ -17,6 +17,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="assets/context-manager.js"></script>
+    <!-- v2.0.0 核心系统 -->
+    <script src="assets/v2-system.js"></script>
+    <script src="assets/v2-ui.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -603,6 +606,43 @@
         }
         .capture-btn:active {
             transform: scale(0.9);
+        }
+    </style>
+    <!-- v2.0.0 样式 -->
+    <link rel="stylesheet" href="assets/v2-styles.css">
+    <style>
+        /* 盲盒入口按钮 */
+        .blindbox-entry-btn {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 0.5rem;
+        }
+        .blindbox-entry-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(212, 165, 116, 0.4);
+        }
+        .blindbox-count {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            color: white;
+            font-size: 0.625rem;
+            font-weight: 600;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -1391,6 +1431,33 @@
             if (!currentConversationId) {
                 currentConversationId = generateConversationId();
             }
+            
+            // ========== v2.0.0 初始化 ==========
+            // 初始化等级徽章
+            if (window.LevelBadge) LevelBadge.init();
+            
+            // 初始化签到组件
+            if (window.CheckinComponent) CheckinComponent.init();
+            
+            // 添加盲盒入口按钮
+            setTimeout(() => {
+                const headerActions = document.querySelector('header .flex.items-center.justify-between .flex.items-center.gap-1');
+                if (headerActions && !document.getElementById('blindBoxEntry')) {
+                    const remaining = V2System ? V2System.blindBox.getDailyDraws() : 3;
+                    headerActions.insertAdjacentHTML('beforeend', `
+                        <button id="blindBoxEntry" onclick="BlindBoxModal.open()" class="blindbox-entry-btn" title="得纹样">
+                            <span style="font-size:1.25rem;">🎁</span>
+                            <span class="blindbox-count">${remaining}</span>
+                        </button>
+                    `);
+                }
+                
+                // 修改收藏按钮行为（改为打开收藏册）
+                const favBtn = document.getElementById('headerFavBtn');
+                if (favBtn && window.PatternCollection) {
+                    favBtn.onclick = () => PatternCollection.open();
+                }
+            }, 100);
         });
         
         // 渲染预设问题（轮询8组不同风格）
