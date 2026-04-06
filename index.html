@@ -1352,21 +1352,28 @@
             transform: scale(1);
         }
         .pattern-grid {
-            display: block;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
             padding: 20px 24px;
             overflow-y: auto;
             max-height: calc(80vh - 100px);
             height: 100%;
+            align-content: start;
         }
-        .pattern-item:hover {
-            border-color: var(--gold) !important;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        @media (max-width: 768px) {
+            .pattern-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                padding: 16px;
+            }
         }
-        .pattern-item.locked:hover {
-            border-color: var(--border-color) !important;
-            transform: none;
-            box-shadow: none;
+        @media (max-width: 480px) {
+            .pattern-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                padding: 12px;
+            }
         }
         .pattern-card {
             aspect-ratio: 3/4;
@@ -2885,56 +2892,41 @@
                 
                 if (countEl) countEl.textContent = unlocked.length;
                 
-                // 按稀有度分组
-                const byRarity = { mythic: [], legendary: [], epic: [], rare: [], common: [] };
-                all.forEach(p => {
-                    if (byRarity[p.rarity]) byRarity[p.rarity].push(p);
+                // 稀有度排序权重
+                const rarityWeight = { mythic: 5, legendary: 4, epic: 3, rare: 2, common: 1 };
+                
+                // 排序：已解锁在前，稀有度高的在前
+                const sorted = all.sort((a, b) => {
+                    const aUnlocked = unlocked.includes(a.id);
+                    const bUnlocked = unlocked.includes(b.id);
+                    
+                    // 先按解锁状态排序（已解锁在前）
+                    if (aUnlocked && !bUnlocked) return -1;
+                    if (!aUnlocked && bUnlocked) return 1;
+                    
+                    // 再按稀有度排序（高的在前）
+                    return rarityWeight[b.rarity] - rarityWeight[a.rarity];
                 });
                 
-                // 稀有度配置
-                const rarityConfig = {
-                    mythic: { label: 'MYTHIC', color: '#e74c3c', bg: 'rgba(231, 76, 60, 0.1)' },
-                    legendary: { label: 'LEGENDARY', color: '#f39c12', bg: 'rgba(243, 156, 18, 0.1)' },
-                    epic: { label: 'EPIC', color: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)' },
-                    rare: { label: 'RARE', color: '#3498db', bg: 'rgba(52, 152, 219, 0.1)' },
-                    common: { label: 'COMMON', color: '#95a5a6', bg: 'rgba(149, 165, 166, 0.1)' }
-                };
-                
-                // 生成扁平化列表
-                let html = '';
-                ['mythic', 'legendary', 'epic', 'rare', 'common'].forEach(rarity => {
-                    const patterns = byRarity[rarity];
-                    if (patterns.length === 0) return;
+                container.innerHTML = sorted.map(p => {
+                    const isUnlocked = unlocked.includes(p.id);
+                    const rarityClass = `rarity-${p.rarity}`;
+                    const glowClass = isUnlocked ? `glow-${p.rarity}` : '';
                     
-                    const config = rarityConfig[rarity];
-                    html += `
-                        <div class="rarity-section" style="margin-bottom: 16px;">
-                            <div class="rarity-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: ${config.bg}; border-radius: 8px; border-left: 4px solid ${config.color};">
-                                <span class="rarity-label" style="font-size: 12px; font-weight: 700; color: ${config.color}; letter-spacing: 1px;">${config.label}</span>
-                                <span class="rarity-count" style="font-size: 11px; color: var(--text-tertiary);">(${patterns.filter(p => unlocked.includes(p.id)).length}/${patterns.length})</span>
+                    // 未解锁的显示灰色预览
+                    const svgStyle = isUnlocked ? '' : 'filter: grayscale(100%) opacity(0.4);';
+                    
+                    return `
+                        <div class="pattern-card ${isUnlocked ? '' : 'locked'} ${glowClass}" onclick="showPatternDetail('${p.id}', ${isUnlocked})">
+                            <span class="rarity-badge ${rarityClass}">${p.rarity}</span>
+                            <div class="w-16 h-16" style="color: var(--gold); ${svgStyle}">
+                                ${p.svg}
                             </div>
-                            <div class="pattern-list" style="display: flex; flex-wrap: wrap; gap: 12px;">
-                                ${patterns.map(p => {
-                                    const isUnlocked = unlocked.includes(p.id);
-                                    const svgStyle = isUnlocked ? '' : 'filter: grayscale(100%) opacity(0.3);';
-                                    return `
-                                        <div class="pattern-item ${isUnlocked ? '' : 'locked'}" onclick="showPatternDetail('${p.id}', ${isUnlocked})" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg-tertiary); border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease; min-width: 140px;">
-                                            <div class="pattern-icon" style="width: 36px; height: 36px; color: var(--gold); ${svgStyle};">
-                                                ${p.svg}
-                                            </div>
-                                            <div class="pattern-info" style="display: flex; flex-direction: column;">
-                                                <span class="pattern-name" style="font-size: 13px; font-weight: 500; color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${isUnlocked ? p.name : '???'}</span>
-                                                ${isUnlocked ? `<span class="pattern-theme" style="font-size: 10px; color: var(--text-tertiary);">${p.theme}</span>` : '<span class="pattern-theme" style="font-size: 10px; color: var(--text-tertiary);">未解锁</span>'}
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
+                            <span class="font-medium text-sm" style="color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${isUnlocked ? p.name : '???'}</span>
+                            <span class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</span>
                         </div>
                     `;
-                });
-                
-                container.innerHTML = html;
+                }).join('');
             }
         };
 
@@ -5943,7 +5935,7 @@
             followupBtn.addEventListener('click', () => askFollowUp(question));
             
             shareBtn.addEventListener('click', () => {
-                shareConversation(question, answer);
+                openShareModal(question, answer, messageCount);
             });
             
             deleteBtn.addEventListener('click', () => {
