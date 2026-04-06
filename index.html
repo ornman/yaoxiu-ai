@@ -812,7 +812,21 @@
             overflow: hidden;
             cursor: pointer;
             transition: all 0.3s ease;
+            transform-style: preserve-3d;
+        }
+        .blindbox-scene {
             perspective: 1000px;
+        }
+        .blindbox-card-front {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border-radius: 16px;
         }
         .blindbox-card:hover {
             transform: translateY(-5px);
@@ -866,11 +880,13 @@
             padding: 20px;
             opacity: 0;
             transform: rotateY(180deg);
-            transition: opacity 0.3s ease;
             backface-visibility: hidden;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border-radius: 16px;
         }
         .blindbox-pattern.revealed {
             opacity: 1;
+            transition: opacity 0.3s ease 0.5s;
         }
         
         /* 抽卡糖果光效 */
@@ -1379,7 +1395,6 @@
             }
         }
         .pattern-card {
-            aspect-ratio: 3/4;
             background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
             border: 2px solid var(--border-color);
             border-radius: 16px;
@@ -1387,13 +1402,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: space-between;
             gap: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
-            min-height: 200px;
+            min-height: 180px;
         }
         .pattern-card:hover {
             border-color: var(--gold);
@@ -2330,9 +2344,9 @@
                     <p class="text-xs mt-1" style="color: var(--text-tertiary);">基础 <span id="drawBaseCount">10</span> 次 + 奖励 <span id="drawBonusCount">0</span> 次</p>
                 </div>
                 <!-- 盲盒卡片 -->
-                <div class="flex justify-center mb-6">
+                <div class="flex justify-center mb-6 blindbox-scene">
                     <div class="blindbox-card" id="blindboxCard" onclick="drawBlindBox()">
-                        <div class="absolute inset-0 flex flex-col items-center justify-center" id="cardFront">
+                        <div class="blindbox-card-front" id="cardFront">
                             <span class="text-6xl mb-4">🎁</span>
                             <span class="text-sm font-medium" style="color: var(--text-secondary);">点击抽取</span>
                         </div>
@@ -2944,12 +2958,11 @@
             BlindBoxSystem.render();
             // 重置卡片
             const card = document.getElementById('blindboxCard');
-            const front = document.getElementById('cardFront');
             const back = document.getElementById('cardBack');
-            card.classList.remove('flipping', 'flipped');
-            card.style.transform = 'rotateY(0deg)';
-            front.style.display = 'flex';
+            card.classList.remove('flipping', 'flipped', 'draw-card-mythic', 'draw-card-legendary');
+            card.style.transform = '';
             back.classList.remove('revealed');
+            document.getElementById('patternResult').innerHTML = '';
         }
 
         function closeBlindBoxModal() {
@@ -3032,17 +3045,15 @@
         
         function drawBlindBox() {
             const card = document.getElementById('blindboxCard');
-            const front = document.getElementById('cardFront');
             const back = document.getElementById('cardBack');
             const result = document.getElementById('patternResult');
             
             // 如果已经翻开，先重置
             if (back.classList.contains('revealed')) {
-                card.classList.remove('flipping', 'flipped');
-                card.style.transform = 'rotateY(0deg)';
-                front.style.display = 'flex';
-                front.style.opacity = '1';
+                card.classList.remove('flipping', 'flipped', 'draw-card-mythic', 'draw-card-legendary');
+                card.style.transform = '';
                 back.classList.remove('revealed');
+                result.innerHTML = '';
                 setTimeout(() => doDraw(), 300);
                 return;
             }
@@ -3102,7 +3113,6 @@
                     // 添加到绣谱（通过draw()已自动添加）
                     
                     setTimeout(() => {
-                        front.style.opacity = '0';
                         card.classList.add('flipped');
                         back.classList.add('revealed');
                         // 移除发光
