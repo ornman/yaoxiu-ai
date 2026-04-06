@@ -147,8 +147,8 @@ $env:CLOUDFLARE_API_TOKEN="cfut_EgZRwdtXs1zxVvfUixPShNtTvOrOrIQwU44H68OVc9ef079c
 wrangler deploy
 
 # 步骤 5: 验证部署
-# 前端: https://yaoxiu-ai.vercel.app
-# API: https://yaoembroidery-api.kdy233.workers.dev
+# 前端:  https://yaoxiumax.top
+# API:  https://api.yaoxiumax.top/
 ```
 
 ---

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>API测试</title>
+</head>
+<body>
+    <h1>Worker API 测试</h1>
+    <input type="text" id="msg" placeholder="输入消息" value="你好">
+    <button onclick="test()">发送</button>
+    <pre id="result"></pre>
+
+<script>
+async function test() {
+    const msg = document.getElementById('msg').value;
+    const result = document.getElementById('result');
+    
+    result.textContent = '发送中...';
+    
+    try {
+        const res = await fetch('https://api.yaoxiumax.top', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                type: 'chat-context',
+                messages: [{ role: 'user', content: msg }],
+                model: 'deepseek-chat'
+            })
+        });
+        
+        const text = await res.text();
+        result.textContent = `状态: ${res.status}\n响应: ${text}`;
+        
+    } catch (err) {
+        result.textContent = `错误: ${err.message}`;
+    }
+}
+</script>
+</body>
+</html>

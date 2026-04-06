@@ -460,20 +460,20 @@
         }
         .user-message-wrapper {
             position: relative;
+            max-width: 100%;
         }
         .user-message-actions {
-            position: absolute;
-            right: 0;
-            top: 100%;
-            margin-top: 4px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 6px;
+            margin-right: 48px;
             opacity: 0;
-            transform: translateY(-5px);
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(-3px);
+            transition: all 0.2s ease;
             pointer-events: none;
-            z-index: 10;
+            padding: 2px 0;
         }
         .user-message-wrapper:hover .user-message-actions {
             opacity: 1;
@@ -483,21 +483,22 @@
         .user-action-btn {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--text-tertiary);
             background: transparent;
             border: none;
             cursor: pointer;
-            padding: 2px 6px;
-            transition: color 0.2s ease;
+            padding: 0;
+            transition: color 0.15s ease;
+            white-space: nowrap;
         }
         .user-action-btn:hover {
             color: var(--accent);
         }
         .user-action-btn svg {
-            width: 14px;
-            height: 14px;
+            width: 13px;
+            height: 13px;
         }
         pre {
             background: var(--bg-tertiary) !important;
@@ -780,9 +781,44 @@
             opacity: 0;
             transform: rotateY(180deg);
             transition: opacity 0.3s ease;
+            backface-visibility: hidden;
         }
         .blindbox-pattern.revealed {
             opacity: 1;
+        }
+        
+        /* 抽卡糖果光效 */
+        .draw-glow {
+            position: absolute;
+            inset: -20px;
+            background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
+            opacity: 0;
+            animation: glowPulse 1.5s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 0.8; transform: scale(1.2); }
+        }
+        
+        /* 抽卡粒子效果 */
+        .draw-particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: var(--gold);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleBurst 0.8s ease-out forwards;
+        }
+        @keyframes particleBurst {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+        
+        /* 锁定卡牌标识 */
+        .locked-pattern {
+            filter: grayscale(100%) opacity(0.3);
         }
 
         /* 等级徽章 */
@@ -836,6 +872,126 @@
             background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
             border-radius: 2px;
             transition: width 0.5s ease;
+        }
+        
+        /* 个人成长下拉菜单 */
+        .growth-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            width: 240px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            animation: growthSlideDown 0.3s ease;
+        }
+        @keyframes growthSlideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .growth-dropdown.hidden {
+            display: none;
+        }
+        .growth-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .growth-level-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: white;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+        }
+        .growth-level-info {
+            flex: 1;
+        }
+        .growth-level-name {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .growth-progress-bar {
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .growth-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-light));
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .growth-xp-text {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+        .growth-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .growth-stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .growth-stat-icon {
+            font-size: 16px;
+        }
+        .growth-stat-label {
+            color: var(--text-secondary);
+            flex: 1;
+        }
+        .growth-stat-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+        .growth-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 12px 0;
+        }
+        .growth-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .growth-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .growth-link:hover {
+            border-color: var(--gold);
+            background: var(--bg-primary);
+        }
+        .growth-link svg {
+            color: var(--text-tertiary);
         }
 
         /* 签到条 */
@@ -1076,12 +1232,55 @@
                     
                     <div class="flex items-center gap-1 sm:gap-3">
                         <!-- 等级徽章 -->
-                        <div class="level-badge" id="levelBadge" onclick="openLevelModal()" title="查看等级">
-                            <div class="level-icon" id="levelIcon">初</div>
-                            <div class="level-info">
-                                <span class="level-name" id="levelName">学徒</span>
-                                <div class="level-progress">
-                                    <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
+                        <div class="relative">
+                            <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长">
+                                <div class="level-icon" id="levelIcon">初</div>
+                                <div class="level-info">
+                                    <span class="level-name" id="levelName">学徒</span>
+                                    <div class="level-progress">
+                                        <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- 个人成长下拉菜单 -->
+                            <div id="growthMenu" class="growth-dropdown hidden">
+                                <div class="growth-header">
+                                    <div class="growth-level-icon" id="growthMenuIcon">初</div>
+                                    <div class="growth-level-info">
+                                        <span class="growth-level-name" id="growthMenuName">学徒</span>
+                                        <div class="growth-progress-bar">
+                                            <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%"></div>
+                                        </div>
+                                        <span class="growth-xp-text" id="growthMenuXP">0/100 XP</span>
+                                    </div>
+                                </div>
+                                <div class="growth-stats">
+                                    <div class="growth-stat-item">
+                                        <span class="growth-stat-icon">📚</span>
+                                        <span class="growth-stat-label">已掌握</span>
+                                        <span class="growth-stat-value" id="growthPatterns">0 个纹样</span>
+                                    </div>
+                                    <div class="growth-stat-item">
+                                        <span class="growth-stat-icon">📅</span>
+                                        <span class="growth-stat-label">学习天数</span>
+                                        <span class="growth-stat-value" id="growthDays">1 天</span>
+                                    </div>
+                                    <div class="growth-stat-item">
+                                        <span class="growth-stat-icon">💬</span>
+                                        <span class="growth-stat-label">对话次数</span>
+                                        <span class="growth-stat-value" id="growthChats">0 次</span>
+                                    </div>
+                                </div>
+                                <div class="growth-divider"></div>
+                                <div class="growth-links">
+                                    <button onclick="openCollectionModal(); closeGrowthMenu();" class="growth-link">
+                                        <span>📖 我的秀谱</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </button>
+                                    <button onclick="openBlindBoxModal(); closeGrowthMenu();" class="growth-link">
+                                        <span>🎁 纹样盲盒</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1696,9 +1895,14 @@
                             <p class="text-xs" style="color: var(--text-tertiary);">抽取稀有纹样，解锁专属故事</p>
                         </div>
                     </div>
-                    <button onclick="closeBlindBoxModal()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="closeBlindBoxModal(); openCollectionModal();" class="px-3 py-1.5 rounded-lg text-sm" style="background: var(--bg-tertiary); color: var(--gold); border: 1px solid var(--gold);">
+                            📖 我的秀谱
+                        </button>
+                        <button onclick="closeBlindBoxModal()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="p-6">
@@ -2192,6 +2396,24 @@
             document.getElementById('blindboxModal').classList.remove('open');
         }
 
+        // 创建抽卡粒子效果
+        function createDrawParticles(container) {
+            const colors = ['#d4a574', '#c41e3a', '#f1c40f', '#fff'];
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'draw-particle';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.left = '50%';
+                particle.style.top = '50%';
+                const angle = (Math.PI * 2 * i) / 20;
+                const distance = 100 + Math.random() * 100;
+                particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                container.appendChild(particle);
+                setTimeout(() => particle.remove(), 800);
+            }
+        }
+        
         function drawBlindBox() {
             const card = document.getElementById('blindboxCard');
             const front = document.getElementById('cardFront');
@@ -2203,6 +2425,7 @@
                 card.classList.remove('flipping');
                 front.style.display = 'flex';
                 back.classList.remove('revealed');
+                card.style.transform = 'rotateY(0deg)';
                 setTimeout(() => doDraw(), 300);
                 return;
             }
@@ -2213,12 +2436,20 @@
                 const pattern = BlindBoxSystem.draw();
                 if (!pattern) return;
                 
+                // 添加发光效果
+                const glow = document.createElement('div');
+                glow.className = 'draw-glow';
+                card.appendChild(glow);
+                
                 // 摇晃动画
                 card.classList.add('shaking');
                 
                 setTimeout(() => {
                     card.classList.remove('shaking');
                     card.classList.add('flipping');
+                    
+                    // 粒子爆炸效果
+                    createDrawParticles(card);
                     
                     // 设置结果
                     const rarityColors = {
@@ -2227,6 +2458,15 @@
                         epic: '#9b59b6',
                         legendary: '#f1c40f'
                     };
+                    
+                    // 根据稀有度调整光效强度
+                    const glowIntensity = {
+                        common: '0.3',
+                        rare: '0.5',
+                        epic: '0.7',
+                        legendary: '1'
+                    };
+                    glow.style.opacity = glowIntensity[pattern.rarity];
                     
                     result.innerHTML = `
                         <div class="w-24 h-24 mx-auto mb-3" style="color: ${rarityColors[pattern.rarity]};">${pattern.svg}</div>
@@ -2239,6 +2479,8 @@
                     setTimeout(() => {
                         front.style.display = 'none';
                         back.classList.add('revealed');
+                        // 移除发光
+                        setTimeout(() => glow.remove(), 500);
                     }, 400);
                 }, 500);
             }
@@ -2278,6 +2520,85 @@
 
         function openLevelModal() {
             openCollectionModal();
+        }
+        
+        // 个人成长下拉菜单
+        function toggleGrowthMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('growthMenu');
+            const isHidden = menu.classList.contains('hidden');
+            
+            if (isHidden) {
+                // 更新菜单数据
+                updateGrowthMenu();
+                menu.classList.remove('hidden');
+                // 点击外部关闭
+                document.addEventListener('click', closeGrowthMenuOnClickOutside);
+            } else {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeGrowthMenuOnClickOutside);
+            }
+        }
+        
+        function closeGrowthMenu() {
+            const menu = document.getElementById('growthMenu');
+            menu.classList.add('hidden');
+            document.removeEventListener('click', closeGrowthMenuOnClickOutside);
+        }
+        
+        function closeGrowthMenuOnClickOutside(event) {
+            const menu = document.getElementById('growthMenu');
+            const badge = document.getElementById('levelBadge');
+            if (!menu.contains(event.target) && !badge.contains(event.target)) {
+                closeGrowthMenu();
+            }
+        }
+        
+        function updateGrowthMenu() {
+            const level = LevelSystem.getCurrentLevel();
+            const progress = LevelSystem.getProgress();
+            const xp = LevelSystem.getXP();
+            const nextLevel = LevelSystem.levels[level.index + 1];
+            
+            // 更新等级信息
+            document.getElementById('growthMenuIcon').textContent = level.icon;
+            document.getElementById('growthMenuIcon').style.background = `linear-gradient(135deg, ${level.color}, ${level.color}dd)`;
+            document.getElementById('growthMenuName').textContent = level.name;
+            document.getElementById('growthMenuProgress').style.width = progress + '%';
+            document.getElementById('growthMenuProgress').style.background = `linear-gradient(90deg, ${level.color}, ${level.color}dd)`;
+            
+            // XP 显示
+            if (nextLevel) {
+                document.getElementById('growthMenuXP').textContent = `${xp}/${nextLevel.minXP} XP`;
+            } else {
+                document.getElementById('growthMenuXP').textContent = `${xp} XP (满级)`;
+            }
+            
+            // 更新统计
+            const patterns = PatternCollection.getUnlocked().length;
+            document.getElementById('growthPatterns').textContent = `${patterns} 个纹样`;
+            
+            // 计算学习天数
+            const firstVisit = localStorage.getItem('yao-first-visit');
+            let days = 1;
+            if (firstVisit) {
+                const diff = Date.now() - parseInt(firstVisit);
+                days = Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
+            } else {
+                localStorage.setItem('yao-first-visit', Date.now().toString());
+            }
+            document.getElementById('growthDays').textContent = `${days} 天`;
+            
+            // 对话次数
+            const today = new Date().toDateString();
+            let totalChats = 0;
+            for (let i = 0; i < 30; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - i);
+                const count = localStorage.getItem(`yao-chat-${date.toDateString()}`);
+                if (count) totalChats += parseInt(count);
+            }
+            document.getElementById('growthChats').textContent = `${totalChats} 次`;
         }
 
         function handleCheckin() {
@@ -3929,6 +4250,12 @@
                         <button onclick="retryLastMessage()" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
                     </div>`;
                 }
+                
+                // 添加操作按钮到未完成的AI消息
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addIncompleteMessageActions(messageBubble, textContent || '[图片识别]', '');
+                }
             } finally {
                 clearTimeout(timeoutId);
                 isGenerating = false;
@@ -4282,6 +4609,12 @@
                         <button onclick="retryLastMessage()" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
                     </div>`;
                 }
+                
+                // 添加操作按钮到未完成的AI消息
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addIncompleteMessageActions(messageBubble, content, '');
+                }
             } finally {
                 clearTimeout(timeoutId); // 确保清除超时
                 isGenerating = false;
@@ -4478,6 +4811,63 @@
             return document.getElementById(uniqueId);
         }
 
+        // 为未完成的AI消息添加操作按钮（停止生成/出错后）
+        function addIncompleteMessageActions(container, question, partialAnswer) {
+            const bubble = container.querySelector('.chat-content') || container;
+            if (!bubble) return;
+            
+            // 检查是否已有操作按钮
+            if (bubble.querySelector('.ai-message-actions')) return;
+            
+            // 创建简化版操作栏
+            const actions = document.createElement('div');
+            actions.className = 'ai-message-actions';
+            
+            actions.innerHTML = `
+                <button class="action-btn copy-btn" title="复制已生成内容">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>复制</span>
+                </button>
+                <button class="action-btn regen-btn" title="重新生成">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    <span>重新生成</span>
+                </button>
+                <button class="action-btn delete-btn" title="删除">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <span>删除</span>
+                </button>
+            `;
+            
+            const copyBtn = actions.querySelector('.copy-btn');
+            const regenBtn = actions.querySelector('.regen-btn');
+            const deleteBtn = actions.querySelector('.delete-btn');
+            
+            // 获取当前显示的文本内容
+            const contentText = bubble.innerText || '';
+            copyBtn.addEventListener('click', () => copyToClipboard(contentText, copyBtn));
+            
+            regenBtn.addEventListener('click', () => {
+                const userWrapper = container.closest('.flex')?.previousElementSibling;
+                if (userWrapper) {
+                    const userDiv = userWrapper.querySelector('.chat-content');
+                    regenerateResponse(userDiv);
+                }
+            });
+            
+            deleteBtn.addEventListener('click', () => {
+                const userWrapper = container.closest('.flex')?.previousElementSibling;
+                if (userWrapper) deleteMessagePair(userWrapper);
+            });
+            
+            bubble.appendChild(actions);
+        }
+        
         // 重新生成回答
         function regenerateResponse(questionDiv) {
             // 找到对应的 AI 消息容器
