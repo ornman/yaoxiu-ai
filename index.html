@@ -428,19 +428,6 @@
             opacity: 1;
             transform: translateY(0);
         }
-        .ai-message-actions {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid var(--border-color);
-            opacity: 0.7;
-            transition: opacity 0.2s ease;
-        }
-        .ai-message-actions:hover {
-            opacity: 1;
-        }
         .action-btn {
             display: inline-flex;
             align-items: center;
@@ -471,7 +458,7 @@
             margin-right: 48px;
             opacity: 0;
             transform: translateY(-3px);
-            transition: all 0.2s ease;
+            transition: opacity 200ms ease, transform 200ms ease;
             pointer-events: none;
             padding: 2px 0;
         }
@@ -490,13 +477,42 @@
             border: none;
             cursor: pointer;
             padding: 0;
-            transition: color 0.15s ease;
+            transition: color 150ms ease;
             white-space: nowrap;
         }
         .user-action-btn:hover {
             color: var(--accent);
         }
         .user-action-btn svg {
+            width: 13px;
+            height: 13px;
+        }
+        /* AI消息底部操作栏 */
+        .ai-message-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border-color);
+        }
+        .ai-action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: color 150ms ease;
+            white-space: nowrap;
+        }
+        .ai-action-btn:hover {
+            color: var(--accent);
+        }
+        .ai-action-btn svg {
             width: 13px;
             height: 13px;
         }
@@ -4414,11 +4430,14 @@
                     addMessageActions(messageBubble, textContent || '[图片识别]', fullText);
                 }
                 
-                // 显示用户消息的分享按钮
+                // 显示用户消息的编辑和分享按钮（AI回复生成后）
                 const userWrapper = messageBubble?.closest('.flex')?.previousElementSibling;
                 if (userWrapper) {
+                    const editBtn = userWrapper.querySelector('.edit-btn');
                     const shareBtn = userWrapper.querySelector('.share-btn');
+                    if (editBtn) editBtn.style.display = 'inline-flex';
                     if (shareBtn) shareBtn.style.display = 'inline-flex';
+                    delete userWrapper.dataset.waitingForReply;
                 }
                 
             } catch (err) {
@@ -4767,11 +4786,14 @@
                     addMessageActions(messageBubble, content, fullText);
                 }
                 
-                // 显示用户消息的分享按钮
+                // 显示用户消息的编辑和分享按钮（AI回复生成后）
                 const userWrapper = messageBubble?.closest('.flex')?.previousElementSibling;
                 if (userWrapper) {
+                    const editBtn = userWrapper.querySelector('.edit-btn');
                     const shareBtn = userWrapper.querySelector('.share-btn');
+                    if (editBtn) editBtn.style.display = 'inline-flex';
                     if (shareBtn) shareBtn.style.display = 'inline-flex';
+                    delete userWrapper.dataset.waitingForReply;
                 }
 
             } catch (err) {
@@ -4918,19 +4940,19 @@
                         <p class="leading-relaxed text-sm sm:text-base" style="color: white;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
                     </div>
                     <div class="user-message-actions">
+                        <button class="user-action-btn edit-btn" title="编辑" style="display: none;">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                            <span>编辑</span>
+                        </button>
                         <button class="user-action-btn copy-btn" title="复制">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                             </svg>
                             <span>复制</span>
                         </button>
-                        <button class="user-action-btn edit-btn" title="编辑">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
-                            <span>编辑</span>
-                        </button>
-                        <button class="user-action-btn share-btn" title="分享">
+                        <button class="user-action-btn share-btn" title="分享" style="display: none;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
                             </svg>
@@ -4961,9 +4983,9 @@
             shareBtn.addEventListener('click', () => openShareModal(content, null, messageCount));
             deleteBtn.addEventListener('click', () => deleteUserMessage(wrapper));
             
-            // 隐藏分享按钮（等回答生成后显示）
-            shareBtn.style.display = 'none';
-            wrapper.dataset.shareBtn = 'share-btn';
+            // 标记这条用户消息等待AI回复
+            wrapper.dataset.waitingForReply = 'true';
+            wrapper.dataset.messageId = messageId;
             
             container.appendChild(wrapper);
             scrollToBottom();
@@ -5311,39 +5333,27 @@
             const actions = document.createElement('div');
             actions.className = 'ai-message-actions';
             
-            // AI 消息操作按钮：复制、收藏、分享、重新生成、追问、删除
+            // AI 消息操作按钮：复制、重新生成、追问、删除
             actions.innerHTML = `
-                <button class="action-btn copy-btn" title="复制">
+                <button class="ai-action-btn copy-btn" title="复制">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                     </svg>
                     <span>复制</span>
                 </button>
-                <button class="action-btn fav-btn" title="收藏">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
-                    </svg>
-                    <span>收藏</span>
-                </button>
-                <button class="action-btn share-btn" title="分享">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
-                    </svg>
-                    <span>分享</span>
-                </button>
-                <button class="action-btn regen-btn" title="重新生成">
+                <button class="ai-action-btn regen-btn" title="重新生成">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
                     <span>重新生成</span>
                 </button>
-                <button class="action-btn followup-btn" title="追问">
+                <button class="ai-action-btn followup-btn" title="追问">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
                     </svg>
                     <span>追问</span>
                 </button>
-                <button class="action-btn delete-btn" title="删除">
+                <button class="ai-action-btn delete-btn" title="删除">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                     </svg>
@@ -5353,15 +5363,11 @@
             
             // 绑定点击事件
             const copyBtn = actions.querySelector('.copy-btn');
-            const favBtn = actions.querySelector('.fav-btn');
-            const shareBtn = actions.querySelector('.share-btn');
             const regenBtn = actions.querySelector('.regen-btn');
             const followupBtn = actions.querySelector('.followup-btn');
             const deleteBtn = actions.querySelector('.delete-btn');
             
             copyBtn.addEventListener('click', () => copyToClipboard(answer, copyBtn));
-            favBtn.addEventListener('click', () => addToFavorites(question, answer));
-            shareBtn.addEventListener('click', () => openShareModal(question, answer, messageCount));
             
             regenBtn.addEventListener('click', () => {
                 // 找到对应的用户消息
