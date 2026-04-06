@@ -604,6 +604,362 @@
         .capture-btn:active {
             transform: scale(0.9);
         }
+
+        /* ========== v2.0.0 核心样式 ========== */
+        /* 盲盒入口按钮 */
+        .blindbox-entry-btn {
+            position: relative;
+            background: linear-gradient(135deg, #d4a574 0%, #f4d03f 50%, #d4a574 100%);
+            background-size: 200% 200%;
+            animation: goldShimmer 3s ease-in-out infinite;
+            border: 2px solid transparent;
+            box-shadow: 0 0 15px rgba(212, 165, 116, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        .blindbox-entry-btn:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 25px rgba(212, 165, 116, 0.6);
+        }
+        @keyframes goldShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* 盲盒弹窗 */
+        .blindbox-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .blindbox-modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .blindbox-content {
+            width: 90%;
+            max-width: 400px;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            border: 2px solid var(--gold);
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s var(--anim-elastic);
+        }
+        .blindbox-modal.open .blindbox-content {
+            transform: scale(1);
+        }
+        .blindbox-card {
+            width: 200px;
+            height: 280px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 3px solid var(--gold);
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            perspective: 1000px;
+        }
+        .blindbox-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(212, 165, 116, 0.3);
+        }
+        .blindbox-card.flipping {
+            animation: cardFlip 0.8s ease-in-out;
+        }
+        @keyframes cardFlip {
+            0% { transform: rotateY(0deg); }
+            50% { transform: rotateY(180deg); }
+            100% { transform: rotateY(360deg); }
+        }
+        .blindbox-card.shaking {
+            animation: cardShake 0.5s ease-in-out;
+        }
+        @keyframes cardShake {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+        .blindbox-pattern {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transform: rotateY(180deg);
+            transition: opacity 0.3s ease;
+        }
+        .blindbox-pattern.revealed {
+            opacity: 1;
+        }
+
+        /* 等级徽章 */
+        .level-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 2px solid var(--gold);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .level-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.3);
+        }
+        .level-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: var(--bg-primary);
+        }
+        .level-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .level-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gold);
+            white-space: nowrap;
+        }
+        .level-progress {
+            width: 60px;
+            height: 4px;
+            background: var(--bg-primary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .level-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        /* 签到条 */
+        .checkin-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: linear-gradient(90deg, rgba(212, 165, 116, 0.1) 0%, rgba(196, 30, 58, 0.1) 100%);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .checkin-streak {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .checkin-streak .fire {
+            font-size: 16px;
+            animation: flame 1s ease-in-out infinite alternate;
+        }
+        @keyframes flame {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.2); }
+        }
+        .checkin-btn {
+            padding: 6px 16px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .checkin-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(196, 30, 58, 0.4);
+        }
+        .checkin-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-tertiary);
+            cursor: default;
+        }
+        .checkin-btn.checked {
+            background: var(--gold);
+            color: var(--bg-primary);
+        }
+
+        /* 绣谱系统 */
+        .collection-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .collection-modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .collection-content {
+            width: 90%;
+            max-width: 800px;
+            height: 80%;
+            max-height: 600px;
+            background: var(--bg-secondary);
+            border-radius: 24px;
+            border: 2px solid var(--gold);
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s var(--anim-elastic);
+        }
+        .collection-modal.open .collection-content {
+            transform: scale(1);
+        }
+        .pattern-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .pattern-card {
+            aspect-ratio: 3/4;
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .pattern-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(212, 165, 116, 0.2);
+        }
+        .pattern-card.locked {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
+        .pattern-card .rarity-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .rarity-common { background: #95a5a6; color: white; }
+        .rarity-rare { background: #3498db; color: white; }
+        .rarity-epic { background: #9b59b6; color: white; }
+        .rarity-legendary { background: linear-gradient(135deg, #f1c40f, #e74c3c); color: white; }
+
+        /* 稀有度光效 */
+        .glow-common { box-shadow: 0 0 10px rgba(149, 165, 166, 0.3); }
+        .glow-rare { box-shadow: 0 0 15px rgba(52, 152, 219, 0.4); }
+        .glow-epic { box-shadow: 0 0 20px rgba(155, 89, 182, 0.5); }
+        .glow-legendary { box-shadow: 0 0 30px rgba(241, 196, 15, 0.6); animation: legendaryGlow 2s ease-in-out infinite; }
+        @keyframes legendaryGlow {
+            0%, 100% { box-shadow: 0 0 30px rgba(241, 196, 15, 0.6); }
+            50% { box-shadow: 0 0 50px rgba(241, 196, 15, 0.8); }
+        }
+
+        /* 抽卡动画 */
+        .draw-animation {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .draw-animation.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .draw-card {
+            width: 250px;
+            height: 350px;
+            background: linear-gradient(135deg, var(--bg-tertiary), var(--bg-secondary));
+            border: 4px solid var(--gold);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            animation: drawShake 0.5s ease-in-out 3;
+        }
+        @keyframes drawShake {
+            0%, 100% { transform: translateX(0) rotateY(0deg); }
+            25% { transform: translateX(-20px) rotateY(-15deg); }
+            75% { transform: translateX(20px) rotateY(15deg); }
+        }
+
+        /* 等级提升动画 */
+        .level-up-animation {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .level-up-animation.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .level-up-text {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: levelUpPulse 1s ease-in-out;
+        }
+        @keyframes levelUpPulse {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body class="min-h-screen pattern-octagon">
@@ -637,12 +993,21 @@
                     </div>
                     
                     <div class="flex items-center gap-1 sm:gap-3">
-                        <!-- 对话历史入口 -->
-                        <button onclick="openConversations()" id="headerConvBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="对话历史">
-                            <svg class="w-5 h-5 sm:w-6 sm:h-6 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span id="convBadge" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yao-gold text-white text-xs flex items-center justify-center hidden">0</span>
+                        <!-- 等级徽章 -->
+                        <div class="level-badge" id="levelBadge" onclick="openLevelModal()" title="查看等级">
+                            <div class="level-icon" id="levelIcon">初</div>
+                            <div class="level-info">
+                                <span class="level-name" id="levelName">学徒</span>
+                                <div class="level-progress">
+                                    <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 盲盒入口 -->
+                        <button onclick="openBlindBoxModal()" id="blindboxBtn" class="blindbox-entry-btn p-2 rounded-lg transition-all duration-200 relative group" title="纹样盲盒">
+                            <span class="text-lg">🎁</span>
+                            <span id="blindboxBadge" class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center hidden">3</span>
                         </button>
                         
                         <!-- 收藏入口 -->
@@ -672,6 +1037,17 @@
                 </div>
             </div>
         </header>
+
+        <!-- 签到条 -->
+        <div class="checkin-bar" id="checkinBar">
+            <div class="checkin-streak">
+                <span class="fire">🔥</span>
+                <span>连续 <strong id="streakDays">0</strong> 天</span>
+            </div>
+            <button class="checkin-btn" id="checkinBtn" onclick="handleCheckin()">
+                今日签到
+            </button>
+        </div>
 
         <!-- Chat Area -->
         <div id="chatContainer" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth">
@@ -1226,6 +1602,113 @@
         </div>
     </div>
 
+    <!-- Blind Box Modal -->
+    <div id="blindboxModal" class="blindbox-modal" onclick="if(event.target===this)closeBlindBoxModal()">
+        <div class="blindbox-content">
+            <div class="p-6 border-b" style="border-color: var(--border-color);">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🎁</span>
+                        <div>
+                            <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">纹样盲盒</h2>
+                            <p class="text-xs" style="color: var(--text-tertiary);">抽取稀有纹样，解锁专属故事</p>
+                        </div>
+                    </div>
+                    <button onclick="closeBlindBoxModal()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <!-- 今日剩余次数 -->
+                <div class="text-center mb-6">
+                    <p class="text-sm mb-2" style="color: var(--text-secondary);">今日剩余次数</p>
+                    <div class="flex items-center justify-center gap-1">
+                        <span id="drawCount" class="text-3xl font-bold" style="color: var(--gold);">3</span>
+                        <span class="text-lg" style="color: var(--text-tertiary);">/ 3</span>
+                    </div>
+                </div>
+                <!-- 盲盒卡片 -->
+                <div class="flex justify-center mb-6">
+                    <div class="blindbox-card" id="blindboxCard" onclick="drawBlindBox()">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center" id="cardFront">
+                            <span class="text-6xl mb-4">🎁</span>
+                            <span class="text-sm font-medium" style="color: var(--text-secondary);">点击抽取</span>
+                        </div>
+                        <div class="blindbox-pattern" id="cardBack">
+                            <div id="patternResult" class="text-center"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 提示文字 -->
+                <p class="text-xs text-center" style="color: var(--text-tertiary);">
+                    每次对话可获得1次抽卡机会 · 每日最多3次
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Modal (绣谱) -->
+    <div id="collectionModal" class="collection-modal" onclick="if(event.target===this)closeCollectionModal()">
+        <div class="collection-content flex flex-col">
+            <div class="p-6 border-b flex items-center justify-between" style="border-color: var(--border-color);">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">📖</span>
+                    <div>
+                        <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">我的绣谱</h2>
+                        <p class="text-xs" style="color: var(--text-tertiary);">已收集 <span id="collectionCount">0</span> / 11 个纹样</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openBlindBoxModal(); closeCollectionModal();" class="px-4 py-2 rounded-lg text-sm font-medium" style="background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--bg-primary);">
+                        去抽卡
+                    </button>
+                    <button onclick="closeCollectionModal()" class="p-2 rounded-lg" style="color: var(--text-tertiary);">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-hidden">
+                <div class="pattern-grid" id="patternGrid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pattern Detail Modal -->
+    <div id="patternDetailModal" class="collection-modal" onclick="if(event.target===this)closePatternDetailModal()">
+        <div class="blindbox-content" style="max-width: 380px;">
+            <div class="p-6">
+                <button onclick="closePatternDetailModal()" class="absolute top-4 right-4 p-2 rounded-lg" style="color: var(--text-tertiary);">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div class="text-center mb-6">
+                    <div id="detailPatternSvg" class="w-32 h-32 mx-auto mb-4"></div>
+                    <span id="detailRarity" class="rarity-badge text-xs px-3 py-1 rounded-full mb-2 inline-block"></span>
+                    <h3 id="detailName" class="text-xl font-bold mb-2" style="color: var(--text-primary);"></h3>
+                    <p id="detailTheme" class="text-sm italic" style="color: var(--gold);"></p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xs font-medium mb-2" style="color: var(--text-tertiary);">纹样故事</h4>
+                        <p id="detailDescription" class="text-sm leading-relaxed" style="color: var(--text-secondary);"></p>
+                    </div>
+                    <div class="p-4 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                        <p id="detailQuote" class="text-sm italic text-center" style="color: var(--gold);"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Up Animation -->
+    <div id="levelUpAnimation" class="level-up-animation" onclick="this.classList.remove('active')">
+        <div class="text-6xl mb-4">✨</div>
+        <div class="level-up-text">等级提升!</div>
+        <p id="levelUpText" class="mt-4 text-lg" style="color: var(--text-secondary);"></p>
+    </div>
+
     <!-- Toast -->
     <div id="toast" class="fixed bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-lg shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 text-xs sm:text-sm" style="background: var(--bg-secondary); border: 1px solid var(--border-color); color: var(--text-primary);">
         <span id="toastMsg"></span>
@@ -1311,6 +1794,435 @@
         let selectedImages = [];
         let videoStream = null;
         
+        // ===== v2.0.0 核心系统 =====
+        
+        // 纹样数据库（带心理学故事）
+        const PATTERN_DATABASE = {
+            common: [
+                { id: 'c1', name: '山纹', rarity: 'common', theme: '不完美也是美', description: '山纹是瑶绣中最基础的纹样，它不像其他纹样那样规整对称，却有着自然的韵律。就像人生，不必追求完美，每条曲线都有自己的意义。', quote: '你的不完美，是你的纹样。', svg: '<svg viewBox="0 0 100 100"><path d="M10 80 L30 40 L50 70 L70 30 L90 80" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M20 80 L30 55 L40 80" fill="currentColor" opacity="0.3"/><path d="M60 80 L70 50 L80 80" fill="currentColor" opacity="0.3"/></svg>' },
+                { id: 'c2', name: '水波纹', rarity: 'common', theme: '接纳情绪的流动', description: '水波纹路连绵起伏，象征着情绪的流动。瑶族阿妈说，情绪就像水，堵不如疏，让它自然流过，心灵才能平静。', quote: '让情绪像水一样流过，你会更轻盈。', svg: '<svg viewBox="0 0 100 100"><path d="M10 30 Q25 20 40 30 T70 30 T100 30" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 50 Q25 40 40 50 T70 50 T100 50" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 70 Q25 60 40 70 T70 70 T100 70" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+                { id: 'c3', name: '云纹', rarity: 'common', theme: '放下的智慧', description: '云朵聚了又散，从不执着于某一种形状。云纹提醒我们，学会放下，才能拥有内心的自在与宁静。', quote: '像云一样，不执着于形，自在随风。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="35" cy="50" rx="20" ry="15" fill="currentColor" opacity="0.4"/><ellipse cx="55" cy="45" rx="25" ry="18" fill="currentColor" opacity="0.4"/><ellipse cx="75" cy="50" rx="18" ry="12" fill="currentColor" opacity="0.4"/></svg>' },
+                { id: 'c4', name: '竹纹', rarity: 'common', theme: '韧性的力量', description: '竹子弯而不折，象征着韧性。当生活给你压力时，像竹子一样弯曲，但不要折断，风雨过后会重新挺直。', quote: '弯而不折，是你的韧性。', svg: '<svg viewBox="0 0 100 100"><line x1="30" y1="10" x2="30" y2="90" stroke="currentColor" stroke-width="3"/><line x1="35" y1="15" x2="35" y2="85" stroke="currentColor" stroke-width="2" opacity="0.5"/><line x1="15" y1="30" x2="30" y2="35" stroke="currentColor" stroke-width="2"/><line x1="30" y1="45" x2="50" y2="42" stroke="currentColor" stroke-width="2"/><line x1="15" y1="60" x2="30" y2="65" stroke="currentColor" stroke-width="2"/></svg>' },
+                { id: 'c5', name: '草纹', rarity: 'common', theme: '微小的力量', description: '小草看似柔弱，却能在石缝中生长。草纹告诉我们，即使感觉渺小，你也有破土而出的力量。', quote: '再微小的生命，也有破土的力量。', svg: '<svg viewBox="0 0 100 100"><path d="M50 90 Q50 60 30 40" fill="none" stroke="currentColor" stroke-width="2"/><path d="M50 90 Q50 55 50 30" fill="none" stroke="currentColor" stroke-width="2"/><path d="M50 90 Q50 60 70 40" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="40" rx="5" ry="8" fill="currentColor" transform="rotate(-30 30 40)"/><ellipse cx="50" cy="30" rx="5" ry="8" fill="currentColor"/><ellipse cx="70" cy="40" rx="5" ry="8" fill="currentColor" transform="rotate(30 70 40)"/></svg>' }
+            ],
+            rare: [
+                { id: 'r1', name: '八角花', rarity: 'rare', theme: '完整的自我', description: '八角花是瑶族的族徽，八个角代表着生命的完整。每一个角都是一种面向，接纳自己的全部，才是真正的完整。', quote: '你有许多面向，每一面都是真实的你。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,5 80,20 95,50 80,80 50,95 20,80 5,50 20,20" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="50,20 70,30 80,50 70,70 50,80 30,70 20,50 30,30" fill="currentColor" opacity="0.3"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>' },
+                { id: 'r2', name: '蛙纹', rarity: 'rare', theme: '蜕变与新生', description: '青蛙从蝌蚪蜕变而来，象征着生命的转变。当你经历变化时，记住这是成长的必经之路，新的你正在诞生。', quote: '每一次蜕变，都是为了更好的新生。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="20" fill="currentColor" opacity="0.3"/><circle cx="40" cy="45" r="5" fill="currentColor"/><circle cx="60" cy="45" r="5" fill="currentColor"/><path d="M25 50 Q20 35 30 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M75 50 Q80 35 70 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M35 70 Q50 75 65 70" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+                { id: 'r3', name: '太阳纹', rarity: 'rare', theme: '内在的火焰', description: '太阳纹代表着光明与温暖。即使在最黑暗的时刻，你内心也有一团火，它会照亮前行的路。', quote: '你内在的火焰，足以照亮黑暗。', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="15" fill="currentColor"/><line x1="50" y1="20" x2="50" y2="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="80" x2="50" y2="90" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="20" y1="50" x2="10" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="29" y1="29" x2="22" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="71" y1="71" x2="78" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="29" y1="71" x2="22" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="71" y1="29" x2="78" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>' }
+            ],
+            epic: [
+                { id: 'e1', name: '龙凤纹', rarity: 'epic', theme: '平衡与和谐', description: '龙凤呈祥，阴阳相济。这个纹样提醒我们，生活中需要平衡——工作与休息，付出与接受，刚强与温柔。', quote: '平衡，是生命最好的状态。', svg: '<svg viewBox="0 0 100 100"><path d="M30 70 Q40 30 50 50 Q60 30 70 70" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="35" cy="40" r="4" fill="currentColor"/><circle cx="65" cy="40" r="4" fill="currentColor"/><path d="M50 50 L50 65" stroke="currentColor" stroke-width="2"/><path d="M20 60 Q30 50 40 60" fill="none" stroke="currentColor" stroke-width="2"/><path d="M60 60 Q70 50 80 60" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+                { id: 'e2', name: '盘王纹', rarity: 'epic', theme: '根源的力量', description: '盘王是瑶族的始祖，这个纹样连接着古老的智慧。当你感到迷茫时，记得你的根源会给你力量。', quote: '你的根源，是你永远的力量之源。', svg: '<svg viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="currentColor" opacity="0.5"/><line x1="30" y1="30" x2="70" y2="70" stroke="currentColor" stroke-width="1" opacity="0.5"/><line x1="70" y1="30" x2="30" y2="70" stroke="currentColor" stroke-width="1" opacity="0.5"/><circle cx="30" cy="30" r="4" fill="currentColor"/><circle cx="70" cy="30" r="4" fill="currentColor"/><circle cx="30" cy="70" r="4" fill="currentColor"/><circle cx="70" cy="70" r="4" fill="currentColor"/></svg>' }
+            ],
+            legendary: [
+                { id: 'l1', name: '祖灵纹', rarity: 'legendary', theme: '你值得被祝福', description: '这是瑶绣中最神圣的纹样，承载着祖先的祝福与智慧。抽到这个纹样，说明祖先在告诉你：你一直被爱着，被祝福着。', quote: '你一直被爱着，被祝福着。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="50" r="15" fill="currentColor" opacity="0.4"/><path d="M50 20 L50 80" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M25 35 L75 65" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M75 35 L25 65" stroke="currentColor" stroke-width="1" opacity="0.5"/><circle cx="50" cy="20" r="3" fill="currentColor"/><circle cx="85" cy="35" r="3" fill="currentColor"/><circle cx="85" cy="65" r="3" fill="currentColor"/><circle cx="50" cy="80" r="3" fill="currentColor"/><circle cx="15" cy="65" r="3" fill="currentColor"/><circle cx="15" cy="35" r="3" fill="currentColor"/></svg>' }
+            ]
+        };
+
+        // 等级系统
+        const LevelSystem = {
+            levels: [
+                { name: '学徒', icon: '初', minXP: 0, color: '#95a5a6' },
+                { name: '绣娘', icon: '入', minXP: 100, color: '#3498db' },
+                { name: '巧手', icon: '进', minXP: 300, color: '#2ecc71' },
+                { name: '能手', icon: '熟', minXP: 600, color: '#9b59b6' },
+                { name: '师傅', icon: '精', minXP: 1000, color: '#e74c3c' },
+                { name: '大师', icon: '专', minXP: 1500, color: '#f39c12' },
+                { name: '传人', icon: '传', minXP: 2200, color: '#1abc9c' },
+                { name: '宗师', icon: '宗', minXP: 3000, color: '#d4a574' }
+            ],
+            
+            getCurrentLevel() {
+                const xp = this.getXP();
+                for (let i = this.levels.length - 1; i >= 0; i--) {
+                    if (xp >= this.levels[i].minXP) {
+                        return { ...this.levels[i], index: i };
+                    }
+                }
+                return { ...this.levels[0], index: 0 };
+            },
+            
+            getXP() {
+                return parseInt(localStorage.getItem('yao-xp') || '0');
+            },
+            
+            addXP(amount) {
+                const oldLevel = this.getCurrentLevel();
+                const newXP = this.getXP() + amount;
+                localStorage.setItem('yao-xp', newXP.toString());
+                const newLevel = this.getCurrentLevel();
+                
+                if (newLevel.index > oldLevel.index) {
+                    this.showLevelUp(newLevel);
+                }
+                this.render();
+                return newLevel;
+            },
+            
+            showLevelUp(level) {
+                const anim = document.getElementById('levelUpAnimation');
+                const text = document.getElementById('levelUpText');
+                text.textContent = `恭喜升至「${level.name}」`;
+                anim.classList.add('active');
+                setTimeout(() => anim.classList.remove('active'), 3000);
+            },
+            
+            getProgress() {
+                const xp = this.getXP();
+                const currentLevel = this.getCurrentLevel();
+                const nextLevel = this.levels[currentLevel.index + 1];
+                if (!nextLevel) return 100;
+                const levelXP = xp - currentLevel.minXP;
+                const levelTotal = nextLevel.minXP - currentLevel.minXP;
+                return Math.min(100, Math.floor((levelXP / levelTotal) * 100));
+            },
+            
+            render() {
+                const level = this.getCurrentLevel();
+                const progress = this.getProgress();
+                
+                const badge = document.getElementById('levelBadge');
+                const icon = document.getElementById('levelIcon');
+                const name = document.getElementById('levelName');
+                const bar = document.getElementById('levelProgressBar');
+                
+                if (badge && icon && name && bar) {
+                    icon.textContent = level.icon;
+                    name.textContent = level.name;
+                    bar.style.width = progress + '%';
+                    badge.style.borderColor = level.color;
+                    icon.style.background = `linear-gradient(135deg, ${level.color}, ${level.color}dd)`;
+                }
+            }
+        };
+
+        // 签到系统
+        const CheckinSystem = {
+            isCheckedToday() {
+                const lastCheckin = localStorage.getItem('yao-last-checkin');
+                if (!lastCheckin) return false;
+                const last = new Date(parseInt(lastCheckin));
+                const today = new Date();
+                return last.toDateString() === today.toDateString();
+            },
+            
+            checkin() {
+                if (this.isCheckedToday()) {
+                    showToast('今日已签到');
+                    return false;
+                }
+                
+                const lastCheckin = localStorage.getItem('yao-last-checkin');
+                const last = lastCheckin ? new Date(parseInt(lastCheckin)) : null;
+                const today = new Date();
+                
+                let streak = parseInt(localStorage.getItem('yao-streak') || '0');
+                
+                // 检查是否连续签到
+                if (last) {
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (last.toDateString() === yesterday.toDateString()) {
+                        streak++;
+                    } else {
+                        streak = 1;
+                    }
+                } else {
+                    streak = 1;
+                }
+                
+                localStorage.setItem('yao-last-checkin', today.getTime().toString());
+                localStorage.setItem('yao-streak', streak.toString());
+                
+                // 签到奖励
+                LevelSystem.addXP(20);
+                BlindBoxSystem.addDrawCount(1);
+                
+                this.render();
+                showToast(`签到成功！连续${streak}天 ✨`);
+                return true;
+            },
+            
+            getStreak() {
+                return parseInt(localStorage.getItem('yao-streak') || '0');
+            },
+            
+            render() {
+                const streak = this.getStreak();
+                const checked = this.isCheckedToday();
+                const streakEl = document.getElementById('streakDays');
+                const btn = document.getElementById('checkinBtn');
+                
+                if (streakEl) streakEl.textContent = streak;
+                if (btn) {
+                    if (checked) {
+                        btn.textContent = '已签到 ✓';
+                        btn.classList.add('checked');
+                        btn.disabled = true;
+                    } else {
+                        btn.textContent = '今日签到';
+                        btn.classList.remove('checked');
+                        btn.disabled = false;
+                    }
+                }
+            }
+        };
+
+        // 盲盒系统
+        const BlindBoxSystem = {
+            getDailyDraws() {
+                const today = new Date().toDateString();
+                const savedDate = localStorage.getItem('yao-draw-date');
+                if (savedDate !== today) {
+                    localStorage.setItem('yao-draw-date', today);
+                    localStorage.setItem('yao-draw-count', '3');
+                    return 3;
+                }
+                return parseInt(localStorage.getItem('yao-draw-count') || '3');
+            },
+            
+            addDrawCount(count) {
+                const current = this.getDailyDraws();
+                localStorage.setItem('yao-draw-count', (current + count).toString());
+                this.render();
+            },
+            
+            useDraw() {
+                const current = this.getDailyDraws();
+                if (current > 0) {
+                    localStorage.setItem('yao-draw-count', (current - 1).toString());
+                    this.render();
+                    return true;
+                }
+                return false;
+            },
+            
+            randomRarity() {
+                const rand = Math.random();
+                if (rand < 0.02) return 'legendary';
+                if (rand < 0.1) return 'epic';
+                if (rand < 0.3) return 'rare';
+                return 'common';
+            },
+            
+            draw() {
+                if (!this.useDraw()) {
+                    showToast('今日次数已用完，继续对话可获得更多机会');
+                    return null;
+                }
+                
+                const rarity = this.randomRarity();
+                const patterns = PATTERN_DATABASE[rarity];
+                const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+                
+                // 添加到收藏
+                PatternCollection.addPattern(pattern.id);
+                
+                // 给予XP奖励
+                const xpReward = { common: 5, rare: 15, epic: 30, legendary: 100 }[rarity];
+                LevelSystem.addXP(xpReward);
+                
+                return pattern;
+            },
+            
+            render() {
+                const count = this.getDailyDraws();
+                const countEl = document.getElementById('drawCount');
+                const badge = document.getElementById('blindboxBadge');
+                
+                if (countEl) countEl.textContent = count;
+                if (badge) {
+                    badge.textContent = count;
+                    badge.classList.toggle('hidden', count === 0);
+                }
+            }
+        };
+
+        // 绣谱系统
+        const PatternCollection = {
+            getUnlocked() {
+                const saved = localStorage.getItem('yao-patterns');
+                return saved ? JSON.parse(saved) : [];
+            },
+            
+            addPattern(id) {
+                const unlocked = this.getUnlocked();
+                if (!unlocked.includes(id)) {
+                    unlocked.push(id);
+                    localStorage.setItem('yao-patterns', JSON.stringify(unlocked));
+                    this.render();
+                }
+            },
+            
+            hasPattern(id) {
+                return this.getUnlocked().includes(id);
+            },
+            
+            getAllPatterns() {
+                const all = [];
+                Object.values(PATTERN_DATABASE).forEach(arr => all.push(...arr));
+                return all;
+            },
+            
+            render() {
+                const container = document.getElementById('patternGrid');
+                const countEl = document.getElementById('collectionCount');
+                if (!container) return;
+                
+                const unlocked = this.getUnlocked();
+                const all = this.getAllPatterns();
+                
+                if (countEl) countEl.textContent = unlocked.length;
+                
+                container.innerHTML = all.map(p => {
+                    const isUnlocked = unlocked.includes(p.id);
+                    const rarityClass = `rarity-${p.rarity}`;
+                    const glowClass = isUnlocked ? `glow-${p.rarity}` : '';
+                    
+                    return `
+                        <div class="pattern-card ${isUnlocked ? '' : 'locked'} ${glowClass}" onclick="${isUnlocked ? `showPatternDetail('${p.id}')` : ''}">
+                            <span class="rarity-badge ${rarityClass}">${p.rarity}</span>
+                            <div class="w-16 h-16" style="color: var(--gold);">
+                                ${isUnlocked ? p.svg : '<svg viewBox="0 0 100 100"><text x="50" y="55" text-anchor="middle" font-size="40">🔒</text></svg>'}
+                            </div>
+                            <span class="font-medium text-sm" style="color: var(--text-primary);">${isUnlocked ? p.name : '???'}</span>
+                            <span class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+        };
+
+        // UI 控制函数
+        function openBlindBoxModal() {
+            document.getElementById('blindboxModal').classList.add('open');
+            BlindBoxSystem.render();
+            // 重置卡片
+            const card = document.getElementById('blindboxCard');
+            const front = document.getElementById('cardFront');
+            const back = document.getElementById('cardBack');
+            card.classList.remove('flipping');
+            front.style.display = 'flex';
+            back.classList.remove('revealed');
+        }
+
+        function closeBlindBoxModal() {
+            document.getElementById('blindboxModal').classList.remove('open');
+        }
+
+        function drawBlindBox() {
+            const card = document.getElementById('blindboxCard');
+            const front = document.getElementById('cardFront');
+            const back = document.getElementById('cardBack');
+            const result = document.getElementById('patternResult');
+            
+            // 如果已经翻开，先重置
+            if (back.classList.contains('revealed')) {
+                card.classList.remove('flipping');
+                front.style.display = 'flex';
+                back.classList.remove('revealed');
+                setTimeout(() => doDraw(), 300);
+                return;
+            }
+            
+            doDraw();
+            
+            function doDraw() {
+                const pattern = BlindBoxSystem.draw();
+                if (!pattern) return;
+                
+                // 摇晃动画
+                card.classList.add('shaking');
+                
+                setTimeout(() => {
+                    card.classList.remove('shaking');
+                    card.classList.add('flipping');
+                    
+                    // 设置结果
+                    const rarityColors = {
+                        common: '#95a5a6',
+                        rare: '#3498db',
+                        epic: '#9b59b6',
+                        legendary: '#f1c40f'
+                    };
+                    
+                    result.innerHTML = `
+                        <div class="w-24 h-24 mx-auto mb-3" style="color: ${rarityColors[pattern.rarity]};">${pattern.svg}</div>
+                        <span class="rarity-badge rarity-${pattern.rarity} text-xs px-2 py-1 rounded mb-2 inline-block">${pattern.rarity}</span>
+                        <h3 class="font-bold text-lg mb-1" style="color: var(--text-primary);">${pattern.name}</h3>
+                        <p class="text-xs mb-2" style="color: var(--gold);">${pattern.theme}</p>
+                        <p class="text-xs italic" style="color: var(--text-secondary);">"${pattern.quote}"</p>
+                    `;
+                    
+                    setTimeout(() => {
+                        front.style.display = 'none';
+                        back.classList.add('revealed');
+                    }, 400);
+                }, 500);
+            }
+        }
+
+        function openCollectionModal() {
+            document.getElementById('collectionModal').classList.add('open');
+            PatternCollection.render();
+        }
+
+        function closeCollectionModal() {
+            document.getElementById('collectionModal').classList.remove('open');
+        }
+
+        function showPatternDetail(id) {
+            const all = PatternCollection.getAllPatterns();
+            const pattern = all.find(p => p.id === id);
+            if (!pattern) return;
+            
+            document.getElementById('detailPatternSvg').innerHTML = pattern.svg;
+            document.getElementById('detailPatternSvg').style.color = {
+                common: '#95a5a6', rare: '#3498db', epic: '#9b59b6', legendary: '#f1c40f'
+            }[pattern.rarity];
+            document.getElementById('detailRarity').textContent = pattern.rarity;
+            document.getElementById('detailRarity').className = `rarity-badge rarity-${pattern.rarity} text-xs px-3 py-1 rounded-full mb-2 inline-block`;
+            document.getElementById('detailName').textContent = pattern.name;
+            document.getElementById('detailTheme').textContent = pattern.theme;
+            document.getElementById('detailDescription').textContent = pattern.description;
+            document.getElementById('detailQuote').textContent = `"${pattern.quote}"`;
+            
+            document.getElementById('patternDetailModal').classList.add('open');
+        }
+
+        function closePatternDetailModal() {
+            document.getElementById('patternDetailModal').classList.remove('open');
+        }
+
+        function openLevelModal() {
+            openCollectionModal();
+        }
+
+        function handleCheckin() {
+            CheckinSystem.checkin();
+        }
+
+        // v2.0.0 初始化
+        function initV2System() {
+            LevelSystem.render();
+            CheckinSystem.render();
+            BlindBoxSystem.render();
+            PatternCollection.render();
+            
+            // 监听对话获得抽卡机会
+            const originalSendMessage = sendMessage;
+            sendMessage = async function() {
+                await originalSendMessage.apply(this, arguments);
+                // 每次对话后增加抽卡机会（限制每天最多5次通过对话获得）
+                const today = new Date().toDateString();
+                const chatCount = parseInt(localStorage.getItem(`yao-chat-${today}`) || '0');
+                if (chatCount < 5) {
+                    localStorage.setItem(`yao-chat-${today}`, (chatCount + 1).toString());
+                    BlindBoxSystem.addDrawCount(1);
+                }
+            };
+        }
+
         // 预设问题轮询（8组丰富模板）
         const presetQuestionSets = [
             // 风格1: 纹样艺术
@@ -1386,6 +2298,7 @@
             updateUI();
             initFloatingOctagons();
             renderPresetQuestions();
+            initV2System(); // 初始化 v2.0.0 系统
             
             // 初始化当前对话ID
             if (!currentConversationId) {
