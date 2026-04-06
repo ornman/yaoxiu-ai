@@ -1012,6 +1012,180 @@
             margin-left: auto;
             margin-right: 8px;
         }
+        /* 等级进化动画 */
+        .level-up-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, rgba(212, 165, 116, 0.3) 0%, rgba(0, 0, 0, 0.9) 100%);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        .level-up-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .level-up-content {
+            text-align: center;
+            transform: scale(0);
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .level-up-overlay.active .level-up-content {
+            transform: scale(1);
+        }
+        .level-up-emoji {
+            font-size: 120px;
+            margin-bottom: 20px;
+            animation: levelUpEmoji 2s ease-in-out;
+            filter: drop-shadow(0 0 30px var(--gold));
+        }
+        @keyframes levelUpEmoji {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            50% { transform: scale(1.3) rotate(10deg); }
+            70% { transform: scale(0.9) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .level-up-title {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--gold), var(--gold-light), #fff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+            animation: levelUpTitle 1s ease-out 0.5s both;
+        }
+        @keyframes levelUpTitle {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .level-up-name {
+            font-size: 32px;
+            color: var(--text-primary);
+            margin-bottom: 24px;
+            animation: levelUpName 1s ease-out 0.8s both;
+        }
+        @keyframes levelUpName {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .level-up-particles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .level-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: levelParticle 1.5s ease-out forwards;
+        }
+        @keyframes levelParticle {
+            0% { transform: translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+        }
+        .level-up-rays {
+            position: absolute;
+            inset: 0;
+            background: conic-gradient(from 0deg, transparent, var(--gold), transparent, var(--gold), transparent);
+            opacity: 0;
+            animation: levelRays 2s ease-in-out;
+        }
+        @keyframes levelRays {
+            0% { opacity: 0; transform: rotate(0deg) scale(0.5); }
+            50% { opacity: 0.3; }
+            100% { opacity: 0; transform: rotate(180deg) scale(1.5); }
+        }
+        .level-up-unlock {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            animation: levelUpUnlock 1s ease-out 1.2s both;
+        }
+        @keyframes levelUpUnlock {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 卡牌稀有度样式 */
+        .rarity-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .rarity-common { 
+            background: linear-gradient(135deg, #95a5a6, #bdc3c7);
+            color: white;
+        }
+        .rarity-rare { 
+            background: linear-gradient(135deg, #3498db, #5dade2);
+            color: white;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+        }
+        .rarity-epic { 
+            background: linear-gradient(135deg, #9b59b6, #bb8fce);
+            color: white;
+            box-shadow: 0 0 15px rgba(155, 89, 182, 0.5);
+            animation: epicGlow 2s ease-in-out infinite;
+        }
+        @keyframes epicGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(155, 89, 182, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(155, 89, 182, 0.7); }
+        }
+        .rarity-legendary { 
+            background: linear-gradient(135deg, #f1c40f, #f39c12);
+            color: var(--bg-primary);
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.6);
+            animation: legendaryGlow 1.5s ease-in-out infinite;
+        }
+        @keyframes legendaryGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(241, 196, 15, 0.5); transform: scale(1); }
+            50% { box-shadow: 0 0 30px rgba(241, 196, 15, 0.9); transform: scale(1.02); }
+        }
+        .rarity-mythic { 
+            background: linear-gradient(135deg, #fff, #e1bfff, #ffd700, #ff9ed8);
+            color: var(--bg-primary);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.8);
+            animation: mythicGlow 1s ease-in-out infinite;
+        }
+        @keyframes mythicGlow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+                filter: hue-rotate(0deg);
+            }
+            50% { 
+                box-shadow: 0 0 40px rgba(255, 105, 180, 0.9);
+                filter: hue-rotate(30deg);
+            }
+        }
+        
+        /* 抽卡卡牌特效 */
+        .draw-card-mythic {
+            animation: mythicCardFloat 3s ease-in-out infinite;
+        }
+        @keyframes mythicCardFloat {
+            0%, 100% { transform: translateY(0) rotateY(180deg); }
+            50% { transform: translateY(-10px) rotateY(180deg); }
+        }
+        .draw-card-legendary {
+            animation: legendaryCardPulse 2s ease-in-out infinite;
+        }
+        @keyframes legendaryCardPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(241, 196, 15, 0.5); }
+            50% { box-shadow: 0 0 60px rgba(241, 196, 15, 0.9); }
+        }
+        
         /* 签到条 */
         .checkin-bar {
             display: flex;
@@ -1231,9 +1405,117 @@
             50% { transform: scale(1.2); }
             100% { transform: scale(1); opacity: 1; }
         }
+    
+        /* ========== 首屏弹窗样式 ========== */
+        .welcome-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .welcome-modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .welcome-content {
+            width: 90%;
+            max-width: 400px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--gold);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .welcome-modal.open .welcome-content {
+            transform: scale(1);
+        }
+        .fortune-ball {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(5deg); }
+        }
+        .welcome-content h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: var(--gold);
+        }
+        .welcome-text {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        .welcome-text .highlight {
+            color: var(--gold);
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .welcome-subtext {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+        .welcome-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .welcome-btn-primary {
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .welcome-btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(196, 30, 58, 0.4);
+        }
+        .welcome-btn-secondary {
+            padding: 12px 24px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .welcome-btn-secondary:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
     </style>
 </head>
 <body class="min-h-screen pattern-octagon">
+    <!-- 首屏弹窗 -->
+    <div id="welcomeModal" class="welcome-modal">
+        <div class="welcome-content">
+            <div class="fortune-ball">🔮</div>
+            <h2>✨ 欢迎来到绣韵幻境 ✨</h2>
+            <p class="welcome-text">今日可免费抽取 <span class="highlight">3</span> 次纹样</p>
+            <p class="welcome-subtext">每次对话额外获得 1 次机会</p>
+            <div class="welcome-buttons">
+                <button onclick="openBlindBoxModal(); closeWelcomeModal();" class="welcome-btn-primary">立即前往抽奖</button>
+                <button onclick="closeWelcomeModal();" class="welcome-btn-secondary">稍后再说</button>
+            </div>
+        </div>
+    </div>
     <!-- 背景飘浮八角花 -->
     <div id="floatingOctagons" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
     <div class="max-w-5xl mx-auto h-screen flex flex-col">
@@ -2031,10 +2313,15 @@
     </div>
 
     <!-- Level Up Animation -->
-    <div id="levelUpAnimation" class="level-up-animation" onclick="this.classList.remove('active')">
-        <div class="text-6xl mb-4">✨</div>
-        <div class="level-up-text">等级提升!</div>
-        <p id="levelUpText" class="mt-4 text-lg" style="color: var(--text-secondary);"></p>
+    <div id="levelUpAnimation" class="level-up-overlay" onclick="closeLevelUpAnimation()">
+        <div class="level-up-rays"></div>
+        <div class="level-up-particles" id="levelUpParticles"></div>
+        <div class="level-up-content">
+            <div class="level-up-emoji" id="levelUpEmoji">🌱</div>
+            <div class="level-up-title">等级突破！</div>
+            <div class="level-up-name" id="levelUpName">进阶为 学徒</div>
+            <div class="level-up-unlock" id="levelUpUnlock">解锁新功能：无</div>
+        </div>
     </div>
 
     <!-- Toast -->
@@ -2126,26 +2413,47 @@
         
         // 纹样数据库（带心理学故事）
         const PATTERN_DATABASE = {
-            common: [
-                { id: 'c1', name: '山纹', rarity: 'common', theme: '不完美也是美', description: '山纹是瑶绣中最基础的纹样，它不像其他纹样那样规整对称，却有着自然的韵律。就像人生，不必追求完美，每条曲线都有自己的意义。', quote: '你的不完美，是你的纹样。', svg: '<svg viewBox="0 0 100 100"><path d="M10 80 L30 40 L50 70 L70 30 L90 80" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M20 80 L30 55 L40 80" fill="currentColor" opacity="0.3"/><path d="M60 80 L70 50 L80 80" fill="currentColor" opacity="0.3"/></svg>' },
-                { id: 'c2', name: '水波纹', rarity: 'common', theme: '接纳情绪的流动', description: '水波纹路连绵起伏，象征着情绪的流动。瑶族阿妈说，情绪就像水，堵不如疏，让它自然流过，心灵才能平静。', quote: '让情绪像水一样流过，你会更轻盈。', svg: '<svg viewBox="0 0 100 100"><path d="M10 30 Q25 20 40 30 T70 30 T100 30" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 50 Q25 40 40 50 T70 50 T100 50" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 70 Q25 60 40 70 T70 70 T100 70" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
-                { id: 'c3', name: '云纹', rarity: 'common', theme: '放下的智慧', description: '云朵聚了又散，从不执着于某一种形状。云纹提醒我们，学会放下，才能拥有内心的自在与宁静。', quote: '像云一样，不执着于形，自在随风。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="35" cy="50" rx="20" ry="15" fill="currentColor" opacity="0.4"/><ellipse cx="55" cy="45" rx="25" ry="18" fill="currentColor" opacity="0.4"/><ellipse cx="75" cy="50" rx="18" ry="12" fill="currentColor" opacity="0.4"/></svg>' },
-                { id: 'c4', name: '竹纹', rarity: 'common', theme: '韧性的力量', description: '竹子弯而不折，象征着韧性。当生活给你压力时，像竹子一样弯曲，但不要折断，风雨过后会重新挺直。', quote: '弯而不折，是你的韧性。', svg: '<svg viewBox="0 0 100 100"><line x1="30" y1="10" x2="30" y2="90" stroke="currentColor" stroke-width="3"/><line x1="35" y1="15" x2="35" y2="85" stroke="currentColor" stroke-width="2" opacity="0.5"/><line x1="15" y1="30" x2="30" y2="35" stroke="currentColor" stroke-width="2"/><line x1="30" y1="45" x2="50" y2="42" stroke="currentColor" stroke-width="2"/><line x1="15" y1="60" x2="30" y2="65" stroke="currentColor" stroke-width="2"/></svg>' },
-                { id: 'c5', name: '草纹', rarity: 'common', theme: '微小的力量', description: '小草看似柔弱，却能在石缝中生长。草纹告诉我们，即使感觉渺小，你也有破土而出的力量。', quote: '再微小的生命，也有破土的力量。', svg: '<svg viewBox="0 0 100 100"><path d="M50 90 Q50 60 30 40" fill="none" stroke="currentColor" stroke-width="2"/><path d="M50 90 Q50 55 50 30" fill="none" stroke="currentColor" stroke-width="2"/><path d="M50 90 Q50 60 70 40" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="40" rx="5" ry="8" fill="currentColor" transform="rotate(-30 30 40)"/><ellipse cx="50" cy="30" rx="5" ry="8" fill="currentColor"/><ellipse cx="70" cy="40" rx="5" ry="8" fill="currentColor" transform="rotate(30 70 40)"/></svg>' }
-            ],
-            rare: [
-                { id: 'r1', name: '八角花', rarity: 'rare', theme: '完整的自我', description: '八角花是瑶族的族徽，八个角代表着生命的完整。每一个角都是一种面向，接纳自己的全部，才是真正的完整。', quote: '你有许多面向，每一面都是真实的你。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,5 80,20 95,50 80,80 50,95 20,80 5,50 20,20" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="50,20 70,30 80,50 70,70 50,80 30,70 20,50 30,30" fill="currentColor" opacity="0.3"/><circle cx="50" cy="50" r="8" fill="currentColor"/></svg>' },
-                { id: 'r2', name: '蛙纹', rarity: 'rare', theme: '蜕变与新生', description: '青蛙从蝌蚪蜕变而来，象征着生命的转变。当你经历变化时，记住这是成长的必经之路，新的你正在诞生。', quote: '每一次蜕变，都是为了更好的新生。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="20" fill="currentColor" opacity="0.3"/><circle cx="40" cy="45" r="5" fill="currentColor"/><circle cx="60" cy="45" r="5" fill="currentColor"/><path d="M25 50 Q20 35 30 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M75 50 Q80 35 70 30" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="M35 70 Q50 75 65 70" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
-                { id: 'r3', name: '太阳纹', rarity: 'rare', theme: '内在的火焰', description: '太阳纹代表着光明与温暖。即使在最黑暗的时刻，你内心也有一团火，它会照亮前行的路。', quote: '你内在的火焰，足以照亮黑暗。', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="15" fill="currentColor"/><line x1="50" y1="20" x2="50" y2="10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="50" y1="80" x2="50" y2="90" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="20" y1="50" x2="10" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="80" y1="50" x2="90" y2="50" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="29" y1="29" x2="22" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="71" y1="71" x2="78" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="29" y1="71" x2="22" y2="78" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><line x1="71" y1="29" x2="78" y2="22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>' }
-            ],
-            epic: [
-                { id: 'e1', name: '龙凤纹', rarity: 'epic', theme: '平衡与和谐', description: '龙凤呈祥，阴阳相济。这个纹样提醒我们，生活中需要平衡——工作与休息，付出与接受，刚强与温柔。', quote: '平衡，是生命最好的状态。', svg: '<svg viewBox="0 0 100 100"><path d="M30 70 Q40 30 50 50 Q60 30 70 70" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="35" cy="40" r="4" fill="currentColor"/><circle cx="65" cy="40" r="4" fill="currentColor"/><path d="M50 50 L50 65" stroke="currentColor" stroke-width="2"/><path d="M20 60 Q30 50 40 60" fill="none" stroke="currentColor" stroke-width="2"/><path d="M60 60 Q70 50 80 60" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
-                { id: 'e2', name: '盘王纹', rarity: 'epic', theme: '根源的力量', description: '盘王是瑶族的始祖，这个纹样连接着古老的智慧。当你感到迷茫时，记得你的根源会给你力量。', quote: '你的根源，是你永远的力量之源。', svg: '<svg viewBox="0 0 100 100"><rect x="30" y="30" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="currentColor" opacity="0.5"/><line x1="30" y1="30" x2="70" y2="70" stroke="currentColor" stroke-width="1" opacity="0.5"/><line x1="70" y1="30" x2="30" y2="70" stroke="currentColor" stroke-width="1" opacity="0.5"/><circle cx="30" cy="30" r="4" fill="currentColor"/><circle cx="70" cy="30" r="4" fill="currentColor"/><circle cx="30" cy="70" r="4" fill="currentColor"/><circle cx="70" cy="70" r="4" fill="currentColor"/></svg>' }
-            ],
-            legendary: [
-                { id: 'l1', name: '祖灵纹', rarity: 'legendary', theme: '你值得被祝福', description: '这是瑶绣中最神圣的纹样，承载着祖先的祝福与智慧。抽到这个纹样，说明祖先在告诉你：你一直被爱着，被祝福着。', quote: '你一直被爱着，被祝福着。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,10 85,30 85,70 50,90 15,70 15,30" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="50" r="15" fill="currentColor" opacity="0.4"/><path d="M50 20 L50 80" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M25 35 L75 65" stroke="currentColor" stroke-width="1" opacity="0.5"/><path d="M75 35 L25 65" stroke="currentColor" stroke-width="1" opacity="0.5"/><circle cx="50" cy="20" r="3" fill="currentColor"/><circle cx="85" cy="35" r="3" fill="currentColor"/><circle cx="85" cy="65" r="3" fill="currentColor"/><circle cx="50" cy="80" r="3" fill="currentColor"/><circle cx="15" cy="65" r="3" fill="currentColor"/><circle cx="15" cy="35" r="3" fill="currentColor"/></svg>' }
-            ]
-        };
+    common: [
+        { id: 'c1', name: '回纹', rarity: 'common', theme: '连绵不绝', description: '回纹象征连绵不绝，是瑶绣中最基础的纹样。', quote: '循环往复，生生不息。', svg: '<svg viewBox="0 0 100 100"><path d="M20 20h60v60h-60z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M30 30h40v40h-40z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M40 40h20v20h-20z" fill="currentColor" opacity="0.3"/></svg>' },
+        { id: 'c2', name: '水波纹', rarity: 'common', theme: '源远流长', description: '水波纹寓意源远流长，生生不息。', quote: '水能载舟，亦能覆舟。', svg: '<svg viewBox="0 0 100 100"><path d="M10 30q20 -10 40 0t40 0" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 50q20 -10 40 0t40 0" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10 70q20 -10 40 0t40 0" fill="none" stroke="currentColor" stroke-width="3"/></svg>' },
+        { id: 'c3', name: '云纹', rarity: 'common', theme: '吉祥如意', description: '云纹代表吉祥如意，步步高升。', quote: '云卷云舒，自在随心。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="40" rx="30" ry="20" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="30" cy="45" r="15" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="70" cy="45" r="15" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'c4', name: '雷纹', rarity: 'common', theme: '威震四方', description: '雷纹象征威震四方，驱邪避害。', quote: '雷霆万钧，势不可挡。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,10 60,40 90,40 65,60 75,90 50,70 25,90 35,60 10,40 40,40" fill="currentColor" opacity="0.4"/></svg>' },
+        { id: 'c5', name: '山纹', rarity: 'common', theme: '稳如泰山', description: '山纹寓意稳如泰山，基业长青。', quote: '山高水长，源远流长。', svg: '<svg viewBox="0 0 100 100"><path d="M10 80l30 -50l20 30l30 -40l20 60z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M20 80l20 -30l10 10l20 -25l20 45z" fill="currentColor" opacity="0.3"/></svg>' },
+        { id: 'c6', name: '树纹', rarity: 'common', theme: '枝繁叶茂', description: '树纹象征枝繁叶茂，家族兴旺。', quote: '十年树木，百年树人。', svg: '<svg viewBox="0 0 100 100"><rect x="45" y="60" width="10" height="30" fill="currentColor"/><circle cx="50" cy="40" r="25" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="35" cy="35" r="15" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="65" cy="35" r="15" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'c7', name: '花草纹', rarity: 'common', theme: '春暖花开', description: '花草纹代表春暖花开，生机勃勃。', quote: '春风吹又生。', svg: '<svg viewBox="0 0 100 100"><path d="M50 60v30" stroke="currentColor" stroke-width="3"/><ellipse cx="50" cy="40" rx="20" ry="15" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="30" cy="50" rx="15" ry="10" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(-30 30 50)"/><ellipse cx="70" cy="50" rx="15" ry="10" fill="none" stroke="currentColor" stroke-width="2" transform="rotate(30 70 50)"/></svg>' },
+        { id: 'c8', name: '鱼纹', rarity: 'common', theme: '年年有余', description: '鱼纹寓意年年有余，富贵吉祥。', quote: '如鱼得水，游刃有余。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="35" ry="20" fill="none" stroke="currentColor" stroke-width="3"/><polygon points="80,50 95,35 95,65" fill="currentColor"/><circle cx="35" cy="45" r="5" fill="currentColor"/><path d="M45 55q5 5 10 0" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'c9', name: '鸟纹', rarity: 'common', theme: '展翅高飞', description: '鸟纹象征展翅高飞，前程似锦。', quote: '鹏程万里，一飞冲天。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="30" ry="15" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="35" cy="45" r="12" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="35" cy="45" r="3" fill="currentColor"/><path d="M20 50l-10 -10m0 20l10 -10" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'c10', name: '蝶纹', rarity: 'common', theme: '破茧成蝶', description: '蝶纹代表破茧成蝶，美丽蜕变。', quote: '化茧成蝶，涅槃重生。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="35" cy="40" rx="20" ry="25" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="65" cy="40" rx="20" ry="25" fill="none" stroke="currentColor" stroke-width="2"/><rect x="48" y="30" width="4" height="40" rx="2" fill="currentColor"/><circle cx="35" cy="35" r="3" fill="currentColor"/><circle cx="65" cy="35" r="3" fill="currentColor"/></svg>' },
+        { id: 'c11', name: '竹纹', rarity: 'common', theme: '节节高升', description: '竹纹寓意节节高升，坚韧不拔。', quote: '咬定青山不放松。', svg: '<svg viewBox="0 0 100 100"><rect x="45" y="10" width="8" height="80" fill="none" stroke="currentColor" stroke-width="3"/><path d="M53 25h15M53 45h15M53 65h15" stroke="currentColor" stroke-width="2"/><path d="M45 35h-15M45 55h-15" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'c12', name: '石纹', rarity: 'common', theme: '坚如磐石', description: '石纹象征坚如磐石，坚定不移。', quote: '稳如泰山，坚如磐石。', svg: '<svg viewBox="0 0 100 100"><polygon points="20,80 30,40 50,20 70,35 85,60 80,80" fill="none" stroke="currentColor" stroke-width="3"/><polygon points="35,80 40,55 55,45 70,55 75,80" fill="currentColor" opacity="0.3"/></svg>' }
+    ],
+    rare: [
+        { id: 'r1', name: '八角花', rarity: 'rare', theme: '族群图腾', description: '八角花是瑶族图腾，象征团结与传承。', quote: '八角连心，世代相传。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,5 61,35 95,35 68,55 79,85 50,65 21,85 32,55 5,35 39,35" fill="none" stroke="currentColor" stroke-width="3"/><polygon points="50,25 55,40 70,40 58,50 63,65 50,55 37,65 42,50 30,40 45,40" fill="currentColor" opacity="0.4"/></svg>' },
+        { id: 'r2', name: '蛙纹', rarity: 'rare', theme: '蜕变新生', description: '蛙纹寓意蜕变与新生，生命轮回。', quote: '每一次蜕变，都是为了更好的新生。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="25" ry="20" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="40" cy="45" r="5" fill="currentColor"/><circle cx="60" cy="45" r="5" fill="currentColor"/><path d="M25 50 Q20 35 30 30" fill="none" stroke="currentColor" stroke-width="3"/><path d="M75 50 Q80 35 70 30" fill="none" stroke="currentColor" stroke-width="3"/><path d="M35 70 Q50 75 65 70" fill="none" stroke="currentColor" stroke-width="2"/></svg>' },
+        { id: 'r3', name: '蛇纹', rarity: 'rare', theme: '智慧灵动', description: '蛇纹象征智慧与灵动，生生不息。', quote: '智慧如蛇，灵巧如丝。', svg: '<svg viewBox="0 0 100 100"><path d="M20 50 Q30 20 50 50 T80 50" fill="none" stroke="currentColor" stroke-width="4"/><circle cx="80" cy="50" r="6" fill="currentColor"/><circle cx="82" cy="48" r="2" fill="white"/></svg>' },
+        { id: 'r4', name: '虎纹', rarity: 'rare', theme: '勇猛威严', description: '虎纹代表勇猛威严，百兽之王。', quote: '虎虎生威，势不可挡。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="30" ry="25" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="35" cy="40" rx="12" ry="10" fill="none" stroke="currentColor" stroke-width="2"/><ellipse cx="65" cy="40" rx="12" ry="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="38" cy="40" r="4" fill="currentColor"/><circle cx="62" cy="40" r="4" fill="currentColor"/><path d="M40 65q10 5 20 0" fill="none" stroke="currentColor" stroke-width="3"/></svg>' },
+        { id: 'r5', name: '鹿纹', rarity: 'rare', theme: '福禄双全', description: '鹿纹寓意福禄双全，长寿安康。', quote: '鹿鸣幽谷，福禄自来。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="60" rx="25" ry="20" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="50" cy="35" rx="15" ry="12" fill="none" stroke="currentColor" stroke-width="2"/><path d="M40 25 L35 10 M45 25 L42 8 M55 25 L58 8 M60 25 L65 10" stroke="currentColor" stroke-width="2"/><circle cx="45" cy="35" r="3" fill="currentColor"/><circle cx="55" cy="35" r="3" fill="currentColor"/></svg>' },
+        { id: 'r6', name: '凤凰纹', rarity: 'rare', theme: '涅槃重生', description: '凤凰纹象征涅槃重生，浴火辉煌。', quote: '凤凰涅槃，浴火重生。', svg: '<svg viewBox="0 0 100 100"><path d="M50 20 Q70 30 70 50 Q70 70 50 80 Q30 70 30 50 Q30 30 50 20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M70 50 Q80 40 85 30 Q80 45 75 50" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="45" cy="40" r="3" fill="currentColor"/></svg>' },
+        { id: 'r7', name: '龙纹', rarity: 'rare', theme: '腾飞九天', description: '龙纹代表腾飞九天，权柄尊贵。', quote: '龙飞九天，志在高远。', svg: '<svg viewBox="0 0 100 100"><path d="M20 50 Q40 20 60 50 T90 40" fill="none" stroke="currentColor" stroke-width="4"/><path d="M60 50 L75 35 L70 55 L85 50" fill="currentColor"/><circle cx="35" cy="42" r="4" fill="currentColor"/></svg>' },
+        { id: 'r8', name: '麒麟纹', rarity: 'rare', theme: '祥瑞降临', description: '麒麟纹象征祥瑞降临，太平盛世。', quote: '麒麟踏祥云，人间百难消。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="55" rx="28" ry="22" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="50" cy="35" rx="18" ry="15" fill="none" stroke="currentColor" stroke-width="2"/><path d="M50 20 L45 8 L55 8 Z" fill="currentColor"/><circle cx="43" cy="35" r="3" fill="currentColor"/><circle cx="57" cy="35" r="3" fill="currentColor"/></svg>' }
+    ],
+    epic: [
+        { id: 'e1', name: '太阳纹', rarity: 'epic', theme: '光明普照', description: '太阳纹寓意光明普照，万物生长。', quote: '阳光普照，万物生长。', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="20" fill="currentColor"/><path d="M50 10v15M50 75v15M10 50h15M75 50h15M22 22l10 10M68 68l10 10M22 78l10 -10M68 32l10 -10" stroke="currentColor" stroke-width="4"/></svg>' },
+        { id: 'e2', name: '月亮纹', rarity: 'epic', theme: '阴晴圆缺', description: '月亮纹象征阴晴圆缺，循环往复。', quote: '月有阴晴圆缺，人有悲欢离合。', svg: '<svg viewBox="0 0 100 100"><path d="M50 15a35 35 0 1 0 0 70a25 25 0 1 1 0 -70z" fill="currentColor"/><circle cx="35" cy="35" r="5" fill="var(--bg-secondary)" opacity="0.5"/><circle cx="40" cy="60" r="4" fill="var(--bg-secondary)" opacity="0.5"/></svg>' },
+        { id: 'e3', name: '星辰纹', rarity: 'epic', theme: '璀璨星河', description: '星辰纹代表璀璨星河，梦想远大。', quote: '星星之火，可以燎原。', svg: '<svg viewBox="0 0 100 100"><polygon points="50,15 58,38 82,38 63,52 71,75 50,60 29,75 37,52 18,38 42,38" fill="currentColor"/><circle cx="20" cy="20" r="3" fill="currentColor"/><circle cx="80" cy="25" r="2" fill="currentColor"/><circle cx="25" cy="80" r="2" fill="currentColor"/><circle cx="75" cy="75" r="3" fill="currentColor"/></svg>' },
+        { id: 'e4', name: '彩虹纹', rarity: 'epic', theme: '雨过天晴', description: '彩虹纹象征雨过天晴，希望永存。', quote: '风雨之后，必见彩虹。', svg: '<svg viewBox="0 0 100 100"><path d="M10 70 Q50 10 90 70" fill="none" stroke="currentColor" stroke-width="4"/><path d="M15 70 Q50 20 85 70" fill="none" stroke="currentColor" stroke-width="3" opacity="0.7"/><path d="M20 70 Q50 30 80 70" fill="none" stroke="currentColor" stroke-width="2" opacity="0.5"/></svg>' },
+        { id: 'e5', name: '火焰纹', rarity: 'epic', theme: '热情燃烧', description: '火焰纹寓意热情燃烧，永不熄灭。', quote: '热情似火，生生不息。', svg: '<svg viewBox="0 0 100 100"><path d="M50 80 Q30 60 35 40 Q25 50 30 30 Q40 40 50 15 Q60 40 70 30 Q75 50 65 40 Q70 60 50 80" fill="currentColor"/><ellipse cx="50" cy="65" rx="10" ry="15" fill="var(--bg-secondary)"/></svg>' },
+        { id: 'e6', name: '冰霜纹', rarity: 'epic', theme: '纯净高洁', description: '冰霜纹象征纯净高洁，晶莹剔透。', quote: '冰清玉洁，纯净无瑕。', svg: '<svg viewBox="0 0 100 100"><path d="M50 10v80M20 30l60 40M20 70l60 -40" stroke="currentColor" stroke-width="3"/><circle cx="50" cy="50" r="15" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="50" r="8" fill="currentColor" opacity="0.3"/></svg>' }
+    ],
+    legendary: [
+        { id: 'l1', name: '盘王印', rarity: 'legendary', theme: '始祖庇佑', description: '盘王印是瑶族始祖印记，得此印者得先祖庇佑。', quote: '盘王庇佑，百邪不侵。', svg: '<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="50" fill="none" stroke="currentColor" stroke-width="4"/><rect x="35" y="35" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"/><text x="50" y="58" text-anchor="middle" font-size="20" fill="currentColor">盤</text><circle cx="20" cy="20" r="5" fill="currentColor"/><circle cx="80" cy="20" r="5" fill="currentColor"/><circle cx="20" cy="80" r="5" fill="currentColor"/><circle cx="80" cy="80" r="5" fill="currentColor"/></svg>' },
+        { id: 'l2', name: '女娲补天', rarity: 'legendary', theme: '创世神力', description: '女娲补天纹样，象征创造与守护的神力。', quote: '女娲补天，救世济民。', svg: '<svg viewBox="0 0 100 100"><path d="M10 60 Q30 40 50 60 T90 60" fill="none" stroke="currentColor" stroke-width="3"/><ellipse cx="50" cy="45" rx="15" ry="20" fill="none" stroke="currentColor" stroke-width="3"/><path d="M35 30 Q25 20 35 15 Q45 20 40 30" fill="currentColor"/><path d="M65 30 Q75 20 65 15 Q55 20 60 30" fill="currentColor"/><circle cx="30" cy="25" r="3" fill="currentColor"/><circle cx="70" cy="25" r="3" fill="currentColor"/><circle cx="50" cy="20" r="4" fill="currentColor"/></svg>' },
+        { id: 'l3', name: '盘古开天', rarity: 'legendary', theme: '开天辟地', description: '盘古开天纹样，代表开创与勇气。', quote: '盘古开天，混沌初分。', svg: '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="4"/><path d="M20 50h60M50 20v60" stroke="currentColor" stroke-width="3"/><circle cx="50" cy="50" r="10" fill="currentColor"/><path d="M50 10 L45 0h10z" fill="currentColor" transform="rotate(0 50 50) translate(0 -40) rotate(180 50 10)"/><path d="M50 10 L45 0h10z" fill="currentColor" transform="rotate(90 50 50) translate(0 -40) rotate(180 50 10)"/><path d="M50 10 L45 0h10z" fill="currentColor" transform="rotate(180 50 50) translate(0 -40) rotate(180 50 10)"/><path d="M50 10 L45 0h10z" fill="currentColor" transform="rotate(270 50 50) translate(0 -40) rotate(180 50 10)"/></svg>' }
+    ],
+    mythic: [
+        { id: 'm1', name: '九天玄女', rarity: 'mythic', theme: '织天绣地', description: '传说中的织天女神，得此纹者可通天地灵气，绣出惊天之作。瑶家千年难得一见的神纹！', quote: '九天玄女下凡尘，一针一线绣乾坤。', svg: '<svg viewBox="0 0 100 100"><ellipse cx="50" cy="40" rx="20" ry="25" fill="none" stroke="currentColor" stroke-width="3"/><path d="M50 65 L40 90 L50 85 L60 90 Z" fill="currentColor"/><ellipse cx="50" cy="80" rx="15" ry="5" fill="currentColor" opacity="0.5"/><circle cx="45" cy="35" r="3" fill="currentColor"/><circle cx="55" cy="35" r="3" fill="currentColor"/><path d="M45 45 Q50 50 55 45" fill="none" stroke="currentColor" stroke-width="2"/><path d="M30 40 L20 30 M70 40 L80 30 M30 50 L15 50 M70 50 L85 50" stroke="currentColor" stroke-width="2"/><circle cx="50" cy="15" r="8" fill="currentColor" opacity="0.6"/></svg>' }
+    ]
+};
 
         // 等级系统
         const LevelSystem = {
@@ -2189,10 +2497,65 @@
             
             showLevelUp(level) {
                 const anim = document.getElementById('levelUpAnimation');
-                const text = document.getElementById('levelUpText');
-                text.textContent = `恭喜升至「${level.name}」`;
+                const emojiEl = document.getElementById('levelUpEmoji');
+                const nameEl = document.getElementById('levelUpName');
+                const unlockEl = document.getElementById('levelUpUnlock');
+                const particlesEl = document.getElementById('levelUpParticles');
+                
+                // 设置内容
+                emojiEl.textContent = level.emoji;
+                nameEl.textContent = `进阶为 ${level.name}`;
+                
+                // 根据等级设置解锁提示
+                const unlocks = [
+                    '', // 学徒无
+                    '解锁：更高级纹样池', // 绣娘
+                    '解锁：稀有纹样概率提升', // 巧手
+                    '解锁：史诗级纹样出现', // 能手
+                    '解锁：传说级纹样出现', // 师傅
+                    '解锁：神话级纹样概率提升', // 大师
+                    '解锁：所有特权', // 传人
+                    '解锁：宗师专属头衔' // 宗师
+                ];
+                unlockEl.textContent = unlocks[level.index] || '';
+                
+                // 创建粒子效果
+                particlesEl.innerHTML = '';
+                const colors = [level.color, '#ffd700', '#ffffff'];
+                for (let i = 0; i < 50; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'level-particle';
+                    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.left = '50%';
+                    particle.style.top = '50%';
+                    const angle = (Math.PI * 2 * i) / 50 + Math.random() * 0.5;
+                    const distance = 200 + Math.random() * 300;
+                    particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                    particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                    particle.style.animationDelay = `${Math.random() * 0.5}s`;
+                    particlesEl.appendChild(particle);
+                }
+                
+                // 显示动画
                 anim.classList.add('active');
-                setTimeout(() => anim.classList.remove('active'), 3000);
+                
+                // 播放进化音效（如果有）
+                // playLevelUpSound();
+                
+                // 4秒后自动关闭
+                setTimeout(() => {
+                    anim.classList.remove('active');
+                    setTimeout(() => particlesEl.innerHTML = '', 500);
+                }, 4000);
+            },
+            
+            // 关闭等级进化动画
+            closeLevelUp() {
+                const anim = document.getElementById('levelUpAnimation');
+                anim.classList.remove('active');
+                setTimeout(() => {
+                    document.getElementById('levelUpParticles').innerHTML = '';
+                }, 500);
             },
             
             getProgress() {
@@ -2479,6 +2842,62 @@
             document.getElementById('blindboxModal').classList.remove('open');
         }
 
+        // 神话级特效
+        function createMythicEffect() {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                inset: 0;
+                background: radial-gradient(circle at center, rgba(255,215,0,0.3) 0%, transparent 70%);
+                z-index: 150;
+                pointer-events: none;
+                animation: mythicOverlay 2s ease-out forwards;
+            `;
+            document.body.appendChild(overlay);
+            
+            // 彩虹粒子
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.style.cssText = `
+                        position: fixed;
+                        width: 6px;
+                        height: 6px;
+                        background: hsl(${Math.random() * 360}, 100%, 50%);
+                        border-radius: 50%;
+                        left: 50%;
+                        top: 50%;
+                        pointer-events: none;
+                        z-index: 151;
+                        animation: mythicParticle 1.5s ease-out forwards;
+                    `;
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 300 + Math.random() * 400;
+                    particle.style.setProperty('--tx', `${Math.cos(angle) * distance}px`);
+                    particle.style.setProperty('--ty', `${Math.sin(angle) * distance}px`);
+                    document.body.appendChild(particle);
+                    setTimeout(() => particle.remove(), 1500);
+                }, i * 30);
+            }
+            
+            setTimeout(() => overlay.remove(), 2000);
+        }
+        
+        // 神话粒子动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes mythicOverlay {
+                0% { opacity: 0; }
+                50% { opacity: 1; }
+                100% { opacity: 0; }
+            }
+            @keyframes mythicParticle {
+                0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
         // 创建抽卡粒子效果
         function createDrawParticles(container) {
             const colors = ['#d4a574', '#c41e3a', '#f1c40f', '#fff'];
@@ -2536,26 +2955,32 @@
                     createDrawParticles(card);
                     
                     // 设置结果
-                    const rarityColors = {
-                        common: '#95a5a6',
-                        rare: '#3498db',
-                        epic: '#9b59b6',
-                        legendary: '#f1c40f'
+                    const rarityConfig = {
+                        common: { color: '#95a5a6', glow: '0.3', particles: 20 },
+                        rare: { color: '#3498db', glow: '0.5', particles: 30 },
+                        epic: { color: '#9b59b6', glow: '0.7', particles: 40 },
+                        legendary: { color: '#f1c40f', glow: '1', particles: 60 },
+                        mythic: { color: '#fff', glow: '1', particles: 100 }
                     };
+                    const config = rarityConfig[pattern.rarity] || rarityConfig.common;
                     
-                    // 根据稀有度调整光效强度
-                    const glowIntensity = {
-                        common: '0.3',
-                        rare: '0.5',
-                        epic: '0.7',
-                        legendary: '1'
-                    };
-                    glow.style.opacity = glowIntensity[pattern.rarity];
+                    // 根据稀有度调整光效
+                    glow.style.opacity = config.glow;
+                    
+                    // 添加特殊卡牌动画
+                    card.classList.remove('draw-card-mythic', 'draw-card-legendary');
+                    if (pattern.rarity === 'mythic') {
+                        card.classList.add('draw-card-mythic');
+                        // 神话级全屏特效
+                        createMythicEffect();
+                    } else if (pattern.rarity === 'legendary') {
+                        card.classList.add('draw-card-legendary');
+                    }
                     
                     result.innerHTML = `
-                        <div class="w-24 h-24 mx-auto mb-3" style="color: ${rarityColors[pattern.rarity]};">${pattern.svg}</div>
+                        <div class="w-24 h-24 mx-auto mb-3 ${pattern.rarity === 'mythic' ? 'animate-pulse' : ''}" style="color: ${config.color}; filter: ${pattern.rarity === 'mythic' ? 'drop-shadow(0 0 10px gold)' : ''};">${pattern.svg}</div>
                         <span class="rarity-badge rarity-${pattern.rarity} text-xs px-2 py-1 rounded mb-2 inline-block">${pattern.rarity}</span>
-                        <h3 class="font-bold text-lg mb-1" style="color: var(--text-primary);">${pattern.name}</h3>
+                        <h3 class="font-bold text-lg mb-1 ${pattern.rarity === 'mythic' ? 'text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-yellow-400' : ''}" style="color: var(--text-primary);">${pattern.name}</h3>
                         <p class="text-xs mb-2" style="color: var(--gold);">${pattern.theme}</p>
                         <p class="text-xs italic" style="color: var(--text-secondary);">"${pattern.quote}"</p>
                     `;
@@ -2685,6 +3110,115 @@
             document.getElementById('growthChats').textContent = `${totalChats} 次`;
         }
         
+        // 分享功能
+        async function shareForDraw() {
+            // 检查今日分享次数
+            const today = new Date().toDateString();
+            const shareCount = parseInt(localStorage.getItem(`yao-share-${today}`) || '0');
+            if (shareCount >= 3) {
+                showToast('今日分享次数已达上限');
+                return;
+            }
+            
+            const shareData = {
+                title: '我在瑶绣AI收集了超多精美纹样！',
+                text: `我已收集 ${PatternCollection.getUnlocked().length} 个瑶族刺绣纹样，快来一起探索非遗之美吧！`,
+                url: window.location.href
+            };
+            
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                    // 分享成功，增加抽奖次数
+                    localStorage.setItem(`yao-share-${today}`, (shareCount + 1).toString());
+                    BlindBoxSystem.addBonusDraw(2);
+                    showToast('🎉 分享成功！获得 2 次抽奖机会');
+                } else {
+                    // 复制到剪贴板
+                    await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+                    localStorage.setItem(`yao-share-${today}`, (shareCount + 1).toString());
+                    BlindBoxSystem.addBonusDraw(2);
+                    showToast('🎉 已复制分享内容！获得 2 次抽奖机会');
+                }
+            } catch (err) {
+                showToast('分享取消或失败');
+            }
+        }
+        
+        // 皮肤系统
+        const SkinSystem = {
+            backgrounds: [
+                { id: 'default', name: '青蓝织锦', unlockLevel: 0, gradient: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)' },
+                { id: 'golden', name: '金色稻田', unlockLevel: 1, gradient: 'linear-gradient(135deg, #2d2416 0%, #4a3c1d 100%)' },
+                { id: 'starry', name: '星空瑶池', unlockLevel: 3, gradient: 'linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #2d1b4e 100%)' },
+                { id: 'temple', name: '盘王圣地', unlockLevel: 5, gradient: 'linear-gradient(135deg, #1a1614 0%, #3d2817 50%, #5c3d1e 100%)' },
+                { id: 'fairy', name: '九天仙境', unlockLevel: 7, gradient: 'linear-gradient(135deg, #1a1a3e 0%, #4a1a4e 50%, #1a3e4a 100%)' }
+            ],
+            
+            avatars: [
+                { id: 'default', name: '经典小瑶', unlockLevel: 0, emoji: '🧑' },
+                { id: 'girl', name: '绣娘小瑶', unlockLevel: 1, emoji: '👧' },
+                { id: 'elf', name: '巧手小瑶', unlockLevel: 2, emoji: '🧝' },
+                { id: 'princess', name: '大师小瑶', unlockLevel: 5, emoji: '👸' },
+                { id: 'wizard', name: '宗师小瑶', unlockLevel: 7, emoji: '🧙‍♀️' }
+            ],
+            
+            frames: [
+                { id: 'default', name: '学徒木框', unlockLevel: 0, style: '2px solid var(--gold)' },
+                { id: 'silver', name: '银丝边框', unlockLevel: 2, style: '3px solid linear-gradient(135deg, #c0c0c0, #e8e8e8)' },
+                { id: 'gold', name: '金丝边框', unlockLevel: 4, style: '3px solid linear-gradient(135deg, #ffd700, #ffed4e)' },
+                { id: 'gem', name: '宝石边框', unlockLevel: 6, style: '4px solid linear-gradient(135deg, #9b59b6, #e74c3c)' },
+                { id: 'mythic', name: '神器边框', unlockLevel: 7, style: '4px solid linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)' }
+            ],
+            
+            getCurrentSkin() {
+                const saved = localStorage.getItem('yao-skin');
+                return saved ? JSON.parse(saved) : { background: 'default', avatar: 'default', frame: 'default' };
+            },
+            
+            setSkin(type, id) {
+                const current = this.getCurrentSkin();
+                current[type] = id;
+                localStorage.setItem('yao-skin', JSON.stringify(current));
+                this.applySkin();
+            },
+            
+            applySkin() {
+                const skin = this.getCurrentSkin();
+                const bg = this.backgrounds.find(b => b.id === skin.background);
+                const avatar = this.avatars.find(a => a.id === skin.avatar);
+                const frame = this.frames.find(f => f.id === skin.frame);
+                
+                // 应用背景
+                if (bg) {
+                    document.body.style.background = bg.gradient;
+                }
+                
+                // 应用头像
+                const userAvatar = document.querySelector('.user-message-wrapper .flex-shrink-0 div');
+                if (userAvatar && avatar) {
+                    userAvatar.textContent = avatar.emoji;
+                }
+                
+                // 应用边框
+                const messageBubbles = document.querySelectorAll('.message-bubble');
+                messageBubbles.forEach(bubble => {
+                    if (frame) {
+                        bubble.style.border = frame.style.includes('linear-gradient') ? '2px solid var(--gold)' : frame.style;
+                    }
+                });
+            },
+            
+            getUnlockedItems(type) {
+                const currentLevel = LevelSystem.getCurrentLevel();
+                const items = this[type + 's'];
+                return items.map(item => ({
+                    ...item,
+                    unlocked: item.unlockLevel <= currentLevel.index
+                }));
+            }
+        };
+        
         // 隐藏签到提示条
         function hideCheckinBar() {
             document.getElementById('checkinBar').style.display = 'none';
@@ -2695,12 +3229,33 @@
             CheckinSystem.checkin();
         }
 
+        // 显示首屏弹窗
+        function showWelcomeModal() {
+            // 检查今日是否已显示
+            const lastShown = localStorage.getItem('yao-welcome-shown');
+            const today = new Date().toDateString();
+            if (lastShown === today) return;
+            
+            setTimeout(() => {
+                document.getElementById('welcomeModal').classList.add('open');
+            }, 500);
+        }
+
+        // 关闭首屏弹窗
+        function closeWelcomeModal() {
+            document.getElementById('welcomeModal').classList.remove('open');
+            localStorage.setItem('yao-welcome-shown', new Date().toDateString());
+        }
+
         // v2.0.0 初始化
         function initV2System() {
             LevelSystem.render();
             CheckinSystem.render();
             BlindBoxSystem.render();
             PatternCollection.render();
+            
+            // 显示首屏弹窗
+            showWelcomeModal();
             
             // 监听对话获得抽卡机会
             const originalSendMessage = sendMessage;
