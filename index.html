@@ -487,48 +487,51 @@
             width: 13px;
             height: 13px;
         }
-        /* 用户消息气泡样式 */
+        /* 用户消息容器 */
+        .user-message-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        /* 用户消息气泡样式 - 浅色 */
         .user-message-bubble {
             position: relative;
             transition: all 0.2s ease;
+            max-width: 100%;
         }
         .user-message-bubble:hover {
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
             transform: translateY(-1px);
         }
-        /* 用户消息右侧垂直操作按钮 */
-        .user-message-actions-vertical {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            opacity: 0;
-            transform: translateX(-5px);
-            transition: opacity 200ms ease, transform 200ms ease;
-        }
-        .user-message-wrapper:hover .user-message-actions-vertical {
-            opacity: 1;
-            transform: translateX(0);
-        }
-        .user-action-btn-v {
+        /* 用户消息底部操作按钮 */
+        .user-message-actions-bottom {
             display: flex;
             align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            gap: 12px;
+            margin-top: 6px;
+            padding-right: 8px;
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+        .user-message-wrapper:hover .user-message-actions-bottom {
+            opacity: 1;
+        }
+        .user-action-btn-bottom {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             font-size: 12px;
-            color: var(--text-tertiary);
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
+            color: #999;
+            background: transparent;
+            border: none;
             cursor: pointer;
-            transition: all 150ms ease;
+            padding: 2px 4px;
+            transition: color 150ms ease;
         }
-        .user-action-btn-v:hover {
+        .user-action-btn-bottom:hover {
             color: var(--accent);
-            background: var(--bg-secondary);
-            border-color: var(--accent);
         }
-        .user-action-btn-v svg {
+        .user-action-btn-bottom svg {
             width: 14px;
             height: 14px;
         }
@@ -1349,14 +1352,21 @@
             transform: scale(1);
         }
         .pattern-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
-            padding: 24px;
+            display: block;
+            padding: 20px 24px;
             overflow-y: auto;
             max-height: calc(80vh - 100px);
             height: 100%;
-            align-content: start;
+        }
+        .pattern-item:hover {
+            border-color: var(--gold) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .pattern-item.locked:hover {
+            border-color: var(--border-color) !important;
+            transform: none;
+            box-shadow: none;
         }
         .pattern-card {
             aspect-ratio: 3/4;
@@ -1618,9 +1628,9 @@
                         <!-- 等级徽章 -->
                         <div class="relative">
                             <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长">
-                                <div class="level-icon" id="levelIcon">初</div>
+                                <div class="level-icon-emoji" id="levelIcon">🌱</div>
                                 <div class="level-info">
-                                    <span class="level-name" id="levelName">学徒</span>
+                                    <span class="level-name" id="levelName">LV.1 学徒</span>
                                     <div class="level-progress">
                                         <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
                                     </div>
@@ -1629,9 +1639,9 @@
                             <!-- 个人成长下拉菜单 -->
                             <div id="growthMenu" class="growth-dropdown hidden">
                                 <div class="growth-header">
-                                    <div class="growth-level-emoji" id="growthMenuEmoji">🌱</div>
-                                    <div class="growth-level-info">
-                                        <span class="growth-level-name" id="growthMenuName">学徒</span>
+                                    <div class="growth-level-emoji-large" id="growthMenuEmoji" style="font-size: 48px; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); border-radius: 16px; margin-right: 12px;">🌱</div>
+                                    <div class="growth-level-info" style="flex: 1;">
+                                        <span class="growth-level-title" id="growthMenuTitle" style="font-size: 16px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 4px;">LV.1 学徒</span>
                                         <div class="growth-progress-bar">
                                             <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%"></div>
                                         </div>
@@ -2648,11 +2658,10 @@
                 const bar = document.getElementById('levelProgressBar');
                 
                 if (badge && icon && name && bar) {
-                    icon.textContent = level.icon;
-                    name.textContent = level.name;
+                    icon.textContent = level.emoji;
+                    name.textContent = `LV.${level.index + 1} ${level.name}`;
                     bar.style.width = progress + '%';
                     badge.style.borderColor = level.color;
-                    icon.style.background = `linear-gradient(135deg, ${level.color}, ${level.color}dd)`;
                 }
             }
         };
@@ -2876,43 +2885,56 @@
                 
                 if (countEl) countEl.textContent = unlocked.length;
                 
-                // 稀有度排序权重
-                const rarityWeight = { mythic: 5, legendary: 4, epic: 3, rare: 2, common: 1 };
-                
-                // 排序：已解锁在前，稀有度高的在前
-                const sorted = all.sort((a, b) => {
-                    const aUnlocked = unlocked.includes(a.id);
-                    const bUnlocked = unlocked.includes(b.id);
-                    
-                    // 先按解锁状态排序（已解锁在前）
-                    if (aUnlocked && !bUnlocked) return -1;
-                    if (!aUnlocked && bUnlocked) return 1;
-                    
-                    // 再按稀有度排序（高的在前）
-                    return rarityWeight[b.rarity] - rarityWeight[a.rarity];
+                // 按稀有度分组
+                const byRarity = { mythic: [], legendary: [], epic: [], rare: [], common: [] };
+                all.forEach(p => {
+                    if (byRarity[p.rarity]) byRarity[p.rarity].push(p);
                 });
                 
-                container.innerHTML = sorted.map(p => {
-                    const isUnlocked = unlocked.includes(p.id);
-                    const rarityClass = `rarity-${p.rarity}`;
-                    const glowClass = isUnlocked ? `glow-${p.rarity}` : '';
+                // 稀有度配置
+                const rarityConfig = {
+                    mythic: { label: 'MYTHIC', color: '#e74c3c', bg: 'rgba(231, 76, 60, 0.1)' },
+                    legendary: { label: 'LEGENDARY', color: '#f39c12', bg: 'rgba(243, 156, 18, 0.1)' },
+                    epic: { label: 'EPIC', color: '#9b59b6', bg: 'rgba(155, 89, 182, 0.1)' },
+                    rare: { label: 'RARE', color: '#3498db', bg: 'rgba(52, 152, 219, 0.1)' },
+                    common: { label: 'COMMON', color: '#95a5a6', bg: 'rgba(149, 165, 166, 0.1)' }
+                };
+                
+                // 生成扁平化列表
+                let html = '';
+                ['mythic', 'legendary', 'epic', 'rare', 'common'].forEach(rarity => {
+                    const patterns = byRarity[rarity];
+                    if (patterns.length === 0) return;
                     
-                    // 未解锁的显示灰色预览
-                    const svgContent = isUnlocked ? p.svg : p.svg;
-                    const svgStyle = isUnlocked ? '' : 'filter: grayscale(100%) opacity(0.4);';
-                    
-                    return `
-                        <div class="pattern-card ${isUnlocked ? '' : 'locked'} ${glowClass}" onclick="showPatternDetail('${p.id}', ${isUnlocked})">
-                            <span class="rarity-badge ${rarityClass}">${p.rarity}</span>
-                            <div class="w-16 h-16" style="color: var(--gold); ${svgStyle}">
-                                ${svgContent}
+                    const config = rarityConfig[rarity];
+                    html += `
+                        <div class="rarity-section" style="margin-bottom: 16px;">
+                            <div class="rarity-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 12px; background: ${config.bg}; border-radius: 8px; border-left: 4px solid ${config.color};">
+                                <span class="rarity-label" style="font-size: 12px; font-weight: 700; color: ${config.color}; letter-spacing: 1px;">${config.label}</span>
+                                <span class="rarity-count" style="font-size: 11px; color: var(--text-tertiary);">(${patterns.filter(p => unlocked.includes(p.id)).length}/${patterns.length})</span>
                             </div>
-                            <span class="font-medium text-sm" style="color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${isUnlocked ? p.name : '???'}</span>
-                            <span class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</span>
-                            ${!isUnlocked ? '<span class="text-xs" style="color: var(--text-tertiary); opacity: 0.6;">点击预览</span>' : ''}
+                            <div class="pattern-list" style="display: flex; flex-wrap: wrap; gap: 12px;">
+                                ${patterns.map(p => {
+                                    const isUnlocked = unlocked.includes(p.id);
+                                    const svgStyle = isUnlocked ? '' : 'filter: grayscale(100%) opacity(0.3);';
+                                    return `
+                                        <div class="pattern-item ${isUnlocked ? '' : 'locked'}" onclick="showPatternDetail('${p.id}', ${isUnlocked})" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--bg-tertiary); border-radius: 10px; border: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease; min-width: 140px;">
+                                            <div class="pattern-icon" style="width: 36px; height: 36px; color: var(--gold); ${svgStyle};">
+                                                ${p.svg}
+                                            </div>
+                                            <div class="pattern-info" style="display: flex; flex-direction: column;">
+                                                <span class="pattern-name" style="font-size: 13px; font-weight: 500; color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${isUnlocked ? p.name : '???'}</span>
+                                                ${isUnlocked ? `<span class="pattern-theme" style="font-size: 10px; color: var(--text-tertiary);">${p.theme}</span>` : '<span class="pattern-theme" style="font-size: 10px; color: var(--text-tertiary);">未解锁</span>'}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     `;
-                }).join('');
+                });
+                
+                container.innerHTML = html;
             }
         };
 
@@ -3176,7 +3198,7 @@
             
             // 更新等级信息
             document.getElementById('growthMenuEmoji').textContent = level.emoji;
-            document.getElementById('growthMenuName').textContent = level.name;
+            document.getElementById('growthMenuTitle').textContent = `LV.${level.index + 1} ${level.name}`;
             document.getElementById('growthMenuProgress').style.width = progress + '%';
             document.getElementById('growthMenuProgress').style.background = `linear-gradient(90deg, ${level.color}, ${level.color}dd)`;
             
@@ -5002,14 +5024,9 @@
                 updateSendBtnState();
                 controller = null;
                 
-                // 对话完成后增加抽奖机会（限制每天最多5次）
-                const today = new Date().toDateString();
-                const chatCount = parseInt(localStorage.getItem(`yao-chat-${today}`) || '0');
-                if (chatCount < 5) {
-                    localStorage.setItem(`yao-chat-${today}`, (chatCount + 1).toString());
-                    BlindBoxSystem.addBonusDraw(1);
-                    console.log(`对话奖励: ${chatCount + 1}/5 次`);
-                }
+                // 对话完成后增加抽奖机会（无限制）
+                BlindBoxSystem.addBonusDraw(1);
+                console.log(`对话奖励: +1 次`);
             }
         }
 
@@ -5371,14 +5388,9 @@
                 updateSendBtnState();
                 controller = null;
                 
-                // 对话完成后增加抽奖机会（限制每天最多5次）
-                const today = new Date().toDateString();
-                const chatCount = parseInt(localStorage.getItem(`yao-chat-${today}`) || '0');
-                if (chatCount < 5) {
-                    localStorage.setItem(`yao-chat-${today}`, (chatCount + 1).toString());
-                    BlindBoxSystem.addBonusDraw(1);
-                    console.log(`对话奖励: ${chatCount + 1}/5 次`);
-                }
+                // 对话完成后增加抽奖机会（无限制）
+                BlindBoxSystem.addBonusDraw(1);
+                console.log(`对话奖励: +1 次`);
             }
         }
         
@@ -5486,32 +5498,26 @@
             const messageId = 'user_msg_' + Date.now();
             
             wrapper.innerHTML = `
-                <div class="flex items-center gap-2">
-                    <div class="message-bubble" id="${messageId}">
-                        <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content user-message-bubble" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); border-color: #c0392b; box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);">
-                            <p class="leading-relaxed text-sm sm:text-base" style="color: white;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
-                        </div>
+                <div class="message-bubble user-message-container" id="${messageId}">
+                    <div class="rounded-2xl rounded-tr-sm px-4 sm:px-5 py-3 border chat-content user-message-bubble" style="background: #f5f5f5; border-color: #e0e0e0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <p class="leading-relaxed text-sm sm:text-base" style="color: #333;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
                     </div>
-                    <div class="user-message-actions-vertical">
-                        <button class="user-action-btn-v edit-btn" title="编辑" style="display: none;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                            </svg>
+                    <div class="user-message-actions-bottom">
+                        <button class="user-action-btn-bottom edit-btn" title="编辑" style="display: none;">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            <span>编辑</span>
                         </button>
-                        <button class="user-action-btn-v copy-btn" title="复制">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                            </svg>
+                        <button class="user-action-btn-bottom copy-btn" title="复制">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span>复制</span>
                         </button>
-                        <button class="user-action-btn-v share-btn" title="分享" style="display: none;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
-                            </svg>
+                        <button class="user-action-btn-bottom share-btn" title="分享" style="display: none;">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                            <span>分享</span>
                         </button>
-                        <button class="user-action-btn-v delete-btn" title="删除">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
+                        <button class="user-action-btn-bottom delete-btn" title="删除">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>删除</span>
                         </button>
                     </div>
                 </div>
