@@ -1353,26 +1353,29 @@
         }
         .pattern-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            padding: 20px 24px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
+            padding: 24px;
             overflow-y: auto;
-            max-height: calc(80vh - 100px);
-            height: 100%;
-            align-content: start;
+            max-height: calc(80vh - 120px);
+        }
+        @media (min-width: 900px) {
+            .pattern-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
         @media (max-width: 768px) {
             .pattern-grid {
                 grid-template-columns: repeat(3, 1fr);
-                gap: 12px;
-                padding: 16px;
+                gap: 16px;
+                padding: 20px;
             }
         }
         @media (max-width: 480px) {
             .pattern-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 10px;
-                padding: 12px;
+                gap: 12px;
+                padding: 16px;
             }
         }
         .pattern-card {
@@ -1380,16 +1383,17 @@
             background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
             border: 2px solid var(--border-color);
             border-radius: 16px;
-            padding: 16px;
+            padding: 16px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 12px;
+            justify-content: flex-start;
+            gap: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            min-height: 200px;
         }
         .pattern-card:hover {
             border-color: var(--gold);
@@ -2919,11 +2923,15 @@
                     return `
                         <div class="pattern-card ${isUnlocked ? '' : 'locked'} ${glowClass}" onclick="showPatternDetail('${p.id}', ${isUnlocked})">
                             <span class="rarity-badge ${rarityClass}">${p.rarity}</span>
-                            <div class="w-16 h-16" style="color: var(--gold); ${svgStyle}">
-                                ${p.svg}
+                            <div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+                                <div class="w-16 h-16" style="color: var(--gold); ${svgStyle}">
+                                    ${p.svg}
+                                </div>
                             </div>
-                            <span class="font-medium text-sm" style="color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'};">${isUnlocked ? p.name : '???'}</span>
-                            <span class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</span>
+                            <div style="text-align: center; width: 100%;">
+                                <div class="font-medium text-sm" style="color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'}; margin-bottom: 2px;">${isUnlocked ? p.name : '???'}</div>
+                                <div class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</div>
+                            </div>
                         </div>
                     `;
                 }).join('');
