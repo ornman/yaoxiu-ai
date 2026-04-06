@@ -1355,13 +1355,14 @@
         }
         .pattern-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 24px;
             padding: 24px 24px 100px 24px;
             overflow-y: auto;
             max-height: calc(80vh - 80px);
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
+            align-items: start;
         }
         @media (min-width: 900px) {
             .pattern-grid {
@@ -1392,13 +1393,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            gap: 8px;
+            justify-content: flex-start;
+            gap: 12px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            aspect-ratio: 3/4;
-            min-height: 200px;
+            height: 220px;
         }
         .pattern-card:hover {
             border-color: var(--gold);
@@ -2882,8 +2882,8 @@
                 if (bonusCountEl) bonusCountEl.textContent = bonusCount;
                 if (badge) {
                     badge.textContent = totalCount;
-                    // 总次数为0时显示红点提示
-                    badge.classList.toggle('hidden', totalCount > 0);
+                    // 有抽奖次数时显示红点提示
+                    badge.classList.toggle('hidden', totalCount === 0);
                 }
             }
         };
