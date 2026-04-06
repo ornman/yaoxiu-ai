@@ -77,10 +77,20 @@ const BlindBoxModal = {
             </button>
           </div>
           
+          <!-- 操作按钮行 -->
+          <div class="blindbox-actions-row">
+            <button class="btn-gallery" onclick="BlindBoxModal.close(); PatternCollectionUI.open();">
+              纹样图鉴
+            </button>
+            <button class="btn-collection" onclick="BlindBoxModal.close(); PatternCollectionUI.open();">
+              查看绣谱
+            </button>
+          </div>
+          
           <!-- 统计 -->
           <div class="blindbox-stats">
             <span>已收集 ${stats.totalCollected} 个纹样</span>
-            <button class="link-btn" onclick="BlindBoxModal.close(); PatternCollection.open();">
+            <button class="link-btn" onclick="BlindBoxModal.close(); PatternCollectionUI.open();">
               查看绣谱 →
             </button>
           </div>
@@ -140,6 +150,15 @@ const BlindBoxModal = {
     // 执行抽卡
     const result = V2System.blindBox.draw();
     
+    // === 绣谱系统联动：添加获得的纹样到收藏 ===
+    if (result && !result.duplicate) {
+      // 根据稀有度映射到对应的皮肤
+      const skinMapping = this.getSkinMapping(result.rarity);
+      if (skinMapping) {
+        V2System.patternCollection.addPattern(skinMapping);
+      }
+    }
+    
     // 隐藏抽卡区，显示结果
     if (drawStage) drawStage.style.display = 'none';
     if (resultStage) {
@@ -179,13 +198,33 @@ const BlindBoxModal = {
       setTimeout(() => {
         const rarityNames = { rare: '节庆纹', epic: '秘传纹', legendary: '祖灵纹' };
         if (window.showToast) {
-          showToast(`✨ 得到了${rarityNames[result.rarity]}！`);
+          showToast(`✨ 得到了${rarityNames[result.rarity]}！新皮肤已解锁`);
         }
       }, 600);
     }
     
     this.isDrawing = false;
     this.hasDrawn = true;
+  },
+  
+  // 根据纹样稀有度映射到对应皮肤
+  getSkinMapping(rarity) {
+    const mapping = {
+      common: ['bg-001', 'frame-001', 'theme-001'],
+      rare: ['bg-002', 'frame-002', 'theme-002'],
+      epic: ['bg-003', 'frame-003', 'theme-003'],
+      legendary: ['bg-004', 'frame-004', 'theme-004']
+    };
+    // 随机返回该稀有度下的一个未解锁皮肤
+    const skins = mapping[rarity] || [];
+    const unlocked = V2System.patternCollection.patterns;
+    const available = skins.filter(id => !unlocked.includes(id));
+    
+    if (available.length > 0) {
+      return available[Math.floor(Math.random() * available.length)];
+    }
+    // 如果都有了，返回第一个
+    return skins[0];
   },
   
   createResultHTML(result) {
@@ -203,6 +242,20 @@ const BlindBoxModal = {
       legendary: '祖灵纹'
     };
     
+    if (result.duplicate) {
+      return `
+        <div class="result-card rarity-common">
+          <div class="result-glow" style="background: #9ca3af"></div>
+          <div class="result-svg">♻️</div>
+          <div class="result-info">
+            <span class="result-rarity" style="background: #9ca3af">重复纹样</span>
+            <h3 class="result-name">${result.name}</h3>
+            <p class="result-desc">已拥有，转化为 +${result.xpReward} 经验</p>
+          </div>
+        </div>
+      `;
+    }
+    
     return `
       <div class="result-card rarity-${result.rarity}">
         <div class="result-glow" style="background: ${rarityColors[result.rarity]}"></div>
@@ -215,6 +268,7 @@ const BlindBoxModal = {
           <p class="result-theme">${result.theme}</p>
           <p class="result-desc">${result.description}</p>
           <blockquote class="result-quote">「${result.quote}」</blockquote>
+          <p class="skin-unlock">✨ 新皮肤已解锁！前往绣谱查看</p>
         </div>
       </div>
     `;
@@ -356,6 +410,13 @@ const LevelModal = {
             </div>
           </div>
           
+          <!-- 绣谱入口 -->
+          <div class="pattern-collection-entry" onclick="PatternCollectionUI.open()">
+            <span>🎨</span>
+            <span>我的绣谱</span>
+            <span class="count">(${stats.totalCollected})</span>
+          </div>
+          
           ${levelInfo.next ? `
             <div class="next-level">
               <p>距离「${levelInfo.next.title}」还需：</p>
@@ -427,11 +488,30 @@ const CheckinComponent = {
   }
 };
 
-// ========== 简化的收藏册 ==========
-const PatternCollection = {
+// ========== 绣谱系统 UI（完整版） ==========
+const PatternCollectionUI = {
+  currentFilter: 'all',
+  selectedPattern: null,
+  
   open() {
-    const patterns = V2System.blindBox.getUnlockedPatternDetails();
-    const stats = V2System.blindBox.getStats();
+    this.currentFilter = 'all';
+    this.selectedPattern = null;
+    this.render();
+    // 初始化绣谱系统
+    V2System.patternCollection.init();
+  },
+  
+  close() {
+    const modal = document.getElementById('patternCollectionModal');
+    if (modal) {
+      modal.style.opacity = '0';
+      setTimeout(() => modal.remove(), 300);
+    }
+  },
+  
+  render() {
+    const unlocked = V2System.patternCollection.getUnlockedPatterns();
+    const applied = V2System.patternCollection.getApplied();
     
     const rarityNames = {
       common: '日用',
@@ -440,66 +520,164 @@ const PatternCollection = {
       legendary: '祖灵'
     };
     
+    const typeNames = {
+      background: '背景',
+      avatarFrame: '头像框',
+      theme: '主题'
+    };
+    
+    // 移除已存在的弹窗
+    const existing = document.getElementById('patternCollectionModal');
+    if (existing) existing.remove();
+    
     const html = `
-      <div id="patternCollection" class="collection-modal" onclick="PatternCollection.close()">
+      <div id="patternCollectionModal" class="collection-modal" style="opacity: 0; transition: opacity 0.3s;" onclick="PatternCollectionUI.close()">
         <div class="collection-container" onclick="event.stopPropagation()">
-          <button class="modal-close" onclick="PatternCollection.close()">×</button>
+          <button class="modal-close" onclick="PatternCollectionUI.close()">×</button>
           
           <div class="collection-header">
             <h2>📚 我的绣谱</h2>
-            <p>已收集 ${stats.totalCollected} 个纹样</p>
+            <p>已收集 ${unlocked.length} 个皮肤 · 点击应用更换外观</p>
           </div>
           
           <div class="collection-filters">
-            <button class="filter-btn active" onclick="PatternCollection.filter('all', this)">全部</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('common', this)">日用</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('rare', this)">节庆</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('epic', this)">秘传</button>
-            <button class="filter-btn" onclick="PatternCollection.filter('legendary', this)">祖灵</button>
+            <button class="filter-btn ${this.currentFilter === 'all' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('all')">全部</button>
+            <button class="filter-btn ${this.currentFilter === 'background' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('background')">背景</button>
+            <button class="filter-btn ${this.currentFilter === 'avatarFrame' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('avatarFrame')">头像框</button>
+            <button class="filter-btn ${this.currentFilter === 'theme' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('theme')">主题</button>
           </div>
           
-          <div class="collection-grid">
-            ${patterns.length === 0 
-              ? '<div class="empty-state">还没有收集到纹样，去"得纹样"看看吧～</div>'
-              : patterns.map(p => `
-                <div class="pattern-item rarity-${p.rarity}" data-rarity="${p.rarity}">
-                  <div class="pattern-preview">${p.svg}</div>
-                  <div class="pattern-meta">
-                    <span class="meta-rarity">${rarityNames[p.rarity]}</span>
-                    <h4>${p.name}</h4>
-                    <p>${p.theme}</p>
-                  </div>
-                </div>
-              `).join('')
-            }
+          <div class="collection-filters rarity-filters">
+            <button class="filter-btn rarity-all ${this.currentFilter === 'rarity-common' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('rarity-common')">日用</button>
+            <button class="filter-btn rarity-rare ${this.currentFilter === 'rarity-rare' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('rarity-rare')">节庆</button>
+            <button class="filter-btn rarity-epic ${this.currentFilter === 'rarity-epic' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('rarity-epic')">秘传</button>
+            <button class="filter-btn rarity-legendary ${this.currentFilter === 'rarity-legendary' ? 'active' : ''}" onclick="PatternCollectionUI.setFilter('rarity-legendary')">祖灵</button>
+          </div>
+          
+          <div class="collection-content">
+            <div class="collection-grid" id="collectionGrid">
+              ${this.renderGrid(unlocked, rarityNames, typeNames, applied)}
+            </div>
+            
+            ${this.selectedPattern ? this.renderDetailPanel(unlocked, rarityNames, typeNames, applied) : ''}
           </div>
         </div>
       </div>
     `;
     
     document.body.insertAdjacentHTML('beforeend', html);
-  },
-  
-  close() {
-    const modal = document.getElementById('patternCollection');
-    if (modal) modal.remove();
-  },
-  
-  filter(rarity, btn) {
-    // 更新按钮状态
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
     
-    // 过滤显示
-    document.querySelectorAll('.pattern-item').forEach(item => {
-      item.style.display = (rarity === 'all' || item.dataset.rarity === rarity) ? 'block' : 'none';
+    // 触发淡入动画
+    requestAnimationFrame(() => {
+      const modal = document.getElementById('patternCollectionModal');
+      if (modal) modal.style.opacity = '1';
     });
+  },
+  
+  renderGrid(unlocked, rarityNames, typeNames, applied) {
+    let filtered = unlocked;
+    
+    if (this.currentFilter.startsWith('rarity-')) {
+      const rarity = this.currentFilter.replace('rarity-', '');
+      filtered = unlocked.filter(p => p.rarity === rarity);
+    } else if (this.currentFilter !== 'all') {
+      filtered = unlocked.filter(p => p.type === this.currentFilter);
+    }
+    
+    if (filtered.length === 0) {
+      return '<div class="empty-state">还没有此类皮肤，去"得纹样"获取吧～</div>';
+    }
+    
+    return filtered.map(p => {
+      const isApplied = applied[p.type] === p.id;
+      return `
+        <div class="pattern-item rarity-${p.rarity} ${isApplied ? 'applied' : ''} ${this.selectedPattern === p.id ? 'selected' : ''}" 
+             onclick="PatternCollectionUI.selectPattern('${p.id}')">
+          <div class="pattern-preview" style="${this.getPreviewStyle(p)}">
+            ${p.type === 'background' ? '🖼️' : p.type === 'avatarFrame' ? '👤' : '🎨'}
+          </div>
+          <div class="pattern-meta">
+            <span class="meta-rarity ${p.rarity}">${rarityNames[p.rarity]}</span>
+            <span class="meta-type">${typeNames[p.type]}</span>
+            <h4>${p.name}</h4>
+            ${isApplied ? '<span class="applied-badge">✓ 使用中</span>' : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+  
+  renderDetailPanel(unlocked, rarityNames, typeNames, applied) {
+    const pattern = unlocked.find(p => p.id === this.selectedPattern);
+    if (!pattern) return '';
+    
+    const isApplied = applied[pattern.type] === pattern.id;
+    
+    return `
+      <div class="detail-panel" id="detailPanel">
+        <div class="detail-preview" style="${this.getPreviewStyle(pattern, true)}">
+          ${pattern.type === 'background' ? '🖼️' : pattern.type === 'avatarFrame' ? '👤' : '🎨'}
+        </div>
+        <div class="detail-info">
+          <span class="detail-rarity ${pattern.rarity}">${rarityNames[pattern.rarity]}</span>
+          <h3>${pattern.name}</h3>
+          <p class="detail-type">${typeNames[pattern.type]}</p>
+          <p class="detail-desc">${pattern.description}</p>
+          <div class="detail-actions">
+            ${isApplied 
+              ? `<button class="btn-secondary" onclick="PatternCollectionUI.unapply('${pattern.type}')">取消应用</button>`
+              : `<button class="btn-primary" onclick="PatternCollectionUI.apply('${pattern.id}', '${pattern.type}')">应用此皮肤</button>`
+            }
+          </div>
+        </div>
+      </div>
+    `;
+  },
+  
+  getPreviewStyle(pattern, isLarge = false) {
+    const size = isLarge ? '120px' : '60px';
+    switch (pattern.type) {
+      case 'background':
+        return `background: ${pattern.preview}; width: ${size}; height: ${size}; border-radius: 8px;`;
+      case 'avatarFrame':
+        return `border: ${pattern.preview}; width: ${size}; height: ${size}; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary);`;
+      case 'theme':
+        return `background: ${pattern.preview}; width: ${size}; height: ${size}; border-radius: 8px;`;
+      default:
+        return '';
+    }
+  },
+  
+  setFilter(filter) {
+    this.currentFilter = filter;
+    this.render();
+  },
+  
+  selectPattern(patternId) {
+    this.selectedPattern = patternId;
+    this.render();
+  },
+  
+  apply(patternId, type) {
+    V2System.patternCollection.applyPattern(patternId, type);
+    this.render();
+    if (window.showToast) showToast('皮肤已应用！');
+  },
+  
+  unapply(type) {
+    V2System.patternCollection.unapplyPattern(type);
+    this.render();
+    if (window.showToast) showToast('已恢复默认');
   }
 };
+
+// 兼容旧接口
+const PatternCollection = PatternCollectionUI;
 
 // 导出
 window.BlindBoxModal = BlindBoxModal;
 window.LevelBadge = LevelBadge;
 window.LevelModal = LevelModal;
 window.CheckinComponent = CheckinComponent;
+window.PatternCollectionUI = PatternCollectionUI;
 window.PatternCollection = PatternCollection;

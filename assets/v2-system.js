@@ -407,10 +407,226 @@ const CheckinSystem = {
   }
 };
 
+// ========== 绣谱系统（皮肤/头像/背景更换） ==========
+const PATTERN_DATA = [
+  // 背景纹样
+  { id: 'bg-001', name: '瑶山晨雾', rarity: 'common', type: 'background', 
+    preview: 'linear-gradient(135deg, #f5f5f0 0%, #e8e4dc 100%)',
+    description: '清晨瑶山的薄雾，宁静而神秘' },
+  { id: 'bg-002', name: '蓝靛夜色', rarity: 'rare', type: 'background', 
+    preview: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+    description: '蓝靛瑶传统染色工艺的深邃蓝' },
+  { id: 'bg-003', name: '金秋丰收', rarity: 'epic', type: 'background', 
+    preview: 'linear-gradient(135deg, #d4a574 0%, #c49a6c 50%, #b8925f 100%)',
+    description: '丰收季节的金黄色调' },
+  { id: 'bg-004', name: '祖灵祝福', rarity: 'legendary', type: 'background', 
+    preview: 'linear-gradient(135deg, #2d1810 0%, #4a2c17 50%, #1a0f0a 100%)',
+    description: '祖先图腾的神圣色彩' },
+  
+  // 头像框纹样
+  { id: 'frame-001', name: '八角花边', rarity: 'common', type: 'avatarFrame', 
+    preview: '2px solid #9ca3af',
+    description: '经典的八角花边框' },
+  { id: 'frame-002', name: '盘瑶金框', rarity: 'rare', type: 'avatarFrame', 
+    preview: '3px solid #3b82f6',
+    description: '盘瑶支系的尊贵边框' },
+  { id: 'frame-003', name: '秘传银纹', rarity: 'epic', type: 'avatarFrame', 
+    preview: '3px dashed #a855f7',
+    description: '只在特定支系传承的神秘边框' },
+  { id: 'frame-004', name: '祖灵神环', rarity: 'legendary', type: 'avatarFrame', 
+    preview: '4px double #f59e0b',
+    description: '传说中只有传承大师才能拥有的神环' },
+  
+  // 主题纹样
+  { id: 'theme-001', name: '素雅白', rarity: 'common', type: 'theme', 
+    preview: '#9ca3af',
+    accentColor: '#9ca3af',
+    description: '朴素典雅的灰色主题' },
+  { id: 'theme-002', name: '节庆蓝', rarity: 'rare', type: 'theme', 
+    preview: '#3b82f6',
+    accentColor: '#3b82f6',
+    description: '节日庆典的喜庆蓝色' },
+  { id: 'theme-003', name: '秘传紫', rarity: 'epic', type: 'theme', 
+    preview: '#a855f7',
+    accentColor: '#a855f7',
+    description: '神秘高贵的紫色主题' },
+  { id: 'theme-004', name: '祖灵金', rarity: 'legendary', type: 'theme', 
+    preview: '#f59e0b',
+    accentColor: '#f59e0b',
+    description: '象征最高荣誉的金色主题' }
+];
+
+// 绣谱收藏管理
+const PatternCollection = {
+  patterns: [], // 获得的纹样ID列表
+  applied: { background: null, avatarFrame: null, theme: null },
+  
+  // 从localStorage初始化
+  init() {
+    const saved = localStorage.getItem('yao-pattern-collection');
+    if (saved) {
+      const data = JSON.parse(saved);
+      this.patterns = data.patterns || [];
+      this.applied = data.applied || { background: null, avatarFrame: null, theme: null };
+    }
+    // 应用已保存的皮肤设置
+    this.applyAll();
+  },
+  
+  // 保存到localStorage
+  save() {
+    localStorage.setItem('yao-pattern-collection', JSON.stringify({
+      patterns: this.patterns,
+      applied: this.applied
+    }));
+  },
+  
+  // 添加纹样
+  addPattern(patternId) {
+    if (!this.patterns.includes(patternId)) {
+      this.patterns.push(patternId);
+      this.save();
+      return true;
+    }
+    return false;
+  },
+  
+  // 应用纹样
+  applyPattern(patternId, type) {
+    const pattern = PATTERN_DATA.find(p => p.id === patternId);
+    if (!pattern || pattern.type !== type) return false;
+    
+    if (!this.patterns.includes(patternId)) return false;
+    
+    this.applied[type] = patternId;
+    this.save();
+    this.applySkin(type, pattern);
+    return true;
+  },
+  
+  // 取消应用
+  unapplyPattern(type) {
+    this.applied[type] = null;
+    this.save();
+    this.removeSkin(type);
+    return true;
+  },
+  
+  // 获取已应用的纹样
+  getApplied(type) {
+    if (type) {
+      return this.applied[type];
+    }
+    return { ...this.applied };
+  },
+  
+  // 按稀有度获取纹样
+  getPatternsByRarity(rarity) {
+    return this.getUnlockedPatterns().filter(p => p.rarity === rarity);
+  },
+  
+  // 检查是否已解锁
+  isUnlocked(patternId) {
+    return this.patterns.includes(patternId);
+  },
+  
+  // 获取所有已解锁纹样详情
+  getUnlockedPatterns() {
+    return this.patterns.map(id => PATTERN_DATA.find(p => p.id === id)).filter(Boolean);
+  },
+  
+  // 应用皮肤效果
+  applySkin(type, pattern) {
+    switch (type) {
+      case 'background':
+        this.applyBackground(pattern);
+        break;
+      case 'avatarFrame':
+        this.applyAvatarFrame(pattern);
+        break;
+      case 'theme':
+        this.applyTheme(pattern);
+        break;
+    }
+  },
+  
+  // 移除皮肤效果
+  removeSkin(type) {
+    switch (type) {
+      case 'background':
+        document.body.style.background = '';
+        const chatContainer = document.getElementById('chatContainer');
+        if (chatContainer) chatContainer.style.background = '';
+        break;
+      case 'avatarFrame':
+        document.querySelectorAll('.avatar-frame').forEach(el => {
+          el.style.border = '';
+          el.style.borderRadius = '';
+        });
+        break;
+      case 'theme':
+        document.documentElement.style.setProperty('--accent', '');
+        document.documentElement.style.setProperty('--accent-light', '');
+        break;
+    }
+  },
+  
+  // 应用背景
+  applyBackground(pattern) {
+    document.body.style.background = pattern.preview;
+    const chatContainer = document.getElementById('chatContainer');
+    if (chatContainer) {
+      chatContainer.style.background = 'rgba(255, 255, 255, 0.85)';
+      chatContainer.style.backdropFilter = 'blur(10px)';
+    }
+  },
+  
+  // 应用头像框
+  applyAvatarFrame(pattern) {
+    // 应用到小瑶头像
+    const yaoAvatar = document.querySelector('.yao-avatar, #yaoAvatar');
+    if (yaoAvatar) {
+      yaoAvatar.style.border = pattern.preview;
+      yaoAvatar.style.borderRadius = '50%';
+      yaoAvatar.classList.add('avatar-frame');
+    }
+    // 应用到用户头像
+    const userAvatars = document.querySelectorAll('.user-avatar, .avatar');
+    userAvatars.forEach(avatar => {
+      avatar.style.border = pattern.preview;
+      avatar.style.borderRadius = '50%';
+      avatar.classList.add('avatar-frame');
+    });
+  },
+  
+  // 应用主题
+  applyTheme(pattern) {
+    if (pattern.accentColor) {
+      document.documentElement.style.setProperty('--accent', pattern.accentColor);
+      document.documentElement.style.setProperty('--accent-light', pattern.accentColor + '40');
+    }
+  },
+  
+  // 应用所有已保存的设置
+  applyAll() {
+    ['background', 'avatarFrame', 'theme'].forEach(type => {
+      const patternId = this.applied[type];
+      if (patternId) {
+        const pattern = PATTERN_DATA.find(p => p.id === patternId);
+        if (pattern) {
+          this.applySkin(type, pattern);
+        }
+      }
+    });
+  }
+};
+
 // 导出
 window.V2System = {
   patterns: PATTERN_DATABASE,
   level: LEVEL_SYSTEM,
   blindBox: BlindBoxSystem,
-  checkin: CheckinSystem
+  checkin: CheckinSystem,
+  patternCollection: PatternCollection,
+  PATTERN_DATA
 };

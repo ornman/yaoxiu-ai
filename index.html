@@ -1097,6 +1097,11 @@
                         <span>·</span>
                         <span>Tailwind</span>
                     </div>
+                    
+                    <!-- 隐藏调试入口 -->
+                    <div id="debugEntry" class="mt-4 opacity-0 hover:opacity-100 transition-opacity cursor-pointer text-center" style="color: var(--text-tertiary); font-size: 10px;" title="连续点击5次启用调试工具">
+                        <span>⚙️</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1439,6 +1444,11 @@
             // 初始化签到组件
             if (window.CheckinComponent) CheckinComponent.init();
             
+            // 初始化绣谱系统
+            if (window.V2System && V2System.patternCollection) {
+                V2System.patternCollection.init();
+            }
+            
             // 添加盲盒入口按钮
             setTimeout(() => {
                 const headerActions = document.querySelector('header .flex.items-center.justify-between .flex.items-center.gap-1');
@@ -1452,12 +1462,15 @@
                     `);
                 }
                 
-                // 修改收藏按钮行为（改为打开收藏册）
+                // 修改收藏按钮行为（改为打开绣谱）
                 const favBtn = document.getElementById('headerFavBtn');
-                if (favBtn && window.PatternCollection) {
-                    favBtn.onclick = () => PatternCollection.open();
+                if (favBtn && window.PatternCollectionUI) {
+                    favBtn.onclick = () => PatternCollectionUI.open();
                 }
             }, 100);
+            
+            // 初始化隐藏调试入口（连续点击5次启用）
+            initDebugEntry();
         });
         
         // 渲染预设问题（轮询8组不同风格）
@@ -2672,6 +2685,11 @@
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 2500);
         }
+        
+        // 显示通知（showToast的别名，用于兼容性）
+        function showNotification(msg, type = 'info') {
+            showToast(msg);
+        }
 
         function quickAsk(text) {
             document.getElementById('userInput').value = text;
@@ -3044,21 +3062,60 @@
         function appendImageAndTextMessage(images, text) {
             const container = document.getElementById('chatContainer');
             const wrapper = document.createElement('div');
-            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up user-message-wrapper';
             
             const imageGrid = images.map(img => 
-                `<img src="${img}" class="rounded-lg border" style="border-color: var(--border-color); width: 100%; height: 100%; object-fit: cover; max-height: 150px;">`
+                `<img src="${img}" class="user-message-image rounded-lg border mb-2" style="border-color: var(--border-color); width: 100%; height: 100%; object-fit: cover; max-height: 150px;">`
             ).join('');
             
-            const textHtml = text ? `<p class="leading-relaxed text-sm sm:text-base mt-2" style="color: var(--text-primary);">${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : '';
+            const textHtml = text ? `<p class="leading-relaxed text-sm sm:text-base user-message-text" style="color: white;">${escapeHtml(text).replace(/\n/g, '<br>')}</p>` : '';
+            const fullContent = text || '[图片]';
             
             wrapper.innerHTML = `
-                <div class="message-bubble">
-                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
+                <div class="message-bubble user-message-bubble" data-original-content="${escapeHtml(fullContent)}">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content cursor-pointer transition-all hover:opacity-90" 
+                         style="background: var(--accent); border-color: var(--accent);"
+                         onclick="showUserMessageActions(this)">
                         <div class="grid gap-2 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}" style="max-width: 300px;">
                             ${imageGrid}
                         </div>
                         ${textHtml}
+                    </div>
+                    <!-- 操作栏 -->
+                    <div class="user-message-actions hidden flex items-center justify-between mt-2 px-1">
+                        <div class="flex items-center gap-2">
+                            <button class="edit-btn flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                    onclick="startEditUserMessage(this)" title="编辑消息">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                编辑
+                            </button>
+                        </div>
+                        <button class="delete-btn flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105" 
+                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;"
+                                onclick="deleteUserMessageAndReply(this)" title="删除消息及回复">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            删除
+                        </button>
+                    </div>
+                    <!-- 编辑区域 -->
+                    <div class="user-message-edit hidden mt-2">
+                        <textarea class="w-full px-3 py-2 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2" 
+                                  style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary); min-height: 60px;"
+                                  onkeydown="handleEditKeyDown(event, this)"
+                                  onblur="saveUserMessageEdit(this)">${escapeHtml(text || '')}</textarea>
+                        <div class="flex items-center justify-end gap-2 mt-2">
+                            <button class="cancel-edit-btn px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                    style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color);"
+                                    onclick="cancelUserMessageEdit(this)">取消</button>
+                            <button class="save-edit-btn px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                    style="background: var(--accent); color: white; border: 1px solid var(--accent);"
+                                    onclick="saveUserMessageEdit(this.closest('.user-message-edit').querySelector('textarea'))">保存</button>
+                        </div>
                     </div>
                 </div>
                 <div class="flex-shrink-0">
@@ -3397,14 +3454,63 @@
             }
         }
 
-        function appendUserMessage(content) {
+        function appendUserMessage(content, images = []) {
             const container = document.getElementById('chatContainer');
             const wrapper = document.createElement('div');
-            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up';
+            wrapper.className = 'flex gap-2 sm:gap-4 justify-end animate-slide-up user-message-wrapper';
+            
+            // 构建图片HTML
+            let imagesHtml = '';
+            if (images && images.length > 0) {
+                const imageGrid = images.map(img => 
+                    `<img src="${img}" class="user-message-image rounded-lg border mb-2" style="border-color: var(--border-color); width: 100%; height: 100%; object-fit: cover; max-height: 150px;">`
+                ).join('');
+                imagesHtml = `<div class="grid gap-2 ${images.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} mb-2" style="max-width: 300px;">${imageGrid}</div>`;
+            }
+            
             wrapper.innerHTML = `
-                <div class="message-bubble">
-                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content" style="background: var(--accent); background-opacity: 0.1; border-color: var(--accent); border-opacity: 0.3;">
-                        <p class="leading-relaxed text-sm sm:text-base" style="color: var(--text-primary);">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                <div class="message-bubble user-message-bubble" data-original-content="${escapeHtml(content)}">
+                    <div class="rounded-2xl rounded-tr-sm px-3 sm:px-5 py-3 border chat-content cursor-pointer transition-all hover:opacity-90" 
+                         style="background: var(--accent); border-color: var(--accent);"
+                         onclick="showUserMessageActions(this)">
+                        ${imagesHtml}
+                        <p class="leading-relaxed text-sm sm:text-base user-message-text" style="color: white;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                    </div>
+                    <!-- 操作栏 -->
+                    <div class="user-message-actions hidden flex items-center justify-between mt-2 px-1">
+                        <div class="flex items-center gap-2">
+                            <button class="edit-btn flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105" 
+                                    style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                                    onclick="startEditUserMessage(this)" title="编辑消息">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                </svg>
+                                编辑
+                            </button>
+                        </div>
+                        <button class="delete-btn flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all hover:scale-105" 
+                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444;"
+                                onclick="deleteUserMessageAndReply(this)" title="删除消息及回复">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            删除
+                        </button>
+                    </div>
+                    <!-- 编辑区域 -->
+                    <div class="user-message-edit hidden mt-2">
+                        <textarea class="w-full px-3 py-2 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2" 
+                                  style="background: var(--bg-secondary); border-color: var(--border-color); color: var(--text-primary); min-height: 60px;"
+                                  onkeydown="handleEditKeyDown(event, this)"
+                                  onblur="saveUserMessageEdit(this)">${escapeHtml(content)}</textarea>
+                        <div class="flex items-center justify-end gap-2 mt-2">
+                            <button class="cancel-edit-btn px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                    style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color);"
+                                    onclick="cancelUserMessageEdit(this)">取消</button>
+                            <button class="save-edit-btn px-3 py-1 rounded-lg text-xs font-medium transition-all" 
+                                    style="background: var(--accent); color: white; border: 1px solid var(--accent);"
+                                    onclick="saveUserMessageEdit(this.closest('.user-message-edit').querySelector('textarea'))">保存</button>
+                        </div>
                     </div>
                 </div>
                 <div class="flex-shrink-0">
@@ -3415,6 +3521,221 @@
             `;
             container.appendChild(wrapper);
             scrollToBottom();
+        }
+        
+        // 显示用户消息操作栏
+        function showUserMessageActions(contentDiv) {
+            // 如果正在编辑，不处理
+            if (contentDiv.closest('.user-message-bubble').querySelector('.user-message-edit:not(.hidden)')) {
+                return;
+            }
+            
+            const actions = contentDiv.closest('.user-message-bubble').querySelector('.user-message-actions');
+            if (actions) {
+                // 切换显示状态
+                const isHidden = actions.classList.contains('hidden');
+                
+                // 先隐藏所有其他的操作栏
+                document.querySelectorAll('.user-message-actions').forEach(a => a.classList.add('hidden'));
+                
+                if (isHidden) {
+                    actions.classList.remove('hidden');
+                    // 3秒后自动隐藏
+                    setTimeout(() => {
+                        actions.classList.add('hidden');
+                    }, 3000);
+                } else {
+                    actions.classList.add('hidden');
+                }
+            }
+        }
+        
+        // 开始编辑用户消息
+        function startEditUserMessage(editBtn) {
+            const bubble = editBtn.closest('.user-message-bubble');
+            const actions = bubble.querySelector('.user-message-actions');
+            const editArea = bubble.querySelector('.user-message-edit');
+            const contentDiv = bubble.querySelector('.chat-content');
+            const textarea = editArea.querySelector('textarea');
+            
+            // 隐藏操作栏和内容
+            actions.classList.add('hidden');
+            contentDiv.classList.add('hidden');
+            
+            // 显示编辑区域
+            editArea.classList.remove('hidden');
+            textarea.focus();
+            
+            // 自动调整高度
+            autoResize(textarea);
+        }
+        
+        // 处理编辑时的键盘事件
+        function handleEditKeyDown(e, textarea) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                saveUserMessageEdit(textarea);
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelUserMessageEdit(textarea.closest('.user-message-edit').querySelector('.cancel-edit-btn'));
+            }
+        }
+        
+        // 保存用户消息编辑
+        async function saveUserMessageEdit(textarea) {
+            const bubble = textarea.closest('.user-message-bubble');
+            const editArea = bubble.querySelector('.user-message-edit');
+            const contentDiv = bubble.querySelector('.chat-content');
+            const textElement = contentDiv.querySelector('.user-message-text');
+            
+            const newContent = textarea.value.trim();
+            if (!newContent) {
+                showToast('消息内容不能为空');
+                return;
+            }
+            
+            const originalContent = bubble.dataset.originalContent;
+            if (newContent === originalContent) {
+                // 内容未改变，取消编辑
+                cancelUserMessageEdit(editArea.querySelector('.cancel-edit-btn'));
+                return;
+            }
+            
+            // 更新显示
+            textElement.innerHTML = escapeHtml(newContent).replace(/\n/g, '<br>');
+            bubble.dataset.originalContent = newContent;
+            
+            // 更新chatHistory
+            const wrapper = bubble.closest('.user-message-wrapper');
+            const allUserWrappers = Array.from(document.querySelectorAll('.user-message-wrapper'));
+            const userMessageIndex = allUserWrappers.indexOf(wrapper);
+            
+            // 找到对应的chatHistory中的用户消息
+            let userHistoryIndex = -1;
+            let userCount = 0;
+            for (let i = 0; i < chatHistory.length; i++) {
+                if (chatHistory[i].role === 'user') {
+                    if (userCount === userMessageIndex) {
+                        userHistoryIndex = i;
+                        break;
+                    }
+                    userCount++;
+                }
+            }
+            
+            if (userHistoryIndex !== -1) {
+                const oldContent = chatHistory[userHistoryIndex].content;
+                chatHistory[userHistoryIndex].content = newContent;
+                
+                // 更新chatContext中的消息
+                if (chatContext && chatContext.messages) {
+                    for (let i = 0; i < chatContext.messages.length; i++) {
+                        if (chatContext.messages[i].role === 'user' && chatContext.messages[i].content === oldContent) {
+                            chatContext.messages[i].content = newContent;
+                            break;
+                        }
+                    }
+                    await chatContext.save();
+                }
+                
+                saveCurrentConversation();
+            }
+            
+            // 恢复显示
+            editArea.classList.add('hidden');
+            contentDiv.classList.remove('hidden');
+            
+            showToast('消息已更新');
+        }
+        
+        // 取消用户消息编辑
+        function cancelUserMessageEdit(cancelBtn) {
+            const bubble = cancelBtn.closest('.user-message-bubble');
+            const editArea = bubble.querySelector('.user-message-edit');
+            const contentDiv = bubble.querySelector('.chat-content');
+            const textarea = editArea.querySelector('textarea');
+            
+            // 恢复原值
+            textarea.value = bubble.dataset.originalContent;
+            
+            // 恢复显示
+            editArea.classList.add('hidden');
+            contentDiv.classList.remove('hidden');
+        }
+        
+        // 删除用户消息及对应的AI回复
+        async function deleteUserMessageAndReply(deleteBtn) {
+            if (!confirm('确定要删除这条消息及其AI回复吗？')) {
+                return;
+            }
+            
+            const bubble = deleteBtn.closest('.user-message-bubble');
+            const wrapper = bubble.closest('.user-message-wrapper');
+            const chatContainer = document.getElementById('chatContainer');
+            
+            // 获取当前用户消息的位置
+            const allWrappers = Array.from(chatContainer.children);
+            const userWrapperIndex = allWrappers.indexOf(wrapper);
+            
+            // 获取用户消息的原始内容用于匹配
+            const userContent = bubble.dataset.originalContent;
+            
+            // 从chatHistory中删除对应的用户消息和AI回复
+            let userHistoryIndex = -1;
+            let userCount = 0;
+            for (let i = 0; i < chatHistory.length; i++) {
+                if (chatHistory[i].role === 'user') {
+                    if (userCount === Array.from(document.querySelectorAll('.user-message-wrapper')).indexOf(wrapper)) {
+                        userHistoryIndex = i;
+                        break;
+                    }
+                    userCount++;
+                }
+            }
+            
+            if (userHistoryIndex !== -1) {
+                // 删除用户消息
+                chatHistory.splice(userHistoryIndex, 1);
+                // 删除对应的AI回复（如果存在）
+                if (userHistoryIndex < chatHistory.length && chatHistory[userHistoryIndex].role === 'assistant') {
+                    chatHistory.splice(userHistoryIndex, 1);
+                }
+            }
+            
+            // 从chatContext中删除
+            if (chatContext && chatContext.messages) {
+                for (let i = 0; i < chatContext.messages.length; i++) {
+                    if (chatContext.messages[i].role === 'user' && chatContext.messages[i].content === userContent) {
+                        // 删除用户消息
+                        chatContext.messages.splice(i, 1);
+                        // 删除对应的AI回复（如果存在且下一条是AI消息）
+                        if (i < chatContext.messages.length && chatContext.messages[i].role === 'assistant') {
+                            chatContext.messages.splice(i, 1);
+                        }
+                        break;
+                    }
+                }
+                await chatContext.save();
+            }
+            
+            // 从DOM中删除用户消息
+            wrapper.remove();
+            
+            // 删除对应的AI回复（下一个元素，如果不是欢迎消息的话）
+            if (userWrapperIndex < allWrappers.length - 1) {
+                const nextElement = allWrappers[userWrapperIndex + 1];
+                // 检查是否是AI回复（不是用户消息且不是计数器）
+                if (nextElement && !nextElement.classList.contains('user-message-wrapper') && !nextElement.querySelector('#msgCount')) {
+                    nextElement.remove();
+                }
+            }
+            
+            // 更新消息计数
+            messageCount = Math.max(0, messageCount - 1);
+            document.getElementById('msgCount').textContent = messageCount;
+            
+            saveCurrentConversation();
+            showToast('消息已删除');
         }
 
         function createAssistantMessage() {
@@ -3663,21 +3984,34 @@
             scrollToBottom();
         }
         
-        // 重新生成消息
+        // 重新生成消息 - 只清空AI回复并重新生成，保留用户消息
         async function regenerateMessage(question, aiBubble) {
-            if (!question) return;
+            if (!question || isGenerating) return;
             
             // 停止之前的生成
-            if (abortController) {
-                abortController.abort();
+            if (controller) {
+                controller.abort();
             }
             
-            // 删除旧的AI回复
-            aiBubble.remove();
+            // 找到AI回复的内容区域并清空
+            const streamingDiv = aiBubble.querySelector('.streaming-content, .chat-content > div');
+            if (!streamingDiv) return;
+            
+            // 清空AI回复内容，显示思考状态
+            streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">正在重新思考...</span>';
+            streamingDiv.classList.add('cursor-blink');
+            
+            // 移除原有的操作按钮
+            const existingActions = aiBubble.querySelector('.message-actions');
+            if (existingActions) {
+                existingActions.remove();
+            }
             
             // 从聊天历史中删除对应的AI回复
+            let aiMessageIndex = -1;
             for (let i = chatHistory.length - 1; i >= 0; i--) {
                 if (chatHistory[i].role === 'assistant') {
+                    aiMessageIndex = i;
                     chatHistory.splice(i, 1);
                     break;
                 }
@@ -3692,18 +4026,656 @@
                         break;
                     }
                 }
-                await chatContext.save();
             }
             
-            // 重新发送消息
-            const input = document.getElementById('userInput');
-            if (input) {
-                input.value = question;
-                await sendMessage();
-                input.value = '';
+            isGenerating = true;
+            document.getElementById('sendBtn').disabled = false;
+            updateSendBtnState();
+            
+            let fullText = '';
+            let reasoningText = '';
+            let hasReceivedContent = false;
+            
+            controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 30000);
+            
+            try {
+                const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                
+                // 使用上下文管理器构建消息数组
+                const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
+                    { role: 'system', content: chatContext?.systemPrompt || '' },
+                    { role: 'user', content: question }
+                ];
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                    },
+                    body: JSON.stringify({
+                        type: 'chat-context',
+                        messages: messages,
+                        model: document.getElementById('modelSelect').value
+                    }),
+                    signal: controller.signal
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                clearTimeout(timeoutId);
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        
+                        const data = line.slice(5).trim();
+                        if (data === '[DONE]') continue;
+                        
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            
+                            if (!hasReceivedContent) {
+                                streamingDiv.innerHTML = '';
+                                hasReceivedContent = true;
+                            }
+                            
+                            // 处理深度思考过程
+                            if (delta?.reasoning_content) {
+                                reasoningText += delta.reasoning_content;
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>深度思考中...</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                }
+                                if (fullText) {
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                }
+                                streamingDiv.innerHTML = displayText;
+                            }
+                            
+                            // 处理正式回复内容
+                            if (delta?.content) {
+                                fullText += delta.content;
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                } else {
+                                    displayText = marked.parse(fullText);
+                                }
+                                streamingDiv.innerHTML = displayText;
+                                streamingDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                            scrollToBottom();
+                        } catch (e) {}
+                    }
+                }
+                
+                streamingDiv.classList.remove('cursor-blink');
+                
+                // 保存新的AI回复到对话历史和上下文管理器
+                if (fullText) {
+                    chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    if (chatContext) {
+                        chatContext.addAssistantMessage(fullText);
+                        await chatContext.save();
+                    }
+                    saveCurrentConversation();
+                }
+                
+                // 重新添加操作按钮
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addMessageActions(messageBubble, question, fullText);
+                }
+                
+            } catch (err) {
+                console.error('重新生成出错:', err);
+                clearTimeout(timeoutId);
+                
+                if (err.name === 'AbortError') {
+                    streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
+                } else {
+                    streamingDiv.innerHTML = `<div style="color: #ef4444; padding: 0.5rem;">
+                        <p class="font-medium">重新生成失败</p>
+                        <p class="text-sm mt-1">${escapeHtml(err.message || '网络连接失败')}</p>
+                        <button onclick="regenerateMessage('${escapeHtml(question).replace(/'/g, "\\'")}', this.closest('.message-bubble'))" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
+                    </div>`;
+                }
+            } finally {
+                clearTimeout(timeoutId);
+                isGenerating = false;
+                document.getElementById('sendBtn').disabled = false;
+                updateSendBtnState();
+                controller = null;
             }
         }
 
+        // ========== 隐藏调试入口初始化 ==========
+        function initDebugEntry() {
+            const debugEntry = document.getElementById('debugEntry');
+            if (!debugEntry) return;
+            
+            let clickCount = 0;
+            let clickTimer = null;
+            
+            debugEntry.addEventListener('click', () => {
+                clickCount++;
+                
+                // 清除之前的定时器
+                if (clickTimer) clearTimeout(clickTimer);
+                
+                // 设置新的定时器，2秒后重置点击计数
+                clickTimer = setTimeout(() => {
+                    clickCount = 0;
+                }, 2000);
+                
+                // 达到5次点击，启用调试工具
+                if (clickCount >= 5) {
+                    clickCount = 0;
+                    if (clickTimer) clearTimeout(clickTimer);
+                    
+                    // 启用调试
+                    if (window.DebugTools && DebugTools.enable) {
+                        DebugTools.enable();
+                    } else {
+                        showToast('调试工具未加载');
+                    }
+                }
+            });
+        }
+
+    </script>
+
+    <!-- ========== 调试系统（上线前删除）========== -->
+    <style>
+        /* 调试面板样式 */
+        #debugPanel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 480px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            border: 2px solid var(--accent);
+            border-radius: 16px;
+            z-index: 9999;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        #debugPanel h3 {
+            margin: 0 0 16px 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #debugPanel section {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        #debugPanel section h4 {
+            margin: 0 0 12px 0;
+            color: var(--gold);
+            font-size: 14px;
+            font-weight: 600;
+        }
+        #debugPanel .debug-btn {
+            padding: 8px 16px;
+            margin: 4px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #debugPanel .debug-btn:hover {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        #debugPanel .debug-btn.secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        #debugPanel .debug-btn.danger {
+            background: #ef4444;
+        }
+        #debugPanel input, #debugPanel select {
+            padding: 8px 12px;
+            margin: 4px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 12px;
+            width: 120px;
+        }
+        #debugPanel .debug-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #debugPanel .debug-close:hover {
+            background: var(--accent);
+            color: white;
+        }
+        #debugPanel .debug-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        #debugPanel .debug-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+        #debugTriggerHint {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            padding: 8px 16px;
+            background: var(--accent);
+            color: white;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        #debugTriggerHint.show {
+            opacity: 1;
+        }
+    </style>
+
+    <!-- 调试面板 -->
+    <div id="debugPanel" style="display: none;">
+        <button class="debug-close" onclick="DebugTools.togglePanel()">×</button>
+        <h3>🛠️ 调试面板（上线前删除）</h3>
+        
+        <!-- 盲盒调试 -->
+        <section>
+            <h4>🎁 盲盒调试</h4>
+            <div class="debug-row">
+                <button class="debug-btn secondary" onclick="DebugTools.resetDrawCount()">重置抽取次数</button>
+                <button class="debug-btn" onclick="DebugTools.forceDraw('common')">强制-日用</button>
+                <button class="debug-btn" onclick="DebugTools.forceDraw('rare')">强制-节庆</button>
+            </div>
+            <div class="debug-row">
+                <button class="debug-btn" onclick="DebugTools.forceDraw('epic')">强制-秘传</button>
+                <button class="debug-btn" onclick="DebugTools.forceDraw('legendary')">强制-祖灵</button>
+                <button class="debug-btn danger" onclick="DebugTools.clearPatterns()">清空纹样</button>
+            </div>
+        </section>
+        
+        <!-- 等级调试 -->
+        <section>
+            <h4>📊 等级调试</h4>
+            <div class="debug-row">
+                <span class="debug-label">经验值:</span>
+                <input type="number" id="debugExp" placeholder="设置经验值" value="0">
+                <button class="debug-btn" onclick="DebugTools.setExp()">设置</button>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">等级:</span>
+                <select id="debugLevel">
+                    <option value="1">🌱 好奇学徒</option>
+                    <option value="2">🌿 初级绣娘</option>
+                    <option value="3">🍃 纹样学徒</option>
+                    <option value="4">🌸 配色助手</option>
+                    <option value="5">🌺 小瑶师妹</option>
+                    <option value="6">💐 资深绣娘</option>
+                    <option value="7">🏵️ 纹样专家</option>
+                    <option value="8">👑 传承大师</option>
+                </select>
+                <button class="debug-btn" onclick="DebugTools.setLevel()">设置</button>
+            </div>
+        </section>
+        
+        <!-- 签到调试 -->
+        <section>
+            <h4>📅 签到调试</h4>
+            <div class="debug-row">
+                <button class="debug-btn secondary" onclick="DebugTools.resetCheckin()">重置签到状态</button>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">连续天数:</span>
+                <input type="number" id="debugStreak" placeholder="连续签到天数" value="1">
+                <button class="debug-btn" onclick="DebugTools.setStreak()">设置</button>
+            </div>
+        </section>
+        
+        <!-- 系统调试 -->
+        <section>
+            <h4>⚙️ 系统调试</h4>
+            <div class="debug-row">
+                <button class="debug-btn danger" onclick="DebugTools.clearAllData()">清空所有数据</button>
+                <button class="debug-btn secondary" onclick="DebugTools.disableDebug()">关闭调试模式</button>
+            </div>
+        </section>
+    </div>
+
+    <!-- 调试触发提示 -->
+    <div id="debugTriggerHint">调试模式已激活！按 Ctrl+Shift+D 打开面板</div>
+
+    <script>
+        // ========== 调试工具对象 ==========
+        const DebugTools = {
+            // 设置按钮点击计数
+            settingsClickCount: 0,
+            settingsClickTimer: null,
+            
+            // 启用调试模式
+            enable() {
+                localStorage.setItem('yaoyao_debug', 'true');
+                this.showPanel();
+                this.showHint('调试模式已启用！');
+                console.log('[Debug] 调试模式已启用');
+            },
+            
+            // 禁用调试模式
+            disable() {
+                localStorage.removeItem('yaoyao_debug');
+                this.hidePanel();
+                this.showHint('调试模式已关闭');
+                console.log('[Debug] 调试模式已关闭');
+            },
+            
+            // 切换面板显示
+            togglePanel() {
+                const panel = document.getElementById('debugPanel');
+                if (panel.style.display === 'none') {
+                    this.showPanel();
+                } else {
+                    this.hidePanel();
+                }
+            },
+            
+            // 显示面板
+            showPanel() {
+                document.getElementById('debugPanel').style.display = 'block';
+            },
+            
+            // 隐藏面板
+            hidePanel() {
+                document.getElementById('debugPanel').style.display = 'none';
+            },
+            
+            // 显示提示
+            showHint(msg) {
+                const hint = document.getElementById('debugTriggerHint');
+                hint.textContent = msg;
+                hint.classList.add('show');
+                setTimeout(() => hint.classList.remove('show'), 3000);
+            },
+            
+            // ========== 盲盒调试 ==========
+            
+            // 重置抽取次数
+            resetDrawCount() {
+                localStorage.removeItem('yao-daily-draws');
+                localStorage.removeItem('yao-last-draw-date');
+                BlindBoxModal.updateEntryButton();
+                this.showHint('抽取次数已重置');
+                console.log('[Debug] 抽取次数已重置');
+            },
+            
+            // 强制指定稀有度抽取
+            forceDraw(rarity) {
+                const pool = PATTERN_DATABASE[rarity];
+                if (!pool || pool.length === 0) {
+                    this.showHint('该稀有度暂无纹样');
+                    return;
+                }
+                
+                const unlocked = V2System.blindBox.getUnlockedPatterns();
+                const available = pool.filter(p => !unlocked.includes(p.id));
+                
+                let pattern;
+                if (available.length === 0) {
+                    pattern = pool[Math.floor(Math.random() * pool.length)];
+                    pattern = { ...pattern, duplicate: true, xpReward: 5 };
+                } else {
+                    pattern = available[Math.floor(Math.random() * available.length)];
+                    V2System.blindBox.unlockPattern(pattern.id);
+                }
+                
+                V2System.level.addXP(10);
+                
+                // 显示结果
+                this.showPatternResult(pattern);
+                
+                // 更新UI
+                BlindBoxModal.updateEntryButton();
+                if (window.LevelBadge) LevelBadge.update();
+                
+                console.log('[Debug] 强制抽取:', rarity, pattern);
+            },
+            
+            // 显示纹样结果
+            showPatternResult(result) {
+                const rarityColors = {
+                    common: '#9ca3af',
+                    rare: '#3b82f6',
+                    epic: '#a855f7',
+                    legendary: '#f59e0b'
+                };
+                const rarityNames = {
+                    common: '日用纹',
+                    rare: '节庆纹',
+                    epic: '秘传纹',
+                    legendary: '祖灵纹'
+                };
+                
+                const html = `
+                    <div id="debugPatternResult" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-primary);border:2px solid ${rarityColors[result.rarity]};border-radius:16px;padding:24px;z-index:10000;text-align:center;min-width:280px;">
+                        <div style="font-size:48px;margin-bottom:12px;">${result.svg}</div>
+                        <span style="display:inline-block;padding:4px 12px;border-radius:12px;background:${rarityColors[result.rarity]};color:white;font-size:12px;margin-bottom:8px;">${rarityNames[result.rarity]}</span>
+                        <h4 style="margin:8px 0;color:var(--text-primary);">${result.name}</h4>
+                        <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">${result.theme}</p>
+                        <p style="font-size:12px;color:var(--gold);font-style:italic;">「${result.quote}」</p>
+                        ${result.duplicate ? '<p style="font-size:11px;color:var(--accent);margin-top:8px;">(重复纹样，+5 XP)</p>' : ''}
+                        <button onclick="document.getElementById('debugPatternResult').remove()" style="margin-top:16px;padding:8px 24px;border:none;border-radius:8px;background:var(--accent);color:white;cursor:pointer;">确定</button>
+                    </div>
+                `;
+                
+                const existing = document.getElementById('debugPatternResult');
+                if (existing) existing.remove();
+                document.body.insertAdjacentHTML('beforeend', html);
+            },
+            
+            // 清空已获纹样
+            clearPatterns() {
+                if (!confirm('确定要清空所有已获得的纹样吗？')) return;
+                localStorage.removeItem('yao-unlocked-patterns');
+                this.showHint('已清空所有纹样');
+                console.log('[Debug] 纹样已清空');
+            },
+            
+            // ========== 等级调试 ==========
+            
+            // 设置经验值
+            setExp() {
+                const exp = parseInt(document.getElementById('debugExp').value) || 0;
+                localStorage.setItem('yao-xp', exp.toString());
+                if (window.LevelBadge) LevelBadge.update();
+                this.showHint(`经验值已设置为 ${exp}`);
+                console.log('[Debug] 经验值设置为:', exp);
+            },
+            
+            // 设置等级
+            setLevel() {
+                const level = parseInt(document.getElementById('debugLevel').value) || 1;
+                localStorage.setItem('yao-level', level.toString());
+                if (window.LevelBadge) LevelBadge.update();
+                this.showHint(`等级已设置为 ${level}`);
+                console.log('[Debug] 等级设置为:', level);
+            },
+            
+            // ========== 签到调试 ==========
+            
+            // 重置签到状态
+            resetCheckin() {
+                localStorage.removeItem('yao-last-checkin');
+                localStorage.removeItem('yao-checkin-streak');
+                if (window.CheckinComponent) CheckinComponent.render();
+                this.showHint('签到状态已重置');
+                console.log('[Debug] 签到状态已重置');
+            },
+            
+            // 设置连续签到天数
+            setStreak() {
+                const days = parseInt(document.getElementById('debugStreak').value) || 1;
+                localStorage.setItem('yao-checkin-streak', days.toString());
+                localStorage.setItem('yao-last-checkin', new Date().toDateString());
+                if (window.CheckinComponent) CheckinComponent.render();
+                this.showHint(`连续签到天数已设置为 ${days}`);
+                console.log('[Debug] 连续签到天数设置为:', days);
+            },
+            
+            // ========== 系统调试 ==========
+            
+            // 清空所有数据
+            clearAllData() {
+                if (!confirm('⚠️ 确定要清空所有本地数据吗？此操作不可恢复！')) return;
+                
+                const keysToRemove = [
+                    'yao-level', 'yao-xp', 'yao-unlocked-patterns',
+                    'yao-daily-draws', 'yao-last-draw-date',
+                    'yao-last-checkin', 'yao-checkin-streak',
+                    'yao-view-count', 'yao-share-count',
+                    'yao-config', 'yao-config-version'
+                ];
+                
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                // 清除 localforage 数据
+                if (window.localforage) {
+                    localforage.clear();
+                }
+                
+                this.showHint('所有数据已清空，页面将刷新');
+                console.log('[Debug] 所有数据已清空');
+                
+                setTimeout(() => location.reload(), 1500);
+            },
+            
+            // 关闭调试模式
+            disableDebug() {
+                this.disable();
+            },
+            
+            // ========== 初始化 ==========
+            
+            init() {
+                // 检查是否已启用调试模式
+                if (localStorage.getItem('yaoyao_debug') === 'true') {
+                    this.showPanel();
+                }
+                
+                // 设置按钮连续点击监听
+                this.initSettingsTrigger();
+                
+                // 键盘快捷键监听
+                this.initKeyboardTrigger();
+            },
+            
+            // 设置按钮触发器（连续点击5次）
+            initSettingsTrigger() {
+                const settingsBtn = document.querySelector('button[onclick="openSettings()"]');
+                if (!settingsBtn) return;
+                
+                settingsBtn.addEventListener('click', () => {
+                    this.settingsClickCount++;
+                    
+                    // 重置计数器（2秒内）
+                    clearTimeout(this.settingsClickTimer);
+                    this.settingsClickTimer = setTimeout(() => {
+                        this.settingsClickCount = 0;
+                    }, 2000);
+                    
+                    // 连续点击5次触发
+                    if (this.settingsClickCount >= 5) {
+                        this.settingsClickCount = 0;
+                        this.enable();
+                    }
+                });
+            },
+            
+            // 键盘快捷键触发器（Ctrl+Shift+D）
+            initKeyboardTrigger() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                        e.preventDefault();
+                        if (localStorage.getItem('yaoyao_debug') === 'true') {
+                            this.togglePanel();
+                        } else {
+                            this.enable();
+                        }
+                    }
+                });
+            }
+        };
+        
+        // 页面加载完成后初始化调试系统
+        document.addEventListener('DOMContentLoaded', () => {
+            // 延迟初始化，确保其他组件已加载
+            setTimeout(() => {
+                DebugTools.init();
+                
+                // 如果调试模式已启用，显示提示
+                if (localStorage.getItem('yaoyao_debug') === 'true') {
+                    console.log('%c[瑶绣调试系统]', 'color: #c41e3a; font-size: 14px; font-weight: bold;', '已启用');
+                    console.log('%c快捷键:', 'color: #d4a574;', 'Ctrl+Shift+D 切换面板');
+                    console.log('%c设置按钮:', 'color: #d4a574;', '连续点击5次启用调试');
+                }
+            }, 500);
+        });
+        
+        // 导出到全局
+        window.DebugTools = DebugTools;
     </script>
 </body>
 </html>
