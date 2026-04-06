@@ -1387,16 +1387,18 @@
         .pattern-card {
             background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
             border: 2px solid var(--border-color);
-            border-radius: 12px;
-            padding: 12px 16px;
+            border-radius: 16px;
+            padding: 16px 12px;
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            gap: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            height: 80px;
+            aspect-ratio: 3/4;
+            min-height: 200px;
         }
         .pattern-card:hover {
             border-color: var(--gold);
@@ -1407,11 +1409,15 @@
             opacity: 0.5;
             filter: grayscale(1);
         }
-        .pattern-card .rarity-tag {
-            font-size: 9px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: white;
+        .pattern-card .rarity-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
         .rarity-common { background: #95a5a6; color: white; }
         .rarity-rare { background: #3498db; color: white; }
@@ -2106,6 +2112,29 @@
                         </button>
                     </div>
                     <div id="apiTestResult" class="hidden rounded-lg px-3 py-2 text-xs sm:text-sm"></div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="mb-6 sm:mb-8">
+                <h3 class="text-sm font-medium mb-3 sm:mb-4 flex items-center gap-2" style="color: var(--text-secondary);">
+                    <span style="color: var(--gold);">●</span> 数据管理
+                </h3>
+                <div class="space-y-3">
+                    <div class="rounded-lg p-3 sm:p-4 border" style="background: rgba(231, 76, 60, 0.05); border-color: rgba(231, 76, 60, 0.2);">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background: rgba(231, 76, 60, 0.1);">
+                                <svg class="w-4 h-4" style="color: #e74c3c;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </div>
+                            <div class="flex-1">
+                                <div class="text-sm font-medium mb-1" style="color: var(--text-primary);">清空所有本地数据</div>
+                                <div class="text-xs mb-3" style="color: var(--text-tertiary);">清空后将删除所有对话记录、收藏、等级、绣谱等所有本地数据，操作不可恢复</div>
+                                <button onclick="confirmClearAllData()" class="w-full py-2 px-3 rounded-lg text-xs font-medium transition-all border" style="background: rgba(231, 76, 60, 0.1); border-color: #e74c3c; color: #e74c3c;">
+                                    确认清空数据
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2921,14 +2950,16 @@
                     
                     return `
                         <div class="pattern-card ${isUnlocked ? '' : 'locked'} ${glowClass}" onclick="showPatternDetail('${p.id}', ${isUnlocked})">
-                            <div class="pattern-icon-wrap" style="width: 48px; height: 48px; flex-shrink: 0; color: var(--gold); ${svgStyle}">
-                                ${p.svg}
+                            <span class="rarity-badge ${rarityClass}">${p.rarity}</span>
+                            <div style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+                                <div class="w-16 h-16" style="color: var(--gold); ${svgStyle}">
+                                    ${p.svg}
+                                </div>
                             </div>
-                            <div class="pattern-info" style="flex: 1; min-width: 0;">
-                                <div class="pattern-name" style="font-size: 14px; font-weight: 500; color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'}; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${isUnlocked ? p.name : '???'}</div>
-                                <div class="pattern-theme" style="font-size: 11px; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${isUnlocked ? p.theme : '未解锁'}</div>
+                            <div style="text-align: center; width: 100%;">
+                                <div class="font-medium text-sm" style="color: ${isUnlocked ? 'var(--text-primary)' : 'var(--text-tertiary)'}; margin-bottom: 2px;">${isUnlocked ? p.name : '???'}</div>
+                                <div class="text-xs" style="color: var(--text-tertiary);">${isUnlocked ? p.theme : '未解锁'}</div>
                             </div>
-                            <span class="rarity-tag ${rarityClass}" style="flex-shrink: 0; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase;">${p.rarity}</span>
                         </div>
                     `;
                 }).join('');
@@ -4310,6 +4341,59 @@
             config.apiKey = '';
             saveConfig();
             showToast('已重置为默认配置');
+        }
+
+        // 清空所有本地数据
+        function confirmClearAllData() {
+            if (confirm('确定要清空所有本地数据吗？\n\n这将删除：\n- 所有对话记录\n- 收藏的内容\n- 等级和经验值\n- 绣谱收集\n- 抽奖次数\n- 签到记录\n\n此操作不可恢复！')) {
+                clearAllData();
+            }
+        }
+
+        async function clearAllData() {
+            try {
+                // 清空 localStorage
+                const keysToRemove = [
+                    'yao-config',
+                    'yao-xp',
+                    'yao-patterns',
+                    'yao-streak',
+                    'yao-last-checkin',
+                    'yao-draw-date',
+                    'yao-draw-base',
+                    'yao-draw-bonus',
+                    'yao-welcome-shown',
+                    'yao-first-visit'
+                ];
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+
+                // 清空 localforage
+                await localforage.clear();
+
+                // 重置应用状态
+                chatHistory = [];
+                conversations = [];
+                favorites = [];
+                currentConversationId = generateConversationId();
+                messageCount = 0;
+
+                // 清空聊天界面
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.innerHTML = '';
+                showWelcomeMessage();
+
+                // 重新初始化系统
+                initV2System();
+                updateFavBadge();
+                updateConvBadge();
+                document.getElementById('msgCount').textContent = '0';
+
+                showToast('✅ 所有数据已清空');
+                closeAllPanels();
+            } catch (err) {
+                console.error('清空数据失败:', err);
+                showToast('❌ 清空数据失败，请刷新页面重试');
+            }
         }
 
         // ========== 收藏功能 ==========
