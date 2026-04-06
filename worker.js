@@ -549,8 +549,18 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
     });
   }
   
+  // 过滤掉 content 为空的消息（防止历史数据问题）
+  const validMessages = messages.filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0);
+  
+  if (validMessages.length === 0) {
+    return new Response(JSON.stringify({ error: '消息内容不能为空' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+  
   // 验证最后一条用户消息（用于日志和安全检查）
-  const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+  const lastUserMessage = validMessages.filter(m => m.role === 'user').pop();
   if (lastUserMessage) {
     const validation = validateInput(lastUserMessage.content, 'text');
     if (!validation.valid) {
@@ -559,6 +569,12 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+  } else {
+    // 没有用户消息，无法继续
+    return new Response(JSON.stringify({ error: '对话中必须包含用户消息' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
   
   // 判断使用哪个服务商
@@ -585,7 +601,7 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
         },
         body: JSON.stringify({
           model: model,
-          messages: messages,  // 直接使用前端传来的完整上下文
+          messages: validMessages,  // 使用过滤后的有效消息
           stream: true,
         }),
       });
@@ -629,7 +645,7 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
     
     try {
       // 转换消息格式为 Qwen 格式
-      const qwenMessages = messages.map(m => ({
+      const qwenMessages = validMessages.map(m => ({
         role: m.role === 'system' ? 'system' : (m.role === 'user' ? 'user' : 'assistant'),
         content: m.content
       }));

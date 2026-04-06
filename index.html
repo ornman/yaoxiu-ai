@@ -3361,6 +3361,11 @@
                 console.error('发送消息出错:', err);
                 clearTimeout(timeoutId); // 确保清除超时
                 
+                // 移除光标闪烁
+                if (streamingDiv) {
+                    streamingDiv.classList.remove('cursor-blink');
+                }
+                
                 if (err.name === 'AbortError') {
                     if (streamingDiv.innerHTML.includes('正在思考')) {
                         streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
@@ -3444,36 +3449,140 @@
             // 检查是否已有操作按钮
             if (bubble.querySelector('.message-actions')) return;
             
+            // 获取消息索引用于重新生成/删除
+            const messageBubble = bubble.closest('.message-bubble');
+            const messageIndex = Array.from(document.querySelectorAll('.message-bubble')).indexOf(messageBubble);
+            
             // 创建固定在消息右下角的按钮组
             const actions = document.createElement('div');
-            actions.className = 'message-actions flex items-center gap-2 mt-2 pt-2 border-t';
+            actions.className = 'message-actions flex items-center gap-2 mt-2 pt-2 border-t flex-wrap';
             actions.style.borderColor = 'var(--border-color)';
             
             // 使用 data 属性存储数据，避免引号问题
             actions.innerHTML = `
-                <button class="fav-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                <button class="copy-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
                         style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
                         onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
-                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'">
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'"
+                        title="复制回答内容">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                    <span class="btn-text">复制</span>
+                </button>
+                <button class="regen-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                        onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'"
+                        title="重新生成回答">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    重新生成
+                </button>
+                <button class="followup-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                        onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'"
+                        title="基于此回答继续追问">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    追问
+                </button>
+                <button class="fav-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-secondary);"
+                        onmouseover="this.style.background='var(--accent)'; this.style.borderColor='var(--accent)'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.borderColor='var(--border-color)'; this.style.color='var(--text-secondary);'"
+                        title="收藏到绣谱">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
                     </svg>
                     收藏
                 </button>
-                <button class="share-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
+                <button class="share-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105" 
                         style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--gold);"
                         onmouseover="this.style.background='var(--gold)'; this.style.color='var(--bg-primary)';"
-                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');">
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='var(--gold');"
+                        title="分享回答">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
                     </svg>
                     分享
                 </button>
+                <button class="delete-btn flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 ml-auto" 
+                        style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: #ef4444;"
+                        onmouseover="this.style.background='#ef4444'; this.style.color='white';"
+                        onmouseout="this.style.background='var(--bg-tertiary)'; this.style.color='#ef4444';"
+                        title="删除此消息">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </button>
             `;
             
             // 绑定点击事件（使用闭包避免引号问题）
+            const copyBtn = actions.querySelector('.copy-btn');
+            const regenBtn = actions.querySelector('.regen-btn');
+            const followupBtn = actions.querySelector('.followup-btn');
             const favBtn = actions.querySelector('.fav-btn');
             const shareBtn = actions.querySelector('.share-btn');
+            const deleteBtn = actions.querySelector('.delete-btn');
+            
+            // 复制功能
+            copyBtn.addEventListener('click', async function() {
+                try {
+                    await navigator.clipboard.writeText(answer);
+                    const btnText = copyBtn.querySelector('.btn-text');
+                    const originalText = btnText.textContent;
+                    btnText.textContent = '已复制';
+                    copyBtn.style.background = 'var(--accent)';
+                    copyBtn.style.color = 'white';
+                    setTimeout(() => {
+                        btnText.textContent = originalText;
+                        copyBtn.style.background = '';
+                        copyBtn.style.color = '';
+                    }, 2000);
+                } catch (err) {
+                    console.error('复制失败:', err);
+                    // 降级方案
+                    const textarea = document.createElement('textarea');
+                    textarea.value = answer;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                }
+            });
+            
+            // 重新生成功能 - 删除AI回复，重新发送用户消息
+            regenBtn.addEventListener('click', async function() {
+                if (isGenerating) {
+                    showNotification('请等待当前生成完成', 'warning');
+                    return;
+                }
+                // 找到用户消息并重发
+                if (question) {
+                    await regenerateMessage(question, messageBubble);
+                }
+            });
+            
+            // 追问功能 - 聚焦输入框并引用当前回答
+            followupBtn.addEventListener('click', function() {
+                const input = document.getElementById('userInput');
+                if (input) {
+                    input.focus();
+                    // 添加引用提示
+                    const hint = `关于"${answer.substring(0, 30)}${answer.length > 30 ? '...' : ''}"，我想进一步了解：`;
+                    if (!input.value.trim()) {
+                        input.value = hint + ' ';
+                    }
+                    input.selectionStart = input.value.length;
+                    input.selectionEnd = input.value.length;
+                }
+            });
             
             favBtn.addEventListener('click', function() {
                 addToFavorites(question, answer);
@@ -3483,8 +3592,116 @@
                 openShareModal(question, answer, messageCount);
             });
             
+            // 删除功能
+            deleteBtn.addEventListener('click', function() {
+                if (confirm('确定要删除这条消息吗？')) {
+                    deleteMessagePair(messageBubble, question);
+                }
+            });
+            
             // 添加到气泡底部
             bubble.appendChild(actions);
+        }
+        
+        // 删除消息对（用户消息和AI回复）
+        function deleteMessagePair(aiBubble, question) {
+            const chatContainer = document.getElementById('chatContainer');
+            if (!chatContainer) return;
+            
+            // 找到所有消息气泡
+            const allBubbles = Array.from(chatContainer.querySelectorAll('.message-bubble'));
+            const aiIndex = allBubbles.indexOf(aiBubble);
+            
+            if (aiIndex > 0) {
+                // 找到对应的用户消息（前一个气泡）
+                const userBubble = allBubbles[aiIndex - 1];
+                // 从聊天历史中也删除
+                const userMsg = chatHistory.find(m => m.role === 'user' && m.content === question);
+                const aiMsg = chatHistory.find(m => m.role === 'assistant' && allBubbles[aiIndex].contains(document.querySelector('.chat-content')));
+                
+                // 从DOM中删除
+                userBubble.remove();
+                aiBubble.remove();
+                
+                // 更新聊天历史
+                if (userMsg) {
+                    const userIdx = chatHistory.indexOf(userMsg);
+                    if (userIdx > -1) chatHistory.splice(userIdx, 1);
+                }
+                const aiContent = aiBubble.querySelector('.chat-content');
+                if (aiContent) {
+                    const aiText = aiContent.textContent || '';
+                    const foundAiMsg = chatHistory.find(m => m.role === 'assistant' && m.content === aiText);
+                    if (foundAiMsg) {
+                        const aiIdx = chatHistory.indexOf(foundAiMsg);
+                        if (aiIdx > -1) chatHistory.splice(aiIdx, 1);
+                    }
+                }
+                
+                // 从上下文管理器中删除
+                if (chatContext && chatContext.messages) {
+                    // 找到并删除对应的用户和AI消息
+                    const ctxMessages = chatContext.messages;
+                    for (let i = ctxMessages.length - 1; i >= 0; i--) {
+                        if (ctxMessages[i].role === 'assistant' && aiContent && ctxMessages[i].content === (aiContent.dataset.fullText || aiContent.textContent)) {
+                            // 删除这个AI消息和前面的用户消息
+                            ctxMessages.splice(i - 1 >= 0 && ctxMessages[i-1].role === 'user' ? i - 1 : i, 
+                                ctxMessages[i-1]?.role === 'user' ? 2 : 1);
+                            break;
+                        }
+                    }
+                    chatContext.save();
+                }
+                
+                saveCurrentConversation();
+                showNotification('消息已删除', 'success');
+            } else {
+                // 只删除AI消息
+                aiBubble.remove();
+                saveCurrentConversation();
+            }
+            scrollToBottom();
+        }
+        
+        // 重新生成消息
+        async function regenerateMessage(question, aiBubble) {
+            if (!question) return;
+            
+            // 停止之前的生成
+            if (abortController) {
+                abortController.abort();
+            }
+            
+            // 删除旧的AI回复
+            aiBubble.remove();
+            
+            // 从聊天历史中删除对应的AI回复
+            for (let i = chatHistory.length - 1; i >= 0; i--) {
+                if (chatHistory[i].role === 'assistant') {
+                    chatHistory.splice(i, 1);
+                    break;
+                }
+            }
+            
+            // 从上下文管理器中删除最后一条AI回复
+            if (chatContext && chatContext.messages) {
+                const messages = chatContext.messages;
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].role === 'assistant') {
+                        messages.splice(i, 1);
+                        break;
+                    }
+                }
+                await chatContext.save();
+            }
+            
+            // 重新发送消息
+            const input = document.getElementById('userInput');
+            if (input) {
+                input.value = question;
+                await sendMessage();
+                input.value = '';
+            }
         }
 
     </script>

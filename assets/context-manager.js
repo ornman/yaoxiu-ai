@@ -151,8 +151,13 @@ class ContextManager {
         // 检查总长度并必要时截断
         historyMessages = this.enforceLengthLimit(historyMessages);
 
-        // 添加历史消息（过滤图片如果需要）
+        // 添加历史消息（过滤图片如果需要），同时过滤掉 content 为空的消息
         historyMessages.forEach(msg => {
+            // 跳过 content 为 null/undefined/空字符串的消息
+            if (!msg.content || (typeof msg.content === 'string' && msg.content.trim().length === 0)) {
+                return;
+            }
+            
             const formattedMsg = {
                 role: msg.role,
                 content: msg.content
