@@ -367,6 +367,24 @@
             background-color: var(--bg-primary);
             color: var(--text-primary);
             font-family: 'Noto Sans SC', sans-serif;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        
+        /* 全局滚动容器回弹效果 */
+        .scroll-container {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            scroll-behavior: smooth;
+        }
+        
+        /* 橡皮筋回弹效果 */
+        @supports (-webkit-touch-callout: none) {
+            .scroll-container {
+                -webkit-overflow-scrolling: touch;
+            }
         }
         .pattern-octagon {
             background-image: 
@@ -1339,9 +1357,11 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 20px;
-            padding: 24px;
+            padding: 24px 24px 100px 24px;
             overflow-y: auto;
-            max-height: calc(80vh - 120px);
+            max-height: calc(80vh - 80px);
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
         @media (min-width: 900px) {
             .pattern-grid {
@@ -1352,14 +1372,16 @@
             .pattern-grid {
                 grid-template-columns: repeat(3, 1fr);
                 gap: 16px;
-                padding: 20px;
+                padding: 20px 20px 80px 20px;
+                max-height: calc(80vh - 60px);
             }
         }
         @media (max-width: 480px) {
             .pattern-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 12px;
-                padding: 16px;
+                padding: 16px 16px 60px 16px;
+                max-height: calc(80vh - 40px);
             }
         }
         .pattern-card {
@@ -1722,7 +1744,7 @@
         </div>
 
         <!-- Chat Area -->
-        <div id="chatContainer" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth">
+        <div id="chatContainer" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth" style="-webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
             <div class="flex justify-center animate-fade-in">
                 <div class="rounded-2xl px-4 sm:px-6 py-2 border backdrop-blur-sm" style="background: var(--bg-secondary); border-color: var(--border-color);">
                     <span class="text-xs sm:text-sm" style="color: var(--text-tertiary);">今日共绣 </span>
@@ -3783,12 +3805,23 @@
             currentConversationId = generateConversationId();
             messageCount = 0;
             
-            // 清空聊天界面
+            // 清空聊天界面并添加淡出效果
             const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = '';
+            chatContainer.style.opacity = '0';
+            chatContainer.style.transform = 'translateY(20px)';
+            chatContainer.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
             
-            // 显示欢迎消息
-            showWelcomeMessage();
+            setTimeout(() => {
+                chatContainer.innerHTML = '';
+                // 显示欢迎消息
+                showWelcomeMessage();
+                
+                // 淡入效果
+                setTimeout(() => {
+                    chatContainer.style.opacity = '1';
+                    chatContainer.style.transform = 'translateY(0)';
+                }, 50);
+            }, 300);
             
             // 更新UI
             document.getElementById('msgCount').textContent = '0';
@@ -3800,7 +3833,7 @@
             saveConversations();
             
             // 显示提示
-            showToast('已创建新对话');
+            showToast('已创建新对话 ✨');
         }
         
         // 生成对话ID
@@ -4116,6 +4149,20 @@
             // 如果没有当前对话ID，创建一个新的
             if (!currentConversationId) {
                 currentConversationId = generateConversationId();
+            }
+            
+            // 更新红点显示
+            updateConvBadge();
+        }
+        
+        // 更新对话历史红点
+        function updateConvBadge() {
+            const headerBadge = document.getElementById('convBadge');
+            if (conversations.length > 0) {
+                headerBadge.textContent = conversations.length;
+                headerBadge.classList.remove('hidden');
+            } else {
+                headerBadge.classList.add('hidden');
             }
         }
 
