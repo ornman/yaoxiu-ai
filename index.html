@@ -3826,6 +3826,13 @@
         
         // 新建对话
         function newConversation() {
+            // 如果正在生成中，先停止
+            if (isGenerating && controller) {
+                controller.abort();
+                isGenerating = false;
+                controller = null;
+            }
+            
             // 保存当前对话（如果有内容）
             if (chatHistory.length > 0 && currentConversationId) {
                 saveCurrentConversation();
@@ -3835,6 +3842,24 @@
             chatHistory = [];
             currentConversationId = generateConversationId();
             messageCount = 0;
+            
+            // 重置状态
+            isGenerating = false;
+            controller = null;
+            
+            // 更新发送按钮状态
+            updateSendBtnState();
+            
+            // 清空输入框
+            const userInput = document.getElementById('userInput');
+            if (userInput) {
+                userInput.value = '';
+                userInput.style.height = 'auto';
+            }
+            
+            // 清空已选图片
+            selectedImages = [];
+            updateImagePreview();
             
             // 清空聊天界面并添加淡出效果
             const chatContainer = document.getElementById('chatContainer');
