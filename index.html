@@ -755,12 +755,14 @@
             box-shadow: 0 15px 40px rgba(212, 165, 116, 0.3);
         }
         .blindbox-card.flipping {
-            animation: cardFlip 0.8s ease-in-out;
+            animation: cardFlip 0.6s ease-in-out forwards;
         }
         @keyframes cardFlip {
             0% { transform: rotateY(0deg); }
-            50% { transform: rotateY(180deg); }
-            100% { transform: rotateY(360deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        .blindbox-card.flipped {
+            transform: rotateY(180deg);
         }
         .blindbox-card.shaking {
             animation: cardShake 0.5s ease-in-out;
@@ -2387,7 +2389,8 @@
             const card = document.getElementById('blindboxCard');
             const front = document.getElementById('cardFront');
             const back = document.getElementById('cardBack');
-            card.classList.remove('flipping');
+            card.classList.remove('flipping', 'flipped');
+            card.style.transform = 'rotateY(0deg)';
             front.style.display = 'flex';
             back.classList.remove('revealed');
         }
@@ -2422,10 +2425,11 @@
             
             // 如果已经翻开，先重置
             if (back.classList.contains('revealed')) {
-                card.classList.remove('flipping');
-                front.style.display = 'flex';
-                back.classList.remove('revealed');
+                card.classList.remove('flipping', 'flipped');
                 card.style.transform = 'rotateY(0deg)';
+                front.style.display = 'flex';
+                front.style.opacity = '1';
+                back.classList.remove('revealed');
                 setTimeout(() => doDraw(), 300);
                 return;
             }
@@ -2477,7 +2481,8 @@
                     `;
                     
                     setTimeout(() => {
-                        front.style.display = 'none';
+                        front.style.opacity = '0';
+                        card.classList.add('flipped');
                         back.classList.add('revealed');
                         // 移除发光
                         setTimeout(() => glow.remove(), 500);
@@ -4287,9 +4292,7 @@
                     </div>
                 </div>
                 <div class="flex-shrink-0">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg" style="background: var(--gold);">
-                        <span class="text-sm sm:text-lg font-serif font-bold" style="color: var(--bg-primary);">问</span>
-                    </div>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg text-lg sm:text-xl" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">🧑</div>
                 </div>
             `;
             container.appendChild(wrapper);
@@ -4760,9 +4763,7 @@
                     </div>
                 </div>
                 <div class="flex-shrink-0">
-                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg" style="background: var(--gold);">
-                        <span class="text-sm sm:text-lg font-serif font-bold" style="color: var(--bg-primary);">问</span>
-                    </div>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center shadow-lg text-lg sm:text-xl" style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);">🧑</div>
                 </div>
             `;
             
@@ -4869,7 +4870,7 @@
         }
         
         // 重新生成回答
-        function regenerateResponse(questionDiv) {
+        async function regenerateResponse(questionDiv) {
             // 找到对应的 AI 消息容器
             const aiWrapper = questionDiv.closest('.flex')?.nextElementSibling;
             if (!aiWrapper) return;
@@ -4885,10 +4886,191 @@
                 chatHistory.pop();
             }
             
-            // 重新发送请求
+            // 保存用户消息用于重试
             lastUserMessage = questionText;
-            document.getElementById('userInput').value = questionText;
-            sendMessage();
+            
+            // 直接调用消息发送逻辑，不经过输入框
+            await sendMessageInternal(questionText);
+        }
+        
+        // 内部消息发送函数（不添加用户消息到界面，用于重新生成）
+        async function sendMessageInternal(content) {
+            if (!content || isGenerating) return;
+
+            isGenerating = true;
+            document.getElementById('sendBtn').disabled = false;
+            updateSendBtnState();
+
+            const streamingDiv = createAssistantMessage();
+            let fullText = '';
+            let reasoningText = '';
+            let hasReceivedContent = false;
+
+            controller = new AbortController();
+            
+            // 设置超时（30秒）
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 30000);
+
+            try {
+                let response;
+                
+                if (USE_DIRECT_API) {
+                    const model = document.getElementById('modelSelect').value;
+                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
+                        { role: 'system', content: chatContext?.systemPrompt || '' },
+                        { role: 'user', content: content }
+                    ];
+                    
+                    response = await fetch('https://api.deepseek.com/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${DIRECT_API_KEY}`
+                        },
+                        body: JSON.stringify({
+                            model: model,
+                            messages: messages,
+                            stream: true
+                        }),
+                        signal: controller.signal
+                    });
+                } else {
+                    const apiUrl = config.apiUrl || DEFAULT_API_URL;
+                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
+                        { role: 'system', content: chatContext?.systemPrompt || '' },
+                        { role: 'user', content: content }
+                    ];
+                    
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                        },
+                        body: JSON.stringify({
+                            type: 'chat-context',
+                            messages: messages,
+                            model: document.getElementById('modelSelect').value
+                        }),
+                        signal: controller.signal
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText || '未知错误'}`);
+                }
+
+                clearTimeout(timeoutId);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (!line.trim() || !line.startsWith('data:')) continue;
+                        
+                        const data = line.slice(5).trim();
+                        if (data === '[DONE]') continue;
+
+                        try {
+                            const json = JSON.parse(data);
+                            const delta = json.choices?.[0]?.delta;
+                            
+                            if (!hasReceivedContent) {
+                                streamingDiv.innerHTML = '';
+                                hasReceivedContent = true;
+                            }
+                            
+                            if (delta?.reasoning_content) {
+                                reasoningText += delta.reasoning_content;
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>深度思考中...</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                }
+                                if (fullText) {
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                }
+                                streamingDiv.innerHTML = displayText;
+                            }
+                            
+                            if (delta?.content) {
+                                fullText += delta.content;
+                                let displayText = '';
+                                if (reasoningText) {
+                                    displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                } else {
+                                    displayText = marked.parse(fullText);
+                                }
+                                streamingDiv.innerHTML = displayText;
+                                streamingDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightElement(block);
+                                });
+                            }
+                            scrollToBottom();
+                        } catch (e) {}
+                    }
+                }
+
+                streamingDiv.classList.remove('cursor-blink');
+                
+                if (fullText) {
+                    chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                    if (chatContext) {
+                        chatContext.addAssistantMessage(fullText);
+                        await chatContext.save();
+                    }
+                    saveCurrentConversation();
+                }
+                
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addMessageActions(messageBubble, content, fullText);
+                }
+                
+                const userWrapper = messageBubble?.closest('.flex')?.previousElementSibling;
+                if (userWrapper) {
+                    const shareBtn = userWrapper.querySelector('.share-btn');
+                    if (shareBtn) shareBtn.style.display = 'inline-flex';
+                }
+
+            } catch (err) {
+                streamingDiv.classList.remove('cursor-blink');
+                
+                if (err.name === 'AbortError') {
+                    if (streamingDiv.innerHTML.includes('正在思考')) {
+                        streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
+                    } else {
+                        streamingDiv.innerHTML += '<p style="color: var(--text-tertiary); font-size: 0.875rem; margin-top: 0.5rem;">[已停止生成]</p>';
+                    }
+                } else {
+                    streamingDiv.innerHTML = `<div style="color: #ef4444; padding: 0.5rem;">
+                        <p class="font-medium">出错了</p>
+                        <p class="text-sm mt-1">${escapeHtml(err.message || '网络连接失败')}</p>
+                        <button onclick="retryLastMessage()" class="mt-2 px-3 py-1 rounded text-xs" style="background: var(--accent); color: white;">重试</button>
+                    </div>`;
+                }
+                
+                const messageBubble = streamingDiv.closest('.message-bubble');
+                if (messageBubble) {
+                    addIncompleteMessageActions(messageBubble, content, '');
+                }
+            } finally {
+                clearTimeout(timeoutId);
+                isGenerating = false;
+                document.getElementById('sendBtn').disabled = false;
+                updateSendBtnState();
+                controller = null;
+            }
         }
         
         // 追问功能
