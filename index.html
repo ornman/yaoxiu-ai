@@ -3923,7 +3923,7 @@
         }
         
         // 新建对话
-        function newConversation() {
+        async function newConversation() {
             // 如果正在生成中，先停止
             if (isGenerating && controller) {
                 controller.abort();
@@ -3945,9 +3945,10 @@
             isGenerating = false;
             controller = null;
             
-            // 重置上下文管理器
+            // 重置上下文管理器 - 创建新会话
             if (chatContext) {
-                chatContext.clear();
+                await chatContext.newConversation();
+                console.log('🔄 chatContext 已创建新会话');
             }
             
             // 更新发送按钮状态
@@ -5426,7 +5427,10 @@
             // 保存到对话历史和上下文管理器
             chatHistory.push({ role: 'user', content: content, timestamp: Date.now() });
             if (chatContext) {
+                console.log('✅ 添加用户消息到 chatContext:', content.substring(0, 20) + '...');
                 chatContext.addUserMessage(content);
+            } else {
+                console.warn('⚠️ chatContext 为空，无法添加消息');
             }
             
             userInput.value = '';
