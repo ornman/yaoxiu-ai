@@ -600,6 +600,15 @@
             width: 13px;
             height: 13px;
         }
+        /* TTS 朗读按钮播放状态 */
+        .ai-action-btn.tts-btn.playing {
+            color: var(--accent);
+            animation: tts-pulse 1.2s ease-in-out infinite;
+        }
+        @keyframes tts-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
         pre {
             background: var(--bg-tertiary) !important;
             border: 1px solid var(--border-color);
@@ -5763,6 +5772,12 @@
             actions.className = 'ai-message-actions';
             
             actions.innerHTML = `
+                <button class="action-btn tts-btn" title="朗读">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <span>朗读</span>
+                </button>
                 <button class="action-btn copy-btn" title="复制已生成内容">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -5783,12 +5798,34 @@
                 </button>
             `;
             
+            const ttsBtn = actions.querySelector('.tts-btn');
             const copyBtn = actions.querySelector('.copy-btn');
             const regenBtn = actions.querySelector('.regen-btn');
             const deleteBtn = actions.querySelector('.delete-btn');
             
             // 获取当前显示的文本内容
             const contentText = bubble.innerText || '';
+            
+            // 朗读按钮事件
+            ttsBtn.addEventListener('click', () => {
+                if (browserTTS.isPlaying && currentTTSBtn === ttsBtn) {
+                    browserTTS.stop();
+                    ttsBtn.classList.remove('playing');
+                    currentTTSBtn = null;
+                } else {
+                    if (browserTTS.isPlaying && currentTTSBtn) {
+                        browserTTS.stop();
+                        currentTTSBtn.classList.remove('playing');
+                    }
+                    currentTTSBtn = ttsBtn;
+                    ttsBtn.classList.add('playing');
+                    browserTTS.speak(contentText, () => {
+                        ttsBtn.classList.remove('playing');
+                        currentTTSBtn = null;
+                    });
+                }
+            });
+            
             copyBtn.addEventListener('click', () => copyToClipboard(contentText, copyBtn));
             
             regenBtn.addEventListener('click', () => {
@@ -6095,6 +6132,12 @@
             
             // AI 消息操作按钮：复制、重新生成、追问、分享、删除
             actions.innerHTML = `
+                <button class="ai-action-btn tts-btn" title="朗读">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+                    </svg>
+                    <span>朗读</span>
+                </button>
                 <button class="ai-action-btn copy-btn" title="复制">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -6134,12 +6177,33 @@
             `;
             
             // 绑定点击事件
+            const ttsBtn = actions.querySelector('.tts-btn');
             const copyBtn = actions.querySelector('.copy-btn');
             const regenBtn = actions.querySelector('.regen-btn');
             const followupBtn = actions.querySelector('.followup-btn');
             const favoriteBtn = actions.querySelector('.favorite-btn');
             const shareBtn = actions.querySelector('.share-btn');
             const deleteBtn = actions.querySelector('.delete-btn');
+            
+            // 朗读按钮事件
+            ttsBtn.addEventListener('click', () => {
+                if (browserTTS.isPlaying && currentTTSBtn === ttsBtn) {
+                    browserTTS.stop();
+                    ttsBtn.classList.remove('playing');
+                    currentTTSBtn = null;
+                } else {
+                    if (browserTTS.isPlaying && currentTTSBtn) {
+                        browserTTS.stop();
+                        currentTTSBtn.classList.remove('playing');
+                    }
+                    currentTTSBtn = ttsBtn;
+                    ttsBtn.classList.add('playing');
+                    browserTTS.speak(answer, () => {
+                        ttsBtn.classList.remove('playing');
+                        currentTTSBtn = null;
+                    });
+                }
+            });
             
             copyBtn.addEventListener('click', () => copyToClipboard(answer, copyBtn));
             
@@ -6170,6 +6234,140 @@
             // 添加到气泡底部
             bubble.appendChild(actions);
         }
+
+        // ========== TTS 朗读功能 ==========
+        class BrowserTTS {
+            constructor() {
+                this.synth = window.speechSynthesis;
+                this.currentUtterance = null;
+                this.isPlaying = false;
+                this.voices = [];
+                this.initVoices();
+            }
+
+            initVoices() {
+                const loadVoices = () => {
+                    this.voices = this.synth.getVoices();
+                    if (this.voices.length > 0) {
+                        console.log('TTS 语音列表已加载:', this.voices.length, '个语音');
+                        // 列出所有中文语音
+                        const zhVoices = this.voices.filter(v => v.lang.includes('zh'));
+                        console.log('可用中文语音:', zhVoices.map(v => `${v.name} (${v.lang})`));
+                    }
+                };
+                loadVoices();
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = loadVoices;
+                }
+                setTimeout(loadVoices, 100);
+            }
+
+            // 获取最佳中文语音（优先 Microsoft Xiaoyi Online）
+            getBestChineseVoice() {
+                if (this.voices.length === 0) {
+                    this.voices = this.synth.getVoices();
+                }
+                
+                // 优先使用 Microsoft Xiaoyi Online (Natural)
+                const xiaoyi = this.voices.find(v => v.name.includes('Microsoft Xiaoyi Online'));
+                if (xiaoyi) {
+                    console.log('TTS 使用语音:', xiaoyi.name);
+                    return xiaoyi;
+                }
+                
+                // 备选语音
+                const fallbacks = [
+                    'Microsoft Yaoyao Online',
+                    'Microsoft Yunxi Online',
+                    'Google 普通话',
+                    'Ting-Ting',
+                    'Mei-Jia'
+                ];
+                for (const name of fallbacks) {
+                    const voice = this.voices.find(v => v.name.includes(name));
+                    if (voice) {
+                        console.log('TTS 使用语音:', voice.name);
+                        return voice;
+                    }
+                }
+                
+                // 最后尝试任何中文语音
+                const zhVoice = this.voices.find(v => v.lang === 'zh-CN' || v.lang.startsWith('zh'));
+                if (zhVoice) {
+                    console.log('TTS 使用语音:', zhVoice.name);
+                    return zhVoice;
+                }
+                
+                console.warn('TTS 没有可用中文语音，使用默认');
+                return this.voices[0] || null;
+            }
+
+            // 文本清洗（去除括号动作、Markdown、emoji）
+            cleanText(text) {
+                return text
+                    .replace(/[（(][^）)]*[）)]/g, '')
+                    .replace(/\*\*/g, '')
+                    .replace(/[🧵✨🌺💪😌～~]/g, '')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+            }
+
+            // 开始朗读
+            speak(text, onEnd) {
+                if (!text || text.trim() === '') {
+                    console.warn('TTS: 空文本');
+                    return;
+                }
+                
+                if (this.isPlaying) {
+                    this.stop();
+                }
+
+                const cleanText = this.cleanText(text);
+                console.log('TTS 朗读:', cleanText.substring(0, 30) + '...');
+                
+                this.currentUtterance = new SpeechSynthesisUtterance(cleanText);
+
+                // 设置语音 - 优先 Microsoft Xiaoyi Online
+                const voice = this.getBestChineseVoice();
+                if (voice) {
+                    this.currentUtterance.voice = voice;
+                }
+
+                // 设置参数
+                this.currentUtterance.rate = 1.0;
+                this.currentUtterance.pitch = 1.0;
+                this.currentUtterance.volume = 1.0;
+                this.currentUtterance.lang = 'zh-CN';
+
+                // 事件处理
+                this.currentUtterance.onstart = () => {
+                    this.isPlaying = true;
+                };
+
+                this.currentUtterance.onend = () => {
+                    this.isPlaying = false;
+                    if (onEnd) onEnd();
+                };
+
+                this.currentUtterance.onerror = (e) => {
+                    console.error('TTS 错误:', e);
+                    this.isPlaying = false;
+                    if (onEnd) onEnd();
+                };
+
+                this.synth.speak(this.currentUtterance);
+            }
+
+            stop() {
+                this.synth.cancel();
+                this.isPlaying = false;
+            }
+        }
+
+        // 全局 TTS 实例
+        const browserTTS = new BrowserTTS();
+        let currentTTSBtn = null;
 
     </script>
 </body>
