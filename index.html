@@ -2383,6 +2383,12 @@
                         <span id="drawCount" class="text-3xl font-bold" style="color: var(--gold);">10</span>
                     </div>
                     <p class="text-xs mt-1" style="color: var(--text-tertiary);">基础 <span id="drawBaseCount">10</span> 次 + 奖励 <span id="drawBonusCount">0</span> 次</p>
+                    <!-- 累计抽卡次数 -->
+                    <div class="mt-3 pt-3" style="border-top: 1px dashed var(--border-color);">
+                        <p class="text-xs" style="color: var(--text-tertiary);">
+                            累计抽卡 <span id="totalDrawCount" class="font-bold" style="color: var(--accent);">0</span> 次
+                        </p>
+                    </div>
                 </div>
                 <!-- 盲盒卡片 -->
                 <div class="flex justify-center mb-6 blindbox-scene">
@@ -2819,6 +2825,18 @@
                 return parseInt(localStorage.getItem('yao-draw-base') || '10');
             },
             
+            // 获取累计抽卡次数
+            getTotalDrawCount() {
+                return parseInt(localStorage.getItem('yao-total-draw-count') || '0');
+            },
+            
+            // 增加累计抽卡次数
+            addTotalDrawCount(count = 1) {
+                const current = this.getTotalDrawCount();
+                localStorage.setItem('yao-total-draw-count', (current + count).toString());
+                return current + count;
+            },
+            
             // 获取对话奖励次数
             getBonusDraws() {
                 const today = new Date().toDateString();
@@ -2881,6 +2899,9 @@
                     return null;
                 }
                 
+                // 增加累计抽卡次数
+                this.addTotalDrawCount(1);
+                
                 const rarity = this.randomRarity();
                 const patterns = PATTERN_DATABASE[rarity];
                 const pattern = patterns[Math.floor(Math.random() * patterns.length)];
@@ -2899,14 +2920,17 @@
                 const totalCount = this.getTotalDraws();
                 const baseCount = this.getDailyBaseDraws();
                 const bonusCount = this.getBonusDraws();
+                const totalDrawCount = this.getTotalDrawCount();
                 const countEl = document.getElementById('drawCount');
                 const badge = document.getElementById('blindboxBadge');
                 const baseCountEl = document.getElementById('drawBaseCount');
                 const bonusCountEl = document.getElementById('drawBonusCount');
+                const totalDrawCountEl = document.getElementById('totalDrawCount');
                 
                 if (countEl) countEl.textContent = totalCount;
                 if (baseCountEl) baseCountEl.textContent = baseCount;
                 if (bonusCountEl) bonusCountEl.textContent = bonusCount;
+                if (totalDrawCountEl) totalDrawCountEl.textContent = totalDrawCount;
                 if (badge) {
                     badge.textContent = totalCount;
                     // 有抽奖次数时显示红点提示
