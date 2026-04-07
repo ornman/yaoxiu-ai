@@ -2343,9 +2343,10 @@
             <!-- 今日分享次数 -->
             <div class="mt-3 text-center">
                 <p class="text-xs" style="color: var(--text-tertiary);">
-                    今日分享次数：<span id="shareCountToday" class="font-bold" style="color: var(--gold);">0</span>/3
+                    今日分享奖励：<span id="shareRewardCount" class="font-bold" style="color: var(--gold);">0</span>/3
                     <span id="shareRewardHint" class="ml-2" style="color: var(--accent);"></span>
                 </p>
+                <p class="text-[10px] mt-1" style="color: var(--text-tertiary);">分享不限次数，但每日最多获得3次奖励</p>
             </div>
             
             <!-- Actions -->
@@ -2884,17 +2885,18 @@
                 return Math.max(0, 3 - this.getTodayShareCount());
             },
             
-            // 增加今日分享次数并奖励抽卡机会
+            // 增加今日分享次数并奖励抽卡机会（分享不限次数，但奖励每日最多3次）
             addShareReward() {
                 const currentCount = this.getTodayShareCount();
                 if (currentCount >= 3) {
-                    return { success: false, message: '今日分享次数已达上限' };
+                    // 分享成功但奖励已达上限
+                    return { success: true, hasReward: false, message: '今日分享奖励已达上限（3次），继续分享不会获得额外抽卡机会' };
                 }
                 // 增加分享次数
                 localStorage.setItem('yao-share-count', (currentCount + 1).toString());
                 // 奖励1次抽卡机会
                 this.addBonusDraw(1);
-                return { success: true, message: `分享成功！获得1次抽卡机会（今日还剩${2 - currentCount}次）` };
+                return { success: true, hasReward: true, message: `分享成功！获得1次抽卡机会（今日奖励还剩${3 - currentCount - 1}次）` };
             },
             
             // 使用抽奖次数
@@ -4794,15 +4796,16 @@
             document.getElementById('shareAnswer').textContent = stripHtml(answer).substring(0, 200) + '...';
             document.getElementById('shareCount').textContent = count;
             
-            // 更新今日分享次数显示
+            // 更新今日分享奖励显示
             const todayCount = BlindBoxSystem.getTodayShareCount();
             const remainingCount = BlindBoxSystem.getRemainingShareCount();
-            document.getElementById('shareCountToday').textContent = todayCount;
+            document.getElementById('shareRewardCount').textContent = todayCount;
             const hintEl = document.getElementById('shareRewardHint');
             if (remainingCount > 0) {
-                hintEl.textContent = `(再分享${remainingCount}次可获得抽卡机会)`;
+                hintEl.textContent = `(再分享${remainingCount}次可获得奖励)`;
+                hintEl.style.color = 'var(--accent)';
             } else {
-                hintEl.textContent = '(今日已达上限)';
+                hintEl.textContent = '(奖励已达上限，仍可继续分享)';
                 hintEl.style.color = 'var(--text-tertiary)';
             }
             
@@ -4846,11 +4849,7 @@
                 
                 // 分享成功，给予奖励
                 const result = BlindBoxSystem.addShareReward();
-                if (result.success) {
-                    showToast('图片已保存，' + result.message);
-                } else {
-                    showToast('图片已保存');
-                }
+                showToast('图片已保存，' + result.message);
             } catch (err) {
                 showToast('保存失败: ' + err.message);
             }
