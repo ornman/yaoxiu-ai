@@ -5542,8 +5542,8 @@
             textarea.focus();
             textarea.select();
             
-            // 处理保存
-            const saveEdit = () => {
+            // 处理保存并重新生成
+            const saveEditAndRegenerate = async () => {
                 const newContent = textarea.value.trim();
                 if (newContent && newContent !== originalContent) {
                     // 更新显示
@@ -5553,14 +5553,41 @@
                     newP.innerHTML = escapeHtml(newContent).replace(/\n/g, '<br>');
                     textarea.replaceWith(newP);
                     
+                    // 找到对应的AI消息容器
+                    const userWrapper = messageDiv.closest('.message-bubble')?.closest('.flex') || messageDiv.closest('.flex');
+                    const aiWrapper = userWrapper?.nextElementSibling;
+                    
+                    if (!aiWrapper) {
+                        showToast('未找到对应的回答');
+                        return;
+                    }
+                    
                     // 更新 chatHistory
                     const index = chatHistory.findIndex(m => m.role === 'user' && m.content === originalContent);
                     if (index >= 0) {
                         chatHistory[index].content = newContent;
+                        // 删除对应的AI回答
+                        if (index + 1 < chatHistory.length && chatHistory[index + 1].role === 'assistant') {
+                            chatHistory.splice(index + 1, 1);
+                        }
                         saveCurrentConversation();
                     }
                     
-                    showToast('已修改，请重新生成回答');
+                    // 清空AI消息内容并显示重新生成状态
+                    const aiContent = aiWrapper.querySelector('.chat-content');
+                    if (aiContent) {
+                        // 移除操作按钮
+                        const actions = aiContent.querySelector('.ai-message-actions');
+                        if (actions) actions.remove();
+                        // 设置重新生成状态
+                        aiContent.innerHTML = '<div class="cursor-blink streaming-content"><span style="color: var(--text-tertiary);">正在重新生成...</span></div>';
+                    }
+                    
+                    // 保存用于重试
+                    lastUserMessage = newContent;
+                    
+                    // 直接调用内部发送函数重新生成，使用现有容器
+                    await sendMessageInternal(newContent, aiWrapper);
                 } else {
                     // 取消编辑
                     const newP = document.createElement('p');
@@ -5571,11 +5598,11 @@
                 }
             };
             
-            // 按 Enter 保存，Esc 取消
+            // 按 Enter 保存并重新生成，Esc 取消
             textarea.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    saveEdit();
+                    saveEditAndRegenerate();
                 } else if (e.key === 'Escape') {
                     const newP = document.createElement('p');
                     newP.className = 'leading-relaxed text-sm sm:text-base';
@@ -5585,8 +5612,20 @@
                 }
             });
             
-            // 失焦时保存
-            textarea.addEventListener('blur', saveEdit);
+            // 失焦时如果内容有变化则保存并重新生成
+            textarea.addEventListener('blur', () => {
+                const newContent = textarea.value.trim();
+                if (newContent && newContent !== originalContent) {
+                    saveEditAndRegenerate();
+                } else if (!newContent || newContent === originalContent) {
+                    // 取消编辑
+                    const newP = document.createElement('p');
+                    newP.className = 'leading-relaxed text-sm sm:text-base';
+                    newP.style.color = 'var(--text-primary)';
+                    newP.innerHTML = escapeHtml(originalContent).replace(/\n/g, '<br>');
+                    textarea.replaceWith(newP);
+                }
+            });
         }
         
         // 删除用户消息及其回复
@@ -5785,14 +5824,30 @@
         }
         
         // 内部消息发送函数（不添加用户消息到界面，用于重新生成）
-        async function sendMessageInternal(content) {
+        async function sendMessageInternal(content, existingAiWrapper = null) {
             if (!content || isGenerating) return;
 
             isGenerating = true;
             document.getElementById('sendBtn').disabled = false;
             updateSendBtnState();
 
-            const streamingDiv = createAssistantMessage();
+            let streamingDiv;
+            if (existingAiWrapper) {
+                // 使用现有的AI容器
+                streamingDiv = existingAiWrapper.querySelector('.streaming-content');
+                if (!streamingDiv) {
+                    // 如果没有找到streaming-content，创建一个
+                    const chatContent = existingAiWrapper.querySelector('.chat-content');
+                    if (chatContent) {
+                        chatContent.innerHTML = '<div class="cursor-blink streaming-content"><span style="color: var(--text-tertiary);">正在重新生成...</span></div>';
+                        streamingDiv = chatContent.querySelector('.streaming-content');
+                    }
+                }
+                // 清空现有内容
+                if (streamingDiv) streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">正在重新生成...</span>';
+            } else {
+                streamingDiv = createAssistantMessage();
+            }
             let fullText = '';
             let reasoningText = '';
             let hasReceivedContent = false;
