@@ -5748,6 +5748,16 @@
             });
             
             bubble.appendChild(actions);
+            
+            // 显示用户消息的编辑和分享按钮
+            const userWrapper = container.closest('.flex')?.previousElementSibling;
+            if (userWrapper) {
+                const editBtn = userWrapper.querySelector('.edit-btn');
+                const shareBtn = userWrapper.querySelector('.share-btn');
+                if (editBtn) editBtn.style.display = 'inline-flex';
+                if (shareBtn) shareBtn.style.display = 'inline-flex';
+                delete userWrapper.dataset.waitingForReply;
+            }
         }
         
         // 重新生成回答
