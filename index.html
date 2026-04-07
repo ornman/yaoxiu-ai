@@ -3945,6 +3945,11 @@
             isGenerating = false;
             controller = null;
             
+            // 重置上下文管理器
+            if (chatContext) {
+                chatContext.reset();
+            }
+            
             // 更新发送按钮状态
             updateSendBtnState();
             
