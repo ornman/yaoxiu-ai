@@ -5463,10 +5463,24 @@
                     const model = document.getElementById('modelSelect').value;
                     
                     // 使用上下文管理器构建消息数组（包含历史对话）
-                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
-                        { role: 'system', content: chatContext?.systemPrompt || '' },
-                        { role: 'user', content: content }
-                    ];
+                    let messages;
+                    if (chatContext) {
+                        messages = chatContext.getMessagesForAPI('sliding-window');
+                        console.log('📝 chatContext messages:', messages);
+                        // 如果返回空数组，手动构建基本消息
+                        if (!messages || messages.length === 0) {
+                            messages = [
+                                { role: 'system', content: chatContext.systemPrompt || '' },
+                                { role: 'user', content: content }
+                            ];
+                            console.log('📝 使用备用messages:', messages);
+                        }
+                    } else {
+                        messages = [
+                            { role: 'system', content: '' },
+                            { role: 'user', content: content }
+                        ];
+                    }
                     
                     response = await fetch(DIRECT_API_URL, {
                         method: 'POST',
@@ -5489,10 +5503,22 @@
                     console.log('📡 请求地址:', apiUrl); // 调试用
                     
                     // 使用上下文管理器构建消息数组（包含历史对话）
-                    const messages = chatContext ? chatContext.getMessagesForAPI('sliding-window') : [
-                        { role: 'system', content: chatContext?.systemPrompt || '' },
-                        { role: 'user', content: content }
-                    ];
+                    let messages;
+                    if (chatContext) {
+                        messages = chatContext.getMessagesForAPI('sliding-window');
+                        // 如果返回空数组，手动构建基本消息
+                        if (!messages || messages.length === 0) {
+                            messages = [
+                                { role: 'system', content: chatContext.systemPrompt || '' },
+                                { role: 'user', content: content }
+                            ];
+                        }
+                    } else {
+                        messages = [
+                            { role: 'system', content: '' },
+                            { role: 'user', content: content }
+                        ];
+                    }
                     
                     response = await fetch(apiUrl, {
                         method: 'POST',
