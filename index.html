@@ -5385,6 +5385,8 @@
         }
 
         async function sendMessage() {
+            console.log('📤 sendMessage 被调用, isGenerating:', isGenerating);
+            
             const userInput = document.getElementById('userInput');
             const rawContent = userInput.value;
             
@@ -5396,6 +5398,7 @@
             }
             
             const content = validation.text;
+            console.log('📝 内容长度:', content.length, '内容:', content.substring(0, 30));
             
             // 如果有图片，调用图片发送函数
             if (selectedImages.length > 0) {
@@ -5403,7 +5406,15 @@
                 return;
             }
             
-            if (!content || isGenerating) return;
+            if (!content) {
+                console.log('⚠️ 内容为空，不发送');
+                return;
+            }
+            
+            if (isGenerating) {
+                console.log('⚠️ 正在生成中，不发送');
+                return;
+            }
 
             // 检查配置
             if (!USE_DIRECT_API) {
