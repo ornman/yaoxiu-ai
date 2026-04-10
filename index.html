@@ -443,6 +443,205 @@
             }
         }
         
+        /* ========== 移动端标题适配 ========== */
+        @media screen and (max-width: 640px) {
+            /* 主标题区域优化 */
+            header .font-serif.text-base {
+                font-size: 0.875rem !important;
+                letter-spacing: 0;
+            }
+            
+            /* 副标题优化 */
+            header .text-xs.mt-0\.5 {
+                font-size: 0.65rem !important;
+                max-width: 100px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            /* 极小屏幕进一步适配 */
+            @media screen and (max-width: 380px) {
+                header .font-serif.text-base {
+                    font-size: 0.8rem !important;
+                }
+                header .text-xs.mt-0\.5 {
+                    font-size: 0.6rem !important;
+                    max-width: 80px;
+                }
+                
+                /* 标题区域更紧凑 */
+                header .flex.items-center.gap-2 {
+                    gap: 0.375rem;
+                }
+                
+                /* 头部按钮更紧凑 */
+                header .flex.items-center.gap-1 {
+                    gap: 0.125rem;
+                }
+            }
+            
+            /* 触摸目标优化 - 确保符合 44x44px 最小标准 */
+            header button, header .level-badge {
+                min-height: 36px;
+                min-width: 36px;
+            }
+            
+            /* 等级徽章在移动端缩小 */
+            header .level-badge {
+                padding: 4px 8px;
+                gap: 4px;
+            }
+            
+            header .level-icon-emoji {
+                width: 20px;
+                height: 20px;
+                font-size: 12px;
+            }
+            
+            header .level-name {
+                font-size: 10px;
+            }
+            
+            header .level-progress {
+                width: 40px;
+                height: 3px;
+            }
+            
+            /* 盲盒按钮在移动端调整 */
+            header .blindbox-entry-btn {
+                padding: 6px;
+            }
+            
+            header .blindbox-entry-btn span {
+                font-size: 16px;
+            }
+            
+            /* 签到条移动端适配 */
+            .checkin-bar {
+                padding: 6px 12px;
+                gap: 8px;
+            }
+            
+            .checkin-streak {
+                font-size: 12px;
+                gap: 4px;
+            }
+            
+            .checkin-streak .fire {
+                font-size: 14px;
+            }
+            
+            .checkin-btn {
+                padding: 5px 12px;
+                font-size: 11px;
+            }
+            
+            /* 消息气泡移动端优化 */
+            .message-bubble {
+                max-width: 90% !important;
+            }
+            
+            /* 输入框移动端优化 */
+            #inputWrapper textarea {
+                font-size: 16px; /* 防止 iOS 缩放 */
+                padding-left: 40px;
+                padding-right: 50px;
+            }
+            
+            /* 底部模型选择器在移动端调整 */
+            #modelToggleBtn {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            
+            /* 预设问题网格在移动端单列显示 */
+            #presetQuestions {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* 八角花 SVG 在移动端缩小 */
+            .octagon-rotate {
+                width: 80px;
+                height: 80px;
+            }
+            
+            /* 面板全屏显示 */
+            .settings-panel, .favorites-panel, .conversations-panel {
+                width: 100% !important;
+            }
+        }
+        
+        /* ========== 移动端触摸优化 ========== */
+        @media (hover: none) and (pointer: coarse) {
+            /* 触摸设备上增大点击区域 */
+            button, .action-btn, .user-action-btn, .ai-action-btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+            
+            /* 触摸反馈 */
+            button:active, .action-btn:active {
+                transform: scale(0.96);
+                opacity: 0.8;
+            }
+            
+            /* 隐藏 hover 效果，避免误触 */
+            .message-actions, .user-message-actions {
+                opacity: 1 !important;
+                transform: none !important;
+                pointer-events: auto !important;
+            }
+            
+            /* 预设问题触摸优化 */
+            #presetQuestions > div {
+                padding: 12px;
+                min-height: 60px;
+            }
+            
+            /* 增大滚动条 */
+            ::-webkit-scrollbar {
+                width: 8px;
+            }
+        }
+        
+        /* ========== 安全区域适配（刘海屏） ========== */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            header {
+                padding-top: env(safe-area-inset-top);
+            }
+            
+            .mobile-input-area {
+                padding-bottom: max(12px, env(safe-area-inset-bottom));
+            }
+            
+            .settings-panel, .favorites-panel, .conversations-panel {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+        }
+        
+        /* ========== 横屏模式适配 ========== */
+        @media screen and (max-height: 500px) and (orientation: landscape) {
+            header {
+                padding-top: 4px;
+                padding-bottom: 4px;
+            }
+            
+            header .w-9, header .h-9 {
+                width: 32px;
+                height: 32px;
+            }
+            
+            .checkin-bar {
+                display: none; /* 横屏时隐藏签到条节省空间 */
+            }
+            
+            #chatContainer {
+                padding-top: 8px;
+            }
+        }
+        
         .cursor-blink::after {
             content: '▊';
             color: var(--accent);
@@ -1659,11 +1858,12 @@
                                 新建对话
                             </span>
                         </div>
-                        <div>
+                        <div class="min-w-0">
                             <h1 class="font-serif text-base sm:text-xl font-bold tracking-wide" style="color: var(--text-primary);">
                                 瑶绣<span style="color: var(--gold);">·</span>智问
                             </h1>
-                            <p class="text-xs mt-0.5" style="color: var(--text-tertiary);">瑶族刺绣非遗知识库</p>
+                            <p class="text-xs mt-0.5 hidden sm:block" style="color: var(--text-tertiary);">瑶族刺绣非遗知识库</p>
+                            <p class="text-[10px] mt-0.5 sm:hidden" style="color: var(--text-tertiary);">瑶绣非遗知识库</p>
                         </div>
                     </div>
                     
