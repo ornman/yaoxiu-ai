@@ -280,19 +280,19 @@
         }
         /* ========== CSS 变量定义 ========== */
         :root {
-            --bg-primary: #131110;
-            --bg-secondary: #1a1816;
-            --bg-tertiary: #242220;
-            --border-color: #2e2c29;
-            --accent: #9e2a3b;
-            --accent-light: #b83a4d;
-            --accent-hover: #7a1f2d;
+            --bg-primary: #fdfcfa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f7f5f1;
+            --border-color: #ebe8e1;
+            --accent: #c45c5c;
+            --accent-light: #d97a7a;
+            --accent-hover: #a84a4a;
             --gold: #c9a66b;
-            --gold-light: #d9b88a;
-            --text-primary: #f2f0ee;
-            --text-secondary: #9a9590;
-            --text-tertiary: #6b6560;
-            --shadow: rgba(158, 42, 59, 0.15);
+            --gold-light: #dcc090;
+            --text-primary: #2d2a25;
+            --text-secondary: #7a756d;
+            --text-tertiary: #a8a39a;
+            --shadow: rgba(196, 92, 92, 0.06);
         }
         [data-theme="blue"] {
             --bg-primary: #0c1118;
@@ -2348,6 +2348,460 @@
                 padding: 12px 16px max(12px, env(safe-area-inset-bottom)) !important;
             }
         }
+
+        /* ========== 第三次重设计：温柔聊天室覆盖样式 ========== */
+        
+        /* --- 禁用 infinite 动画 --- */
+        .fortune-ball { animation: none !important; }
+        .breathe { animation: none !important; }
+        .btn-stitch:hover::after { animation: none !important; }
+        .stitch-border:hover::before { animation: none !important; }
+        .octagon-rotate { animation: none !important; }
+        .octagon-rotate:hover { animation: rotate 8s linear forwards !important; }
+
+        /* --- 布局重写 --- */
+        .yao-workshop {
+            background: var(--bg-primary);
+        }
+        .yao-atelier {
+            width: 340px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+        }
+        .yao-atelier-header {
+            padding: 24px 20px 16px;
+            border-bottom: none;
+            text-align: center;
+        }
+        .yao-atelier-name {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            letter-spacing: 0.02em;
+        }
+        .yao-atelier-stats {
+            display: none;
+        }
+        .yao-portrait img {
+            height: 90%;
+            mask-image: linear-gradient(to top, black 75%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to top, black 75%, transparent 100%);
+        }
+        .yao-speech-bubble {
+            display: none;
+        }
+        .yao-workbench header {
+            background: transparent !important;
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 24px !important;
+        }
+        .yao-workbench header h1 {
+            font-size: 16px;
+            font-family: 'Noto Serif SC', serif;
+        }
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .yao-atelier { width: 260px; }
+        }
+        @media (max-width: 767px) {
+            .yao-atelier { display: none; }
+            .yao-workshop { flex-direction: column; }
+            .yao-avatar-float {
+                display: block;
+                width: 64px;
+                height: 64px;
+                bottom: 100px;
+                right: 16px;
+                border: 2px solid var(--gold);
+                border-radius: 50%;
+                overflow: hidden;
+                box-shadow: 0 4px 20px rgba(201, 166, 107, 0.15);
+                animation: yaoFloatBreathe 3s ease-in-out infinite;
+            }
+            @keyframes yaoFloatBreathe {
+                0%, 100% { box-shadow: 0 4px 20px rgba(201, 166, 107, 0.12); }
+                50% { box-shadow: 0 6px 28px rgba(201, 166, 107, 0.22); }
+            }
+            .yao-avatar-float img {
+                object-position: 50% 15%;
+            }
+        }
+
+        /* --- Header 图标按钮 --- */
+        header .flex.items-center.gap-1.sm\:gap-2 button,
+        header .blindbox-entry-btn {
+            background: transparent !important;
+            border: none !important;
+            color: var(--text-tertiary) !important;
+            padding: 6px !important;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+        header .flex.items-center.gap-1.sm\:gap-2 button:hover,
+        header .blindbox-entry-btn:hover {
+            color: var(--text-primary) !important;
+            transform: scale(1.05);
+            box-shadow: none !important;
+        }
+        header .blindbox-entry-btn span.text-base {
+            font-size: 20px;
+        }
+
+        /* --- 签到条 --- */
+        .checkin-bar {
+            height: 36px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            padding: 0 16px;
+        }
+        .checkin-streak { font-size: 12px; }
+        .checkin-streak .fire { font-size: 14px; }
+        .checkin-btn {
+            padding: 4px 10px;
+            font-size: 11px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: white;
+        }
+        .checkin-delete-btn {
+            color: var(--text-tertiary);
+            padding: 4px;
+        }
+
+        /* --- 消息气泡重写 --- */
+        .message-bubble {
+            max-width: min(85%, 720px);
+        }
+        /* AI 消息 */
+        .message-bubble:not(.user-message-container) .chat-content {
+            background: #ffffff !important;
+            border: 1px solid var(--border-color) !important;
+            border-left: 1px solid var(--border-color) !important;
+            border-radius: 1.5rem 1.5rem 1.5rem 0.5rem !important;
+            padding: 16px 20px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+            max-width: 640px;
+        }
+        .message-bubble:not(.user-message-container) .chat-content p {
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        /* 用户消息 */
+        .message-bubble.user-message-container .chat-content {
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            border: 1px solid transparent !important;
+            border-radius: 1.5rem 1.5rem 0.5rem 1.5rem !important;
+            padding: 14px 18px !important;
+            max-width: 560px;
+        }
+        .message-bubble.user-message-container .chat-content p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #ffffff !important;
+        }
+        /* 消息间距 */
+        #chatContainer > .flex {
+            margin-bottom: 24px;
+        }
+        #chatContainer > .flex + .flex {
+            margin-bottom: 24px;
+        }
+        /* 时间/操作淡入 */
+        .message-actions, .user-message-actions, .user-message-actions-bottom {
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .message-bubble:hover .message-actions,
+        .user-message-wrapper:hover .user-message-actions,
+        .user-message-wrapper:hover .user-message-actions-bottom {
+            opacity: 1;
+        }
+        .ai-message-actions {
+            border-top: none;
+            margin-top: 4px;
+            padding-top: 4px;
+        }
+        .ai-action-btn, .user-action-btn, .action-btn {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* --- 小瑶头像金环 --- */
+        .yao-avatar-hoop {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1.5px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            font-family: 'Noto Serif SC', serif;
+            color: var(--gold);
+            font-size: 14px;
+        }
+
+        /* --- 八角花卡片 intimate 版 --- */
+        .yao-octagon-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+        }
+        .yao-octagon-card p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        /* --- 预设问题软胶囊 --- */
+        #presetQuestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        #presetQuestions > div,
+        #presetQuestions > button {
+            background: var(--bg-tertiary);
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 13px;
+            padding: 8px 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #presetQuestions > div:hover,
+        #presetQuestions > button:hover {
+            background: var(--gold-light);
+            color: var(--text-primary);
+        }
+
+        /* --- 输入区 --- */
+        #inputArea {
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            padding: 16px 24px 24px;
+        }
+        #inputWrapper {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 1.75rem;
+            padding: 6px 6px 6px 20px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        #inputWrapper:focus-within {
+            border-color: var(--gold) !important;
+            box-shadow: 0 0 0 3px rgba(201, 166, 107, 0.1) !important;
+        }
+        #inputWrapper textarea {
+            font-size: 15px;
+            color: var(--text-primary);
+            padding: 12px 0;
+            resize: none;
+        }
+        #sendBtn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            right: 6px;
+            bottom: 6px;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+        #sendBtn:hover:not(:disabled) {
+            transform: scale(1.05);
+            background: var(--accent-hover) !important;
+        }
+        #sendBtn svg {
+            width: 16px;
+            height: 16px;
+        }
+        #imageUploadBtn {
+            width: 36px;
+            height: 36px;
+            color: var(--text-tertiary);
+            transition: color 0.2s ease;
+        }
+        #imageUploadBtn:hover {
+            color: var(--text-secondary);
+            background: transparent;
+        }
+
+        /* --- 面板滑入重写 --- */
+        .settings-panel, .favorites-panel, .conversations-panel, .share-panel, .knowledge-panel {
+            background: #ffffff !important;
+            border-left: 1px solid var(--border-color);
+            box-shadow: -8px 0 32px rgba(0,0,0,0.06);
+        }
+        .settings-panel > div,
+        .favorites-panel > div,
+        .conversations-panel > div {
+            background: #ffffff;
+        }
+
+        /* --- Welcome Modal --- */
+        .welcome-modal {
+            background: rgba(255,255,255,0.85) !important;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .welcome-content {
+            background: #ffffff !important;
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 40px;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+        }
+        .welcome-content h2 {
+            color: var(--text-primary);
+            font-size: 22px;
+            font-family: 'Noto Serif SC', serif;
+            margin-bottom: 12px;
+        }
+        .welcome-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .welcome-text .highlight {
+            color: var(--accent);
+            font-size: 18px;
+        }
+        .welcome-subtext {
+            color: var(--text-tertiary);
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+        .welcome-btn-primary {
+            background: var(--accent);
+            border-radius: 999px;
+            font-size: 15px;
+            padding: 12px 24px;
+        }
+        .welcome-btn-secondary {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            padding: 10px 24px;
+        }
+        .welcome-btn-secondary:hover {
+            border-color: var(--gold);
+            color: var(--gold);
+        }
+
+        /* --- Blindbox Modal --- */
+        .blindbox-modal {
+            background: rgba(255,255,255,0.75) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .blindbox-content {
+            background: #ffffff !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
+            max-width: 420px;
+        }
+        .blindbox-card {
+            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f1 100%);
+            border: 2px solid var(--gold);
+        }
+        .blindbox-card-front, .blindbox-pattern {
+            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f1 100%);
+        }
+
+        /* --- Collection & Pattern Detail --- */
+        .collection-modal {
+            background: rgba(255,255,255,0.75) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .collection-content {
+            background: #ffffff !important;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+        }
+
+        /* --- 收藏项卡片 --- */
+        .favorite-item {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            border-left: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+        }
+        .favorite-item:hover {
+            border-color: var(--gold);
+            transform: translateY(-2px);
+            background: #ffffff;
+        }
+
+        /* --- 等级与成长简化 --- */
+        .level-badge {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            padding: 4px 10px;
+            gap: 6px;
+            box-shadow: none;
+        }
+        .level-badge:hover {
+            box-shadow: none;
+            transform: none;
+        }
+        .level-icon-emoji {
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+        }
+        .level-name {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+        .level-progress {
+            width: 48px;
+            height: 3px;
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+        .growth-dropdown {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            padding: 16px;
+        }
+
+        /* --- 消息入场动画 --- */
+        @keyframes msgFadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: msgFadeIn 0.35s ease-out forwards;
+        }
+
+        /* --- 输入区底部提示 --- */
+        #inputArea .text-\[10px\].sm\:text-xs,
+        #inputArea span.text-\[10px\],
+        #inputArea .mt-2 > span {
+            font-size: 11px;
+            color: var(--text-tertiary);
+        }
+
+        /* --- 隐藏不需要的重装饰 --- */
+        .yao-logo-ring { display: none; }
     </style>
 </head>
 <body class="min-h-screen pattern-octagon">
@@ -2355,11 +2809,10 @@
     <div id="welcomeModal" class="welcome-modal">
         <div class="welcome-content">
             <div class="fortune-ball">🪡</div>
-            <h2>欢迎来到瑶绣绣坊</h2>
-            <p class="welcome-text">今日可免费抽取 <span class="highlight">3</span> 次纹样</p>
-            <p class="welcome-subtext">每次对话额外获得 1 次机会</p>
+            <h2>早安，我是小瑶</h2>
+            <p class="welcome-text">阿姐/阿哥好呀～我从小跟着阿妈学瑶绣，以后你想聊什么，我都在。</p>
             <div class="welcome-buttons">
-                <button onclick="openBlindBoxModal(); closeWelcomeModal();" class="welcome-btn-primary">立即前往抽奖</button>
+                <button onclick="openBlindBoxModal(); closeWelcomeModal();" class="welcome-btn-primary">打开小瑶的绣囊</button>
                 <button onclick="closeWelcomeModal();" class="welcome-btn-secondary">稍后再说</button>
             </div>
         </div>
@@ -2367,21 +2820,16 @@
     <!-- 背景飘浮八角花 -->
     <div id="floatingOctagons" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
     
-    <!-- 绣坊工作台 -->
+    <!-- 聊天室 -->
     <div class="yao-workshop" id="yaoWorkshop">
-        <!-- 左侧：绣娘区 -->
+        <!-- 左侧：小瑶的陪伴区 -->
         <aside class="yao-atelier">
             <div class="yao-atelier-header">
-                <div class="yao-atelier-name">绣娘 · 小瑶</div>
-                <div class="yao-atelier-stats">
-                    <div class="yao-atelier-stat">
-                        <span>✦</span>
-                        <span>今日绣纹</span>
-                    </div>
-                </div>
-                <!-- 等级徽章移到这里 -->
-                <div style="margin-top: 16px;">
-                    <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长" style="width: fit-content; cursor: pointer;">
+                <div class="yao-atelier-name">小瑶</div>
+                <div style="font-size:12px;color:var(--text-tertiary);">你的瑶绣绣娘</div>
+                <!-- 等级徽章紧凑版 -->
+                <div style="margin-top:16px;display:flex;justify-content:center;">
+                    <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长" style="cursor: pointer;">
                         <div class="level-icon-emoji" id="levelIcon">🌱</div>
                         <div class="level-info">
                             <span class="level-name" id="levelName">LV.1 学徒</span>
@@ -2390,90 +2838,87 @@
                             </div>
                         </div>
                     </div>
-                    <!-- 个人成长下拉菜单 -->
-                    <div id="growthMenu" class="growth-dropdown hidden" style="position: absolute; top: 100px; left: 20px; right: 20px; width: auto;">
-                        <div class="growth-header">
-                            <div class="growth-level-emoji-large" id="growthMenuEmoji" style="font-size: 40px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); border-radius: 16px; margin-right: 12px;">🌱</div>
-                            <div class="growth-level-info" style="flex: 1;">
-                                <span class="growth-level-title" id="growthMenuTitle" style="font-size: 15px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 4px;">LV.1 学徒</span>
-                                <div class="growth-progress-bar">
-                                    <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%"></div>
-                                </div>
-                                <span class="growth-xp-text" id="growthMenuXP">0/100 XP</span>
+                </div>
+                <!-- 个人成长下拉菜单 -->
+                <div id="growthMenu" class="growth-dropdown hidden" style="position: absolute; top: 110px; left: 20px; right: 20px; width: auto; z-index: 100;">
+                    <div class="growth-header">
+                        <div class="growth-level-emoji-large" id="growthMenuEmoji" style="font-size: 32px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); border-radius: 12px; margin-right: 10px;">🌱</div>
+                        <div class="growth-level-info" style="flex: 1;">
+                            <span class="growth-level-title" id="growthMenuTitle" style="font-size: 14px; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 2px;">LV.1 学徒</span>
+                            <div class="growth-progress-bar">
+                                <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%"></div>
                             </div>
+                            <span class="growth-xp-text" id="growthMenuXP">0/100 XP</span>
                         </div>
-                        <div class="growth-stats">
-                            <div class="growth-stat-item">
-                                <span class="growth-stat-icon">📚</span>
-                                <span class="growth-stat-label">已掌握</span>
-                                <span class="growth-stat-value" id="growthPatterns">0 个纹样</span>
-                            </div>
-                            <div class="growth-stat-item">
-                                <span class="growth-stat-icon">📅</span>
-                                <span class="growth-stat-label">学习天数</span>
-                                <span class="growth-stat-value" id="growthDays">1 天</span>
-                            </div>
-                            <div class="growth-stat-item">
-                                <span class="growth-stat-icon">💬</span>
-                                <span class="growth-stat-label">对话次数</span>
-                                <span class="growth-stat-value" id="growthChats">0 次</span>
-                            </div>
+                    </div>
+                    <div class="growth-stats">
+                        <div class="growth-stat-item">
+                            <span class="growth-stat-icon">📚</span>
+                            <span class="growth-stat-label">已掌握</span>
+                            <span class="growth-stat-value" id="growthPatterns">0 个纹样</span>
                         </div>
-                        <div class="growth-divider"></div>
-                        <div class="growth-links">
-                            <button onclick="openCollectionModal(); closeGrowthMenu();" class="growth-link">
-                                <span>📖 我的秀谱</span>
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </button>
-                            <button onclick="openBlindBoxModal(); closeGrowthMenu();" class="growth-link">
-                                <span>🎁 纹样盲盒</span>
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </button>
+                        <div class="growth-stat-item">
+                            <span class="growth-stat-icon">📅</span>
+                            <span class="growth-stat-label">学习天数</span>
+                            <span class="growth-stat-value" id="growthDays">1 天</span>
                         </div>
+                        <div class="growth-stat-item">
+                            <span class="growth-stat-icon">💬</span>
+                            <span class="growth-stat-label">对话次数</span>
+                            <span class="growth-stat-value" id="growthChats">0 次</span>
+                        </div>
+                    </div>
+                    <div class="growth-divider"></div>
+                    <div class="growth-links">
+                        <button onclick="openCollectionModal(); closeGrowthMenu();" class="growth-link">
+                            <span>📖 我的秀谱</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                        <button onclick="openBlindBoxModal(); closeGrowthMenu();" class="growth-link">
+                            <span>🎁 纹样盲盒</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                     </div>
                 </div>
             </div>
             <div class="yao-portrait">
-                <div class="yao-speech-bubble">
-                    阿姐/阿哥好呀～今天想学什么纹样呢？
-                </div>
                 <img src="art/立绘/小瑶初级版本立绘.png" alt="小瑶">
+            </div>
+            <!-- 底部心情/状态 -->
+            <div style="padding:16px 20px;font-size:12px;color:var(--text-tertiary);text-align:center;border-top:1px solid var(--border-color);">
+                小瑶正在绣一朵八角花
             </div>
         </aside>
         
-        <!-- 右侧：绣品台 -->
+        <!-- 右侧：聊天区 -->
         <main class="yao-workbench">
             <!-- Header -->
             <header class="glass border-b sticky top-0 z-40" style="border-color: var(--border-color);">
                 <div class="px-4 sm:px-6 py-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="yao-logo-ring cursor-pointer group" onclick="newConversation()" title="新建对话">
-                                <span>瑶</span>
-                            </div>
                             <div class="min-w-0">
                                 <h1 class="font-serif text-base font-semibold tracking-wide" style="color: var(--text-primary);">
                                     瑶绣<span style="color: var(--gold);">·</span>智问
                                 </h1>
-                                <p class="text-[11px] hidden sm:block" style="color: var(--text-tertiary);">瑶族刺绣非遗知识库</p>
                             </div>
                         </div>
                         
                         <div class="flex items-center gap-1 sm:gap-2">
                             <!-- 盲盒入口 -->
-                            <button onclick="openBlindBoxModal()" id="blindboxBtn" class="blindbox-entry-btn p-2 rounded-lg transition-all duration-200 relative group" title="纹样盲盒">
-                                <span class="text-base">🎁</span>
+                            <button onclick="openBlindBoxModal()" id="blindboxBtn" class="blindbox-entry-btn p-2 rounded-lg transition-all duration-200 relative group" title="小瑶的绣囊">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                                 <span id="blindboxBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center hidden">3</span>
                             </button>
                             
                             <!-- 对话历史入口 -->
-                            <button onclick="openConversations()" id="headerConvBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="对话历史">
+                            <button onclick="openConversations()" id="headerConvBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-tertiary);" title="对话历史">
                                 <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span id="convBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
                             </button>
                             
                             <!-- 收藏入口 -->
-                            <button onclick="openFavorites()" id="headerFavBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-secondary);" title="我的收藏">
+                            <button onclick="openFavorites()" id="headerFavBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-tertiary);" title="我的收藏">
                                 <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
                                 <span id="favBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
                                 
@@ -2490,7 +2935,7 @@
                                 <option value="qwen-plus">Qwen-Plus</option>
                             </select>
                             
-                            <button onclick="openSettings()" class="p-2 rounded-lg transition-all duration-200" style="color: var(--text-secondary);" title="设置">
+                            <button onclick="openSettings()" class="p-2 rounded-lg transition-all duration-200" style="color: var(--text-tertiary);" title="设置">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -2537,22 +2982,18 @@
                                 阿姐/阿哥好呀～我是小瑶🌸 从小跟着阿妈学刺绣，是瑶山里的第三代绣娘。千百年来，我们瑶家女儿以针为笔、以线为墨，在靛蓝布上绣出八角花的图腾，把祖先的祝福一针一线传下去。
                             </p>
                             <!-- 八角花纹样展示 -->
-                            <div class="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border wood-frame" style="background: var(--bg-tertiary); border-color: var(--border-color);">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <span style="color: var(--gold);">❋</span>
-                                    <span class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">八角花纹样示意</span>
-                                </div>
+                            <div class="mb-3 sm:mb-4 yao-octagon-card">
                                 <div class="flex justify-center py-2">
                                     <svg class="w-24 h-24 sm:w-32 sm:h-32 octagon-rotate" viewBox="0 0 200 200">
                                         <defs>
                                             <linearGradient id="octGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" style="stop-color:#9e2a3b;stop-opacity:1" />
+                                                <stop offset="0%" style="stop-color:#c45c5c;stop-opacity:1" />
                                                 <stop offset="100%" style="stop-color:#c9a66b;stop-opacity:1" />
                                             </linearGradient>
                                         </defs>
                                         <polygon points="100,10 170,40 190,100 170,160 100,190 30,160 10,100 30,40" fill="none" stroke="url(#octGrad)" stroke-width="3"/>
-                                        <polygon points="100,30 150,55 160,100 150,145 100,170 50,145 40,100 50,55" fill="none" stroke="#9e2a3b" stroke-width="2" opacity="0.6"/>
-                                        <polygon points="100,50 130,65 135,100 130,135 100,150 70,135 65,100 70,65" fill="#9e2a3b" opacity="0.3"/>
+                                        <polygon points="100,30 150,55 160,100 150,145 100,170 50,145 40,100 50,55" fill="none" stroke="#c45c5c" stroke-width="2" opacity="0.6"/>
+                                        <polygon points="100,50 130,65 135,100 130,135 100,150 70,135 65,100 70,65" fill="#c45c5c" opacity="0.3"/>
                                         <circle cx="100" cy="100" r="15" fill="#c9a66b"/>
                                         <circle cx="100" cy="10" r="4" fill="#c9a66b"/>
                                         <circle cx="190" cy="100" r="4" fill="#c9a66b"/>
@@ -2560,11 +3001,11 @@
                                         <circle cx="10" cy="100" r="4" fill="#c9a66b"/>
                                     </svg>
                                 </div>
-                                <p class="text-xs text-center" style="color: var(--text-tertiary);">鼠标悬停暂停旋转 · 象征太阳与生命</p>
+                                <p>这是我们瑶家的八角花，象征着太阳和祖先的保佑</p>
                             </div>
                             
-                            <!-- 轮询预设问题 - 8组丰富模板 -->
-                            <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                            <!-- 轮询预设问题 -->
+                            <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
                                 <!-- 动态生成的预设问题 -->
                             </div>
                             
@@ -2592,7 +3033,7 @@
                 </div>
             </div>
 
-            <!-- Input Area - 移动端固定底部 -->
+            <!-- Input Area -->
             <div id="inputArea" class="glass border-t px-3 sm:px-6 py-3 sm:py-4 mobile-input-area" style="border-color: var(--border-color);">
                 <div class="max-w-4xl mx-auto">
                     <!-- 已选图片预览（支持多图） -->
@@ -2619,7 +3060,7 @@
                         <input type="file" id="fileInput" class="hidden" accept="image/*" multiple onchange="handleFileSelect(event)">
                         
                         <div id="inputWrapper" class="flex-1 relative">
-                            <textarea id="userInput" class="w-full bg-transparent px-4 py-3 pr-12 resize-none focus:outline-none text-sm sm:text-base" style="color: var(--text-primary);" placeholder="问问小瑶关于瑶绣的知识..." rows="1" oninput="autoResize(this)" onkeydown="handleKeyDown(event)"></textarea>
+                            <textarea id="userInput" class="w-full bg-transparent px-4 py-3 pr-12 resize-none focus:outline-none text-sm sm:text-base" style="color: var(--text-primary);" placeholder="想跟小瑶说点什么？" rows="1" oninput="autoResize(this)" onkeydown="handleKeyDown(event)"></textarea>
                             <button id="sendBtn" onclick="handleSendBtnClick(event)" disabled title="发送" class="absolute right-2 bottom-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
@@ -2630,7 +3071,7 @@
                     
                     <!-- 模型选择 -->
                     <div class="flex items-center justify-between mt-2">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 relative">
                             <button onclick="toggleModelDropdown()" id="modelToggleBtn" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color);">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -2778,9 +3219,9 @@
                 </h3>
                 <div class="grid grid-cols-2 gap-2 sm:gap-3">
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="red" onclick="setTheme('red')">
-                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0a0b] to-[#c41e3a]"></div>
-                        <div class="text-sm font-medium" style="color: var(--text-primary);">黑底红彩</div>
-                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">经典传统</div>
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fdfcfa] to-[#c45c5c]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">暖调素白</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">默认温柔</div>
                     </div>
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="blue" onclick="setTheme('blue')">
                         <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0f1a] to-[#3b82f6]"></div>
@@ -2788,7 +3229,7 @@
                         <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">蓝靛支系</div>
                     </div>
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="light" onclick="setTheme('light')">
-                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fafaf9] to-[#c41e3a]"></div>
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fdfcfa] to-[#c45c5c]"></div>
                         <div class="text-sm font-medium" style="color: var(--text-primary);">素雅白底</div>
                         <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">护眼模式</div>
                     </div>
@@ -3094,9 +3535,9 @@
             <div class="p-6 border-b" style="border-color: var(--border-color);">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-3xl">🎁</span>
+                        <span class="text-2xl">🪡</span>
                         <div>
-                            <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">纹样盲盒</h2>
+                            <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">小瑶的绣囊</h2>
                             <p class="text-xs" style="color: var(--text-tertiary);">抽取稀有纹样，解锁专属故事</p>
                         </div>
                     </div>
@@ -3217,6 +3658,7 @@
         <span id="toastMsg"></span>
     </div>
 
+    <script>
     <script>
         // ========== 安全工具函数（精简版） ==========
         const SecurityUtils = {
