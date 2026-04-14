@@ -191,8 +191,10 @@ function getCorsHeaders(request) {
     };
   }
   
-  // 检查是否在允许列表中
-  if (SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin)) {
+  // 检查是否在允许列表中，或是否为 Vercel 预览域名
+  const isAllowedOrigin = SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin) ||
+                          /^https:\/\/yaoxiu-ai-[a-z0-9-]+\.vercel\.app$/.test(origin);
+  if (isAllowedOrigin) {
     return {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',

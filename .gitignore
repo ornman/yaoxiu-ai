@@ -4,3 +4,14 @@
 !.dev.vars.example
 .env*
 !.env.example
+
+# 备份与临时文件
+*.bak
+*.tmp
+*.pdb
+*.log
+index.html.*-backup
+
+# 开发杂项
+123.cpp
+vc140.pdb
