@@ -50,12 +50,19 @@
     <style>
         /* ========== 动画系统变量 ========== */
         :root {
-            --anim-fast: 150ms;
-            --anim-normal: 300ms;
-            --anim-slow: 500ms;
-            --anim-easing: cubic-bezier(0.4, 0, 0.2, 1);
-            --anim-elastic: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            --silver: #a8b0b8;
+            --bg-primary: #fdfdfd;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #f8f8f8;
+            --border-color: #e5e5e5;
+            --accent: #c45c5c;
+            --accent-light: #d97a7a;
+            --accent-hover: #a84a4a;
+            --gold: #c9a66b;
+            --gold-light: #dcc090;
+            --text-primary: #1f1d1a;
+            --text-secondary: #6b6560;
+            --text-tertiary: #9a9590;
+            --shadow: rgba(196, 92, 92, 0.06);
         }
 
         /* ========== 针线光标动画 ========== */
@@ -164,7 +171,8 @@
             pointer-events: none;
         }
         .stitch-border:hover::before {
-            opacity: 0.4;
+            opacity: 0.5;
+            animation: stitchMove 1s linear infinite;
         }
         @keyframes stitchMove {
             0% { stroke-dashoffset: 0; }
@@ -186,7 +194,8 @@
             transition: all 0.3s;
         }
         .btn-stitch:hover::after {
-            opacity: 0.6;
+            opacity: 1;
+            animation: stitchDash 2s linear infinite;
         }
         @keyframes stitchDash {
             0% { clip-path: inset(0 100% 0 0); }
@@ -280,76 +289,76 @@
         }
         /* ========== CSS 变量定义 ========== */
         :root {
-            --bg-primary: #fdfcfa;
-            --bg-secondary: #ffffff;
-            --bg-tertiary: #f7f5f1;
-            --border-color: #ebe8e1;
-            --accent: #c45c5c;
-            --accent-light: #d97a7a;
-            --accent-hover: #a84a4a;
-            --gold: #c9a66b;
-            --gold-light: #dcc090;
-            --text-primary: #2d2a25;
-            --text-secondary: #7a756d;
-            --text-tertiary: #a8a39a;
-            --shadow: rgba(196, 92, 92, 0.06);
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-tertiary: #1f1f23;
+            --border-color: #2a2a2e;
+            --accent: #c41e3a;
+            --accent-light: #e63950;
+            --accent-hover: #9f1239;
+            --gold: #d4a574;
+            --gold-light: #e8c9a0;
+            --text-primary: #f5f5f5;
+            --text-secondary: #a1a1aa;
+            --text-tertiary: #71717a;
+            --shadow: rgba(196, 30, 58, 0.15);
         }
         [data-theme="blue"] {
-            --bg-primary: #0c1118;
-            --bg-secondary: #131b26;
-            --bg-tertiary: #1e2a38;
-            --border-color: #2d3a4a;
-            --accent: #4a7fc4;
-            --accent-light: #6ba3e0;
-            --accent-hover: #3a669e;
-            --gold: #8fb8d9;
-            --gold-light: #b0d0e8;
-            --text-primary: #f0f2f4;
-            --text-secondary: #8a9aad;
-            --text-tertiary: #5e6f82;
-            --shadow: rgba(74, 127, 196, 0.18);
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1e293b;
+            --border-color: #334155;
+            --accent: #3b82f6;
+            --accent-light: #60a5fa;
+            --accent-hover: #2563eb;
+            --gold: #93c5fd;
+            --gold-light: #bfdbfe;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --shadow: rgba(59, 130, 246, 0.2);
         }
         [data-theme="light"] {
-            --bg-primary: #faf9f7;
-            --bg-secondary: #f5f3f0;
-            --bg-tertiary: #e8e5e1;
-            --border-color: #d9d5d0;
-            --accent: #9e2a3b;
-            --accent-light: #b83a4d;
-            --accent-hover: #7a1f2d;
-            --gold: #a67c3d;
-            --gold-light: #bf9556;
-            --text-primary: #1f1c19;
-            --text-secondary: #5c554e;
-            --text-tertiary: #7f7770;
-            --shadow: rgba(158, 42, 59, 0.1);
+            --bg-primary: #fafaf9;
+            --bg-secondary: #f5f5f4;
+            --bg-tertiary: #e7e5e4;
+            --border-color: #d6d3d1;
+            --accent: #c41e3a;
+            --accent-light: #e63950;
+            --accent-hover: #9f1239;
+            --gold: #b45309;
+            --gold-light: #d97706;
+            --text-primary: #1c1917;
+            --text-secondary: #57534e;
+            --text-tertiary: #78716c;
+            --shadow: rgba(196, 30, 58, 0.1);
         }
         @media (prefers-color-scheme: light) {
             [data-theme="auto"] {
-                --bg-primary: #faf9f7;
-                --bg-secondary: #f5f3f0;
-                --bg-tertiary: #e8e5e1;
-                --border-color: #d9d5d0;
-                --accent: #9e2a3b;
-                --accent-light: #b83a4d;
-                --gold: #a67c3d;
-                --text-primary: #1f1c19;
-                --text-secondary: #5c554e;
-                --text-tertiary: #7f7770;
+                --bg-primary: #fafaf9;
+                --bg-secondary: #f5f5f4;
+                --bg-tertiary: #e7e5e4;
+                --border-color: #d6d3d1;
+                --accent: #c41e3a;
+                --accent-light: #e63950;
+                --gold: #b45309;
+                --text-primary: #1c1917;
+                --text-secondary: #57534e;
+                --text-tertiary: #78716c;
             }
         }
         @media (prefers-color-scheme: dark) {
             [data-theme="auto"] {
-                --bg-primary: #131110;
-                --bg-secondary: #1a1816;
-                --bg-tertiary: #242220;
-                --border-color: #2e2c29;
-                --accent: #9e2a3b;
-                --accent-light: #b83a4d;
-                --gold: #c9a66b;
-                --text-primary: #f2f0ee;
-                --text-secondary: #9a9590;
-                --text-tertiary: #6b6560;
+                --bg-primary: #0a0a0b;
+                --bg-secondary: #141416;
+                --bg-tertiary: #1f1f23;
+                --border-color: #2a2a2e;
+                --accent: #c41e3a;
+                --accent-light: #e63950;
+                --gold: #d4a574;
+                --text-primary: #f5f5f5;
+                --text-secondary: #a1a1aa;
+                --text-tertiary: #71717a;
             }
         }
         [data-font-size="small"] { font-size: 14px; }
@@ -404,12 +413,11 @@
             }
         }
         .pattern-octagon {
-            background-color: var(--bg-primary);
             background-image: 
-                radial-gradient(circle at 25% 25%, rgba(158, 42, 59, 0.015) 0%, transparent 50%),
-                radial-gradient(circle at 75% 75%, rgba(201, 166, 107, 0.015) 0%, transparent 50%),
-                linear-gradient(45deg, transparent 48%, rgba(158, 42, 59, 0.01) 49%, rgba(158, 42, 59, 0.01) 51%, transparent 52%),
-                linear-gradient(-45deg, transparent 48%, rgba(158, 42, 59, 0.01) 49%, rgba(158, 42, 59, 0.01) 51%, transparent 52%);
+                radial-gradient(circle at 25% 25%, rgba(196, 30, 58, 0.02) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(212, 165, 116, 0.02) 0%, transparent 50%),
+                linear-gradient(45deg, transparent 48%, rgba(196, 30, 58, 0.015) 49%, rgba(196, 30, 58, 0.015) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(196, 30, 58, 0.015) 49%, rgba(196, 30, 58, 0.015) 51%, transparent 52%);
             background-size: 100px 100px, 100px 100px, 50px 50px, 50px 50px;
         }
         ::-webkit-scrollbar {
@@ -738,49 +746,6 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
             transform: translateY(-1px);
         }
-        /* AI 消息气泡 */
-        .message-bubble:not(.user-message-container) .chat-content {
-            background: var(--bg-secondary) !important;
-            border: 1px solid var(--border-color) !important;
-            border-left: 2px solid var(--gold) !important;
-            border-radius: 1.25rem 1.25rem 1.25rem 0.375rem !important;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.08) !important;
-        }
-        
-        /* 用户消息气泡 */
-        .message-bubble.user-message-container .chat-content {
-            background: var(--accent) !important;
-            color: #fff !important;
-            border: 1px solid transparent !important;
-            border-radius: 1.25rem 1.25rem 0.375rem 1.25rem !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
-        }
-        
-        /* 输入区域优化 */
-        #inputWrapper {
-            border-radius: 1.25rem !important;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
-        }
-        #inputWrapper:focus-within {
-            border-color: var(--gold) !important;
-            box-shadow: 0 0 0 2px rgba(201, 166, 107, 0.15) !important;
-        }
-        
-        /* 发送按钮优化 */
-        #sendBtn {
-            background: var(--accent) !important;
-            color: #fff !important;
-            border: none !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-            border-radius: 0.875rem !important;
-            transition: all 0.2s ease !important;
-        }
-        #sendBtn:hover:not(:disabled) {
-            background: var(--accent-hover) !important;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15) !important;
-            transform: translateY(-1px) !important;
-        }
-        
         /* 用户消息底部操作按钮 */
         .user-message-actions-bottom {
             display: flex;
@@ -878,8 +843,7 @@
         }
         .settings-panel, .favorites-panel, .conversations-panel, .share-panel, .knowledge-panel {
             transform: translateX(100%);
-            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .settings-panel.open, .favorites-panel.open, .conversations-panel.open, .share-panel.open, .knowledge-panel.open {
             transform: translateX(0);
@@ -1044,15 +1008,20 @@
         /* 盲盒入口按钮 */
         .blindbox-entry-btn {
             position: relative;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--gold);
+            background: linear-gradient(135deg, #d4a574 0%, #f4d03f 50%, #d4a574 100%);
+            background-size: 200% 200%;
+            animation: goldShimmer 3s ease-in-out infinite;
+            border: 2px solid transparent;
+            box-shadow: 0 0 15px rgba(212, 165, 116, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
-            color: var(--gold);
         }
         .blindbox-entry-btn:hover {
-            transform: scale(1.05);
-            background: var(--bg-secondary);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 25px rgba(212, 165, 116, 0.6);
+        }
+        @keyframes goldShimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
         }
 
         /* 盲盒弹窗 */
@@ -1528,8 +1497,7 @@
             justify-content: center;
             gap: 12px;
             padding: 8px 16px;
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border-color);
+            background: linear-gradient(90deg, rgba(212, 165, 116, 0.1) 0%, rgba(196, 30, 58, 0.1) 100%);
             border-bottom: 1px solid var(--border-color);
         }
         .checkin-streak {
@@ -1788,9 +1756,8 @@
             width: 90%;
             max-width: 400px;
             background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            border: 2px solid var(--gold);
             border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             padding: 40px 30px;
             text-align: center;
             transform: scale(0.8);
@@ -1863,287 +1830,130 @@
             color: var(--gold);
         }
 
-        /* ========== 瑶绣绣坊：布局系统 ========== */
-        .yao-workshop {
+        /* ========== Grok式 + 小瑶陪伴 布局 ========== */
+        .app-container {
             display: flex;
             width: 100vw;
             height: 100vh;
             overflow: hidden;
             background: var(--bg-primary);
         }
-        .yao-atelier {
-            width: 300px;
+        .yao-sidebar {
+            width: 280px;
             height: 100vh;
             display: flex;
             flex-direction: column;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border-color);
-            position: relative;
             flex-shrink: 0;
+            position: relative;
         }
-        .yao-atelier-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border-color);
+        .yao-sidebar-header {
+            padding: 28px 24px 16px;
+            text-align: center;
         }
-        .yao-atelier-name {
+        .yao-sidebar-name {
             font-family: 'Noto Serif SC', serif;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 600;
             color: var(--text-primary);
-            margin-bottom: 12px;
-            letter-spacing: 0.05em;
+            margin-bottom: 4px;
         }
-        .yao-atelier-stats {
-            display: flex;
-            gap: 16px;
+        .yao-sidebar-role {
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--text-tertiary);
         }
-        .yao-atelier-stat {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .yao-atelier-stat strong {
-            color: var(--gold);
-            font-weight: 500;
-        }
-        .yao-portrait {
+        .yao-sidebar-body {
             flex: 1;
             position: relative;
             min-height: 0;
             overflow: hidden;
         }
-        .yao-portrait img {
+        .yao-sidebar-body img {
             position: absolute;
             bottom: 0;
             left: 50%;
             transform: translateX(-50%);
-            height: 92%;
+            height: 88%;
             width: auto;
-            max-width: 140%;
+            max-width: 130%;
             object-fit: contain;
             pointer-events: none;
-            mask-image: linear-gradient(to top, black 85%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to top, black 85%, transparent 100%);
+            mask-image: linear-gradient(to top, black 82%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to top, black 82%, transparent 100%);
         }
-        .yao-speech-bubble {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px 16px 16px 4px;
-            padding: 12px 14px;
-            font-size: 13px;
-            color: var(--text-primary);
-            line-height: 1.5;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-            z-index: 10;
-            animation: yaoSpeak 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        .yao-sidebar-footer {
+            padding: 16px 20px 24px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
         }
-        .yao-speech-bubble::before {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            left: 16px;
-            width: 10px;
-            height: 10px;
-            background: var(--bg-tertiary);
-            border-right: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-            transform: rotate(45deg);
+        .yao-float {
+            position: fixed;
+            bottom: 100px;
+            right: 16px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            background: var(--bg-secondary);
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+            cursor: pointer;
+            z-index: 80;
+            display: none;
         }
-        @keyframes yaoSpeak {
-            from { opacity: 0; transform: scale(0.95) translateY(-8px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+        .yao-float img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: 50% 12%;
         }
-        .yao-workbench {
+        @media (max-width: 1023px) {
+            .yao-sidebar { display: none; }
+            .yao-float { display: block; }
+        }
+        
+        .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             min-width: 0;
+            background: var(--bg-primary);
         }
-        .yao-avatar-float {
-            position: fixed;
-            bottom: 100px;
-            right: 16px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            border: 2px solid var(--gold);
-            background: var(--bg-secondary);
-            overflow: hidden;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.25);
-            cursor: pointer;
-            z-index: 90;
-            transition: transform 0.2s ease;
-            display: none;
-        }
-        .yao-avatar-float:hover {
-            transform: scale(1.08);
-        }
-        .yao-avatar-float img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: 50% 15%;
-        }
-        @media (max-width: 767px) {
-            .yao-atelier { display: none; }
-            .yao-workshop { flex-direction: column; }
-            .yao-avatar-float { display: block; }
-        }
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .yao-atelier { width: 220px; }
-        }
-
-        /* ========== 质感系统 ========== */
-        .fabric-texture {
-            background-image:
-                radial-gradient(circle at 20% 20%, rgba(201, 166, 107, 0.015) 0%, transparent 40%),
-                radial-gradient(circle at 80% 80%, rgba(158, 42, 59, 0.015) 0%, transparent 40%),
-                linear-gradient(0deg, transparent 95%, rgba(255,255,255,0.01) 95%);
-            background-size: 80px 80px, 80px 80px, 4px 4px;
-        }
-        .wood-frame {
-            border: 1px solid var(--border-color);
-            box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.03),
-                inset 0 -1px 0 rgba(0,0,0,0.2),
-                0 2px 6px rgba(0,0,0,0.08);
-        }
-
-        /* ========== Header 绣坊匾额 ========== */
+        
+        /* Header 极简 */
         header.glass {
-            background: var(--bg-secondary) !important;
+            background: transparent !important;
             backdrop-filter: none !important;
             border-bottom: 1px solid var(--border-color) !important;
         }
-        .yao-logo-ring {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid var(--gold);
+        .header-icon-btn {
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: var(--bg-tertiary);
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .yao-logo-ring span {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--gold);
-        }
-
-        /* ========== 消息气泡：绣片卡片 ========== */
-        .message-bubble {
-            max-width: min(85%, 680px);
-        }
-        .message-bubble:not(.user-message-container) .chat-content {
-            background: var(--bg-secondary) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 1.25rem 1.25rem 1.25rem 0.375rem !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
-            position: relative;
-        }
-        .message-bubble:not(.user-message-container) .chat-content::before {
-            content: '';
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            width: 16px;
-            height: 16px;
-            border-top: 2px dashed var(--gold);
-            border-left: 2px dashed var(--gold);
-            opacity: 0.4;
-            border-radius: 4px 0 0 0;
-            pointer-events: none;
-        }
-        .message-bubble.user-message-container .chat-content {
-            background: var(--accent) !important;
-            color: #fff !important;
-            border: 1px solid transparent !important;
-            border-radius: 1.25rem 1.25rem 0.375rem 1.25rem !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12) !important;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .message-bubble.user-message-container .chat-content:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15) !important;
-        }
-        .yao-avatar-hoop {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid var(--gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-tertiary);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
-        .yao-avatar-hoop span {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--gold);
-        }
-
-        /* ========== 输入区：绣绷工作台 ========== */
-        #inputWrapper {
-            background: var(--bg-tertiary) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 1.5rem !important;
-            box-shadow:
-                inset 0 1px 2px rgba(0,0,0,0.1),
-                0 1px 0 rgba(255,255,255,0.02) !important;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        #inputWrapper:focus-within {
-            border-color: var(--gold) !important;
-            box-shadow:
-                inset 0 1px 2px rgba(0,0,0,0.1),
-                0 0 0 2px rgba(201, 166, 107, 0.12) !important;
-        }
-        #sendBtn {
-            width: 40px !important;
-            height: 40px !important;
-            border-radius: 50% !important;
-            background: var(--accent) !important;
-            color: #fff !important;
-            border: 2px solid var(--gold) !important;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.15) !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border-radius: 10px;
+            color: var(--text-tertiary);
+            background: transparent;
             transition: all 0.2s ease;
-            padding: 0 !important;
         }
-        #sendBtn:hover:not(:disabled) {
-            background: var(--accent-hover) !important;
-            transform: translateY(-1px) scale(1.05);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2) !important;
+        .header-icon-btn:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
         }
-
-        /* ========== 签到条：每日绣工 ========== */
+        
+        /* 签到条淡化 */
         .checkin-bar {
-            background: var(--bg-secondary) !important;
+            background: var(--bg-tertiary) !important;
             border-bottom: 1px solid var(--border-color) !important;
-            padding: 8px 16px !important;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
+            padding: 8px 20px !important;
         }
         .checkin-btn {
-            background: var(--bg-tertiary) !important;
-            border: 1px solid var(--gold) !important;
-            color: var(--gold) !important;
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-secondary) !important;
             padding: 5px 14px !important;
             border-radius: 999px !important;
             font-size: 12px !important;
@@ -2151,77 +1961,111 @@
             transition: all 0.2s ease;
         }
         .checkin-btn:hover {
-            background: var(--gold) !important;
-            color: var(--bg-primary) !important;
+            border-color: var(--gold) !important;
+            color: var(--gold) !important;
         }
-        .checkin-delete-btn {
-            color: var(--text-tertiary) !important;
-            opacity: 0.6;
-            transition: opacity 0.2s ease;
+        
+        /* 消息气泡 */
+        .message-bubble {
+            max-width: min(85%, 680px);
         }
-        .checkin-delete-btn:hover {
-            opacity: 1;
-            color: var(--text-secondary) !important;
+        .message-bubble:not(.user-message-container) .chat-content {
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 1.25rem !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+            padding: 16px 20px !important;
         }
-
-        /* ========== 首屏弹窗：绣坊迎客 ========== */
+        .message-bubble.user-message-container .chat-content {
+            background: var(--accent) !important;
+            color: #fff !important;
+            border: 1px solid transparent !important;
+            border-radius: 1.25rem !important;
+            padding: 14px 18px !important;
+        }
+        .yao-avatar-ring {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+        }
+        .yao-avatar-ring span {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gold);
+        }
+        
+        /* 输入区：Grok式胶囊 */
+        #inputWrapper {
+            background: var(--bg-tertiary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 1.5rem !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        #inputWrapper:focus-within {
+            border-color: var(--gold) !important;
+            box-shadow: 0 0 0 3px rgba(201, 166, 107, 0.1) !important;
+        }
+        #sendBtn {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 50% !important;
+            background: var(--text-primary) !important;
+            color: #fff !important;
+            border: none !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            transition: transform 0.15s ease, background 0.15s ease;
+        }
+        #sendBtn:hover:not(:disabled) {
+            transform: scale(1.05);
+            background: #000 !important;
+        }
+        
+        /* 首屏弹窗 */
         .welcome-modal {
-            background: rgba(0, 0, 0, 0.7) !important;
-            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.85) !important;
+            backdrop-filter: blur(10px);
         }
         .welcome-content {
             background: var(--bg-secondary) !important;
             border: 1px solid var(--border-color) !important;
             border-radius: 24px !important;
-            box-shadow: 0 24px 80px rgba(0,0,0,0.4) !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1) !important;
             padding: 36px !important;
-            max-width: 420px !important;
-            position: relative;
-            overflow: hidden;
-        }
-        .welcome-content::before {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 200px;
-            height: 300px;
-            background: url('art/立绘/小瑶初级版本立绘.png') no-repeat bottom right;
-            background-size: contain;
-            opacity: 0.08;
-            pointer-events: none;
-            mask-image: linear-gradient(to left, black 20%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to left, black 20%, transparent 100%);
+            max-width: 400px !important;
         }
         .fortune-ball {
-            font-size: 56px !important;
+            font-size: 48px !important;
             margin-bottom: 16px !important;
-            animation: fortuneIn 0.6s ease-out forwards !important;
-        }
-        @keyframes fortuneIn {
-            from { opacity: 0; transform: translateY(20px) scale(0.9); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
+            animation: none !important;
         }
         .welcome-content h2 {
-            font-family: 'Noto Serif SC', serif;
-            font-size: 22px !important;
-            margin-bottom: 16px !important;
-            color: var(--gold) !important;
+            font-size: 20px !important;
+            margin-bottom: 12px !important;
+            color: var(--text-primary) !important;
             font-weight: 600 !important;
         }
         .welcome-btn-primary {
-            background: var(--accent) !important;
+            background: var(--text-primary) !important;
             border: none !important;
             border-radius: 999px !important;
             padding: 12px 24px !important;
             font-size: 14px !important;
+            color: #fff !important;
             font-weight: 500 !important;
             transition: all 0.2s ease;
         }
         .welcome-btn-primary:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            background: var(--accent-hover) !important;
+            opacity: 0.9;
         }
         .welcome-btn-secondary {
             background: transparent !important;
@@ -2230,589 +2074,91 @@
             padding: 10px 24px !important;
             font-size: 14px !important;
             color: var(--text-secondary) !important;
-            transition: all 0.2s ease;
         }
         .welcome-btn-secondary:hover {
-            border-color: var(--gold) !important;
-            color: var(--gold) !important;
+            border-color: var(--text-primary) !important;
+            color: var(--text-primary) !important;
         }
-
-        /* ========== 盲盒系统：绣柜抽屉 ========== */
-        .blindbox-modal {
-            align-items: flex-end !important;
-            background: rgba(0, 0, 0, 0.6) !important;
-            backdrop-filter: blur(4px);
-        }
-        .blindbox-content {
-            border-radius: 24px 24px 0 0 !important;
-            border: none !important;
-            border-top: 2px solid var(--gold) !important;
-            box-shadow: 0 -8px 40px rgba(0,0,0,0.3) !important;
-            width: 100% !important;
-            max-width: 500px !important;
-            margin: 0 auto !important;
-            transform: translateY(100%) !important;
-            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        }
-        .blindbox-modal.open .blindbox-content {
-            transform: translateY(0) !important;
-        }
-
-        /* ========== 面板：绣帘抽屉 ========== */
+        
+        /* 面板/弹窗统一 */
         .settings-panel, .favorites-panel, .conversations-panel, .share-panel, .knowledge-panel {
-            box-shadow: -12px 0 48px rgba(0,0,0,0.2) !important;
+            background: var(--bg-secondary) !important;
             border-left: 1px solid var(--border-color) !important;
+            box-shadow: -8px 0 32px rgba(0,0,0,0.06) !important;
         }
-
-        /* ========== 收藏项：挂起来的绣片 ========== */
-        .favorite-item {
-            border-left: none !important;
-            border-radius: 12px !important;
-            padding: 14px 16px !important;
+        
+        /* 盲盒 */
+        .blindbox-content {
             background: var(--bg-secondary) !important;
             border: 1px solid var(--border-color) !important;
+            border-radius: 24px !important;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12) !important;
+        }
+        
+        /* 收藏项 */
+        .favorite-item {
+            background: var(--bg-secondary) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 14px !important;
             margin-bottom: 10px !important;
             transition: all 0.2s ease;
         }
         .favorite-item:hover {
             border-color: var(--gold) !important;
-            transform: translateX(4px);
-            background: var(--bg-tertiary) !important;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
-
-        /* ========== 成长菜单 ========== */
+        
+        /* 成长菜单 */
         .growth-dropdown {
             background: var(--bg-secondary) !important;
             border: 1px solid var(--border-color) !important;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.25) !important;
             border-radius: 16px !important;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08) !important;
         }
-        .growth-link {
-            background: var(--bg-tertiary) !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 10px !important;
-            transition: all 0.2s ease;
-        }
-        .growth-link:hover {
-            border-color: var(--gold) !important;
-            background: var(--bg-secondary) !important;
-        }
-
-        /* ========== 等级徽章 ========== */
+        
+        /* 等级徽章 */
         .level-badge {
             background: var(--bg-tertiary) !important;
             border: 1px solid var(--border-color) !important;
             border-radius: 999px !important;
-            padding: 6px 12px !important;
-            box-shadow: none !important;
-        }
-        .level-badge:hover {
-            border-color: var(--gold) !important;
-            background: var(--bg-secondary) !important;
-        }
-        .level-icon-emoji {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-primary);
-            border-radius: 50%;
-            font-size: 12px;
-        }
-        .level-name {
-            color: var(--gold) !important;
-            font-weight: 500 !important;
-        }
-
-        /* ========== 聊天区滚动优化 ========== */
-        #chatContainer {
-            padding-right: 24px !important;
-            padding-left: 24px !important;
-        }
-        @media (max-width: 640px) {
-            #chatContainer {
-                padding-right: 16px !important;
-                padding-left: 16px !important;
-                padding-bottom: 140px !important;
-            }
-        }
-
-        /* ========== 底部输入区固定优化 ========== */
-        @media (max-width: 640px) {
-            .mobile-input-area {
-                background: var(--bg-secondary) !important;
-                border-top: 1px solid var(--border-color) !important;
-                left: 0 !important;
-                right: 0 !important;
-                padding: 12px 16px max(12px, env(safe-area-inset-bottom)) !important;
-            }
-        }
-
-        /* ========== 第三次重设计：温柔聊天室覆盖样式 ========== */
-        
-        /* --- 禁用 infinite 动画 --- */
-        .fortune-ball { animation: none !important; }
-        .breathe { animation: none !important; }
-        .btn-stitch:hover::after { animation: none !important; }
-        .stitch-border:hover::before { animation: none !important; }
-        .octagon-rotate { animation: none !important; }
-        .octagon-rotate:hover { animation: rotate 8s linear forwards !important; }
-
-        /* --- 布局重写 --- */
-        .yao-workshop {
-            background: var(--bg-primary);
-        }
-        .yao-atelier {
-            width: 340px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
-        }
-        .yao-atelier-header {
-            padding: 24px 20px 16px;
-            border-bottom: none;
-            text-align: center;
-        }
-        .yao-atelier-name {
-            font-size: 20px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            letter-spacing: 0.02em;
-        }
-        .yao-atelier-stats {
-            display: none;
-        }
-        .yao-portrait img {
-            height: 90%;
-            mask-image: linear-gradient(to top, black 75%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to top, black 75%, transparent 100%);
-        }
-        .yao-speech-bubble {
-            display: none;
-        }
-        .yao-workbench header {
-            background: transparent !important;
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 24px !important;
-        }
-        .yao-workbench header h1 {
-            font-size: 16px;
-            font-family: 'Noto Serif SC', serif;
-        }
-        @media (min-width: 768px) and (max-width: 1023px) {
-            .yao-atelier { width: 260px; }
-        }
-        @media (max-width: 767px) {
-            .yao-atelier { display: none; }
-            .yao-workshop { flex-direction: column; }
-            .yao-avatar-float {
-                display: block;
-                width: 64px;
-                height: 64px;
-                bottom: 100px;
-                right: 16px;
-                border: 2px solid var(--gold);
-                border-radius: 50%;
-                overflow: hidden;
-                box-shadow: 0 4px 20px rgba(201, 166, 107, 0.15);
-                animation: yaoFloatBreathe 3s ease-in-out infinite;
-            }
-            @keyframes yaoFloatBreathe {
-                0%, 100% { box-shadow: 0 4px 20px rgba(201, 166, 107, 0.12); }
-                50% { box-shadow: 0 6px 28px rgba(201, 166, 107, 0.22); }
-            }
-            .yao-avatar-float img {
-                object-position: 50% 15%;
-            }
-        }
-
-        /* --- Header 图标按钮 --- */
-        header .flex.items-center.gap-1.sm\:gap-2 button,
-        header .blindbox-entry-btn {
-            background: transparent !important;
-            border: none !important;
-            color: var(--text-tertiary) !important;
-            padding: 6px !important;
-            transition: color 0.2s ease, transform 0.2s ease;
-        }
-        header .flex.items-center.gap-1.sm\:gap-2 button:hover,
-        header .blindbox-entry-btn:hover {
-            color: var(--text-primary) !important;
-            transform: scale(1.05);
-            box-shadow: none !important;
-        }
-        header .blindbox-entry-btn span.text-base {
-            font-size: 20px;
-        }
-
-        /* --- 签到条 --- */
-        .checkin-bar {
-            height: 36px;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-            font-size: 12px;
-            padding: 0 16px;
-        }
-        .checkin-streak { font-size: 12px; }
-        .checkin-streak .fire { font-size: 14px; }
-        .checkin-btn {
-            padding: 4px 10px;
-            font-size: 11px;
-            border-radius: 999px;
-            background: var(--accent);
-            color: white;
-        }
-        .checkin-delete-btn {
-            color: var(--text-tertiary);
-            padding: 4px;
-        }
-
-        /* --- 消息气泡重写 --- */
-        .message-bubble {
-            max-width: min(85%, 720px);
-        }
-        /* AI 消息 */
-        .message-bubble:not(.user-message-container) .chat-content {
-            background: #ffffff !important;
-            border: 1px solid var(--border-color) !important;
-            border-left: 1px solid var(--border-color) !important;
-            border-radius: 1.5rem 1.5rem 1.5rem 0.5rem !important;
-            padding: 16px 20px !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
-            max-width: 640px;
-        }
-        .message-bubble:not(.user-message-container) .chat-content p {
-            color: var(--text-primary);
-            line-height: 1.7;
-            font-size: 15px;
-        }
-        /* 用户消息 */
-        .message-bubble.user-message-container .chat-content {
-            background: var(--accent) !important;
-            color: #ffffff !important;
-            border: 1px solid transparent !important;
-            border-radius: 1.5rem 1.5rem 0.5rem 1.5rem !important;
-            padding: 14px 18px !important;
-            max-width: 560px;
-        }
-        .message-bubble.user-message-container .chat-content p {
-            font-size: 15px;
-            line-height: 1.6;
-            color: #ffffff !important;
-        }
-        /* 消息间距 */
-        #chatContainer > .flex {
-            margin-bottom: 24px;
-        }
-        #chatContainer > .flex + .flex {
-            margin-bottom: 24px;
-        }
-        /* 时间/操作淡入 */
-        .message-actions, .user-message-actions, .user-message-actions-bottom {
-            opacity: 0;
-            transition: opacity 0.25s ease;
-        }
-        .message-bubble:hover .message-actions,
-        .user-message-wrapper:hover .user-message-actions,
-        .user-message-wrapper:hover .user-message-actions-bottom {
-            opacity: 1;
-        }
-        .ai-message-actions {
-            border-top: none;
-            margin-top: 4px;
-            padding-top: 4px;
-        }
-        .ai-action-btn, .user-action-btn, .action-btn {
-            font-size: 11px;
-            color: var(--text-tertiary);
-        }
-
-        /* --- 小瑶头像金环 --- */
-        .yao-avatar-hoop {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 1.5px solid var(--gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            font-family: 'Noto Serif SC', serif;
-            color: var(--gold);
-            font-size: 14px;
-        }
-
-        /* --- 八角花卡片 intimate 版 --- */
-        .yao-octagon-card {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            text-align: center;
-        }
-        .yao-octagon-card p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-top: 8px;
-        }
-
-        /* --- 预设问题软胶囊 --- */
-        #presetQuestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        #presetQuestions > div,
-        #presetQuestions > button {
-            background: var(--bg-tertiary);
-            border: 1px solid transparent;
-            border-radius: 999px;
-            font-size: 13px;
-            padding: 8px 16px;
-            color: var(--text-secondary);
+            padding: 5px 12px !important;
+            font-size: 12px !important;
             cursor: pointer;
             transition: all 0.2s ease;
         }
-        #presetQuestions > div:hover,
-        #presetQuestions > button:hover {
-            background: var(--gold-light);
-            color: var(--text-primary);
-        }
-
-        /* --- 输入区 --- */
-        #inputArea {
-            border-top: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            padding: 16px 24px 24px;
-        }
-        #inputWrapper {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 1.75rem;
-            padding: 6px 6px 6px 20px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-        }
-        #inputWrapper:focus-within {
-            border-color: var(--gold) !important;
-            box-shadow: 0 0 0 3px rgba(201, 166, 107, 0.1) !important;
-        }
-        #inputWrapper textarea {
-            font-size: 15px;
-            color: var(--text-primary);
-            padding: 12px 0;
-            resize: none;
-        }
-        #sendBtn {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: var(--accent) !important;
-            color: #ffffff !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: absolute;
-            right: 6px;
-            bottom: 6px;
-            transition: transform 0.2s ease, background 0.2s ease;
-        }
-        #sendBtn:hover:not(:disabled) {
-            transform: scale(1.05);
-            background: var(--accent-hover) !important;
-        }
-        #sendBtn svg {
-            width: 16px;
-            height: 16px;
-        }
-        #imageUploadBtn {
-            width: 36px;
-            height: 36px;
-            color: var(--text-tertiary);
-            transition: color 0.2s ease;
-        }
-        #imageUploadBtn:hover {
-            color: var(--text-secondary);
-            background: transparent;
-        }
-
-        /* --- 面板滑入重写 --- */
-        .settings-panel, .favorites-panel, .conversations-panel, .share-panel, .knowledge-panel {
-            background: #ffffff !important;
-            border-left: 1px solid var(--border-color);
-            box-shadow: -8px 0 32px rgba(0,0,0,0.06);
-        }
-        .settings-panel > div,
-        .favorites-panel > div,
-        .conversations-panel > div {
-            background: #ffffff;
-        }
-
-        /* --- Welcome Modal --- */
-        .welcome-modal {
-            background: rgba(255,255,255,0.85) !important;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-        }
-        .welcome-content {
-            background: #ffffff !important;
-            border: 1px solid var(--border-color);
-            border-radius: 28px;
-            padding: 40px;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
-        }
-        .welcome-content h2 {
-            color: var(--text-primary);
-            font-size: 22px;
-            font-family: 'Noto Serif SC', serif;
-            margin-bottom: 12px;
-        }
-        .welcome-text {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 24px;
-        }
-        .welcome-text .highlight {
-            color: var(--accent);
-            font-size: 18px;
-        }
-        .welcome-subtext {
-            color: var(--text-tertiary);
-            font-size: 13px;
-            margin-bottom: 28px;
-        }
-        .welcome-btn-primary {
-            background: var(--accent);
-            border-radius: 999px;
-            font-size: 15px;
-            padding: 12px 24px;
-        }
-        .welcome-btn-secondary {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            padding: 10px 24px;
-        }
-        .welcome-btn-secondary:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
-        /* --- Blindbox Modal --- */
-        .blindbox-modal {
-            background: rgba(255,255,255,0.75) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .blindbox-content {
-            background: #ffffff !important;
-            border: 1px solid var(--border-color) !important;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.06);
-            max-width: 420px;
-        }
-        .blindbox-card {
-            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f1 100%);
-            border: 2px solid var(--gold);
-        }
-        .blindbox-card-front, .blindbox-pattern {
-            background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f1 100%);
-        }
-
-        /* --- Collection & Pattern Detail --- */
-        .collection-modal {
-            background: rgba(255,255,255,0.75) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-        .collection-content {
-            background: #ffffff !important;
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-        }
-
-        /* --- 收藏项卡片 --- */
-        .favorite-item {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            border-left: 1px solid var(--border-color);
-            transition: all 0.2s ease;
-        }
-        .favorite-item:hover {
-            border-color: var(--gold);
-            transform: translateY(-2px);
-            background: #ffffff;
-        }
-
-        /* --- 等级与成长简化 --- */
-        .level-badge {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 999px;
-            padding: 4px 10px;
-            gap: 6px;
-            box-shadow: none;
-        }
         .level-badge:hover {
-            box-shadow: none;
-            transform: none;
+            border-color: var(--gold) !important;
         }
-        .level-icon-emoji {
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
+        
+        /* 禁用 infinite 动画 */
+        .btn-stitch:hover::after,
+        .stitch-border:hover::before {
+            animation: none !important;
         }
-        .level-name {
-            font-size: 11px;
-            color: var(--text-secondary);
+        .breathe {
+            animation: none !important;
         }
-        .level-progress {
-            width: 48px;
-            height: 3px;
-            background: var(--border-color);
-            border-radius: 2px;
+        .octagon-rotate {
+            animation: none !important;
+            transition: transform 20s linear;
         }
-        .growth-dropdown {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            padding: 16px;
+        .octagon-rotate:hover {
+            transform: rotate(360deg);
         }
 
-        /* --- 消息入场动画 --- */
-        @keyframes msgFadeIn {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slide-up {
-            animation: msgFadeIn 0.35s ease-out forwards;
-        }
-
-        /* --- 输入区底部提示 --- */
-        #inputArea .text-\[10px\].sm\:text-xs,
-        #inputArea span.text-\[10px\],
-        #inputArea .mt-2 > span {
-            font-size: 11px;
-            color: var(--text-tertiary);
-        }
-
-        /* --- 隐藏不需要的重装饰 --- */
-        .yao-logo-ring { display: none; }
     </style>
 </head>
 <body class="min-h-screen pattern-octagon">
     <!-- 首屏弹窗 -->
     <div id="welcomeModal" class="welcome-modal">
         <div class="welcome-content">
-            <div class="fortune-ball">🪡</div>
+            <div class="fortune-ball">🌸</div>
             <h2>早安，我是小瑶</h2>
-            <p class="welcome-text">阿姐/阿哥好呀～我从小跟着阿妈学瑶绣，以后你想聊什么，我都在。</p>
+            <p class="welcome-text">今日可免费抽取 <span class="highlight" style="color: var(--gold); font-weight: 600;">3</span> 次纹样</p>
+            <p class="welcome-subtext">每次对话额外获得 1 次机会</p>
             <div class="welcome-buttons">
-                <button onclick="openBlindBoxModal(); closeWelcomeModal();" class="welcome-btn-primary">打开小瑶的绣囊</button>
+                <button onclick="openBlindBoxModal(); closeWelcomeModal();" class="welcome-btn-primary">去抽奖</button>
                 <button onclick="closeWelcomeModal();" class="welcome-btn-secondary">稍后再说</button>
             </div>
         </div>
@@ -2820,33 +2166,40 @@
     <!-- 背景飘浮八角花 -->
     <div id="floatingOctagons" class="fixed inset-0 pointer-events-none overflow-hidden z-0"></div>
     
-    <!-- 聊天室 -->
-    <div class="yao-workshop" id="yaoWorkshop">
-        <!-- 左侧：小瑶的陪伴区 -->
-        <aside class="yao-atelier">
-            <div class="yao-atelier-header">
-                <div class="yao-atelier-name">小瑶</div>
-                <div style="font-size:12px;color:var(--text-tertiary);">你的瑶绣绣娘</div>
-                <!-- 等级徽章紧凑版 -->
-                <div style="margin-top:16px;display:flex;justify-content:center;">
-                    <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长" style="cursor: pointer;">
+    <!-- 主布局 -->
+    <div class="app-container">
+        <!-- 左侧：小瑶陪伴区 -->
+        <aside class="yao-sidebar">
+            <div class="yao-sidebar-header">
+                <div class="yao-sidebar-name">小瑶</div>
+                <div class="yao-sidebar-role">你的瑶绣绣娘</div>
+            </div>
+            <div class="yao-sidebar-body">
+                <img src="art/立绘/小瑶初级版本立绘.png" alt="小瑶">
+            </div>
+            <div class="yao-sidebar-footer">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="level-badge" id="levelBadge" onclick="toggleGrowthMenu(event)" title="查看成长">
                         <div class="level-icon-emoji" id="levelIcon">🌱</div>
-                        <div class="level-info">
-                            <span class="level-name" id="levelName">LV.1 学徒</span>
-                            <div class="level-progress">
-                                <div class="level-progress-bar" id="levelProgressBar" style="width: 0%"></div>
+                        <div class="level-info" style="display: inline-flex; align-items: center; gap: 6px; margin-left: 6px;">
+                            <span class="level-name" id="levelName" style="color: var(--text-secondary);">LV.1 学徒</span>
+                            <div class="level-progress" style="width: 50px; height: 4px; background: var(--border-color); border-radius: 2px; overflow: hidden;">
+                                <div class="level-progress-bar" id="levelProgressBar" style="width: 0%; height: 100%; background: var(--gold); border-radius: 2px;"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- 个人成长下拉菜单 -->
-                <div id="growthMenu" class="growth-dropdown hidden" style="position: absolute; top: 110px; left: 20px; right: 20px; width: auto; z-index: 100;">
+                <div class="text-xs text-center" style="color: var(--text-tertiary);">
+                    今日共绣 <span id="msgCountSidebar" class="font-medium" style="color: var(--gold);">0</span> 纹
+                </div>
+                <!-- 成长菜单 -->
+                <div id="growthMenu" class="growth-dropdown hidden" style="position: absolute; bottom: 90px; left: 16px; right: 16px; width: auto;">
                     <div class="growth-header">
-                        <div class="growth-level-emoji-large" id="growthMenuEmoji" style="font-size: 32px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); border-radius: 12px; margin-right: 10px;">🌱</div>
+                        <div class="growth-level-emoji-large" id="growthMenuEmoji" style="font-size: 36px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); border-radius: 14px; margin-right: 10px;">🌱</div>
                         <div class="growth-level-info" style="flex: 1;">
-                            <span class="growth-level-title" id="growthMenuTitle" style="font-size: 14px; font-weight: 600; color: var(--text-primary); display: block; margin-bottom: 2px;">LV.1 学徒</span>
-                            <div class="growth-progress-bar">
-                                <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%"></div>
+                            <span class="growth-level-title" id="growthMenuTitle" style="font-size: 14px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 3px;">LV.1 学徒</span>
+                            <div class="growth-progress-bar" style="height: 5px; background: var(--bg-tertiary); border-radius: 3px; overflow: hidden; margin-bottom: 3px;">
+                                <div class="growth-progress-fill" id="growthMenuProgress" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 3px;"></div>
                             </div>
                             <span class="growth-xp-text" id="growthMenuXP">0/100 XP</span>
                         </div>
@@ -2881,22 +2234,18 @@
                     </div>
                 </div>
             </div>
-            <div class="yao-portrait">
-                <img src="art/立绘/小瑶初级版本立绘.png" alt="小瑶">
-            </div>
-            <!-- 底部心情/状态 -->
-            <div style="padding:16px 20px;font-size:12px;color:var(--text-tertiary);text-align:center;border-top:1px solid var(--border-color);">
-                小瑶正在绣一朵八角花
-            </div>
         </aside>
         
         <!-- 右侧：聊天区 -->
-        <main class="yao-workbench">
+        <main class="chat-area">
             <!-- Header -->
             <header class="glass border-b sticky top-0 z-40" style="border-color: var(--border-color);">
                 <div class="px-4 sm:px-6 py-3">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
+                            <div class="yao-avatar-ring cursor-pointer" onclick="newConversation()" title="新建对话">
+                                <span>瑶</span>
+                            </div>
                             <div class="min-w-0">
                                 <h1 class="font-serif text-base font-semibold tracking-wide" style="color: var(--text-primary);">
                                     瑶绣<span style="color: var(--gold);">·</span>智问
@@ -2904,23 +2253,20 @@
                             </div>
                         </div>
                         
-                        <div class="flex items-center gap-1 sm:gap-2">
-                            <!-- 盲盒入口 -->
-                            <button onclick="openBlindBoxModal()" id="blindboxBtn" class="blindbox-entry-btn p-2 rounded-lg transition-all duration-200 relative group" title="小瑶的绣囊">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                                <span id="blindboxBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center hidden">3</span>
+                        <div class="flex items-center gap-1 sm:gap-1">
+                            <button onclick="openBlindBoxModal()" id="blindboxBtn" class="header-icon-btn relative group" title="纹样盲盒">
+                                <span class="text-lg">🎁</span>
+                                <span id="blindboxBadge" class="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center hidden">3</span>
                             </button>
                             
-                            <!-- 对话历史入口 -->
-                            <button onclick="openConversations()" id="headerConvBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-tertiary);" title="对话历史">
-                                <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span id="convBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
+                            <button onclick="openConversations()" id="headerConvBtn" class="header-icon-btn relative group" title="对话历史">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span id="convBadge" class="absolute top-1 right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
                             </button>
                             
-                            <!-- 收藏入口 -->
-                            <button onclick="openFavorites()" id="headerFavBtn" class="p-2 rounded-lg transition-all duration-200 relative group" style="color: var(--text-tertiary);" title="我的收藏">
-                                <svg class="w-5 h-5 transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
-                                <span id="favBadge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
+                            <button onclick="openFavorites()" id="headerFavBtn" class="header-icon-btn relative group" title="我的收藏">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                                <span id="favBadge" class="absolute top-1 right-1 w-4 h-4 rounded-full bg-yao-red text-white text-[10px] flex items-center justify-center hidden animate-pulse">0</span>
                                 
                                 <span id="favHint" class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 rounded text-xs whitespace-nowrap opacity-0 transition-opacity pointer-events-none" style="background: var(--accent); color: white;">
                                     查看收藏
@@ -2935,7 +2281,7 @@
                                 <option value="qwen-plus">Qwen-Plus</option>
                             </select>
                             
-                            <button onclick="openSettings()" class="p-2 rounded-lg transition-all duration-200" style="color: var(--text-tertiary);" title="设置">
+                            <button onclick="openSettings()" class="header-icon-btn" title="设置">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                             </button>
                         </div>
@@ -2953,14 +2299,14 @@
                     <button class="checkin-btn" id="checkinBtn" onclick="handleCheckin()">
                         今日签到
                     </button>
-                    <button class="checkin-delete-btn" id="checkinDeleteBtn" onclick="hideCheckinBar()" title="隐藏签到提示">
+                    <button class="checkin-delete-btn" id="checkinDeleteBtn" onclick="hideCheckinBar()" title="隐藏签到提示" style="color: var(--text-tertiary); opacity: 0.6; background: transparent; border: none; cursor: pointer;">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
                 </div>
             </div>
 
             <!-- Chat Area -->
-            <div id="chatContainer" class="flex-1 overflow-y-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth fabric-texture" style="-webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
+            <div id="chatContainer" class="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 scroll-smooth" style="-webkit-overflow-scrolling: touch; overscroll-behavior-y: contain;">
                 <div class="flex justify-center animate-fade-in">
                     <div class="rounded-full px-5 sm:px-6 py-1.5 border" style="background: var(--bg-secondary); border-color: var(--border-color);">
                         <span class="text-xs sm:text-sm" style="color: var(--text-tertiary);">今日共绣 </span>
@@ -2972,17 +2318,21 @@
                 <!-- Assistant Welcome -->
                 <div class="flex gap-3 sm:gap-4 animate-slide-up">
                     <div class="flex-shrink-0">
-                        <div class="yao-avatar-hoop">
+                        <div class="yao-avatar-ring">
                             <span>瑶</span>
                         </div>
                     </div>
                     <div class="message-bubble">
-                        <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content fabric-texture" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                        <div class="rounded-2xl rounded-tl-sm px-3 sm:px-5 py-3 sm:py-4 border chat-content" style="background: var(--bg-secondary); border-color: var(--border-color);">
                             <p class="leading-relaxed mb-3 sm:mb-4 text-sm sm:text-base" style="color: var(--text-primary);">
                                 阿姐/阿哥好呀～我是小瑶🌸 从小跟着阿妈学刺绣，是瑶山里的第三代绣娘。千百年来，我们瑶家女儿以针为笔、以线为墨，在靛蓝布上绣出八角花的图腾，把祖先的祝福一针一线传下去。
                             </p>
                             <!-- 八角花纹样展示 -->
-                            <div class="mb-3 sm:mb-4 yao-octagon-card">
+                            <div class="mb-3 sm:mb-4 p-3 sm:p-4 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span style="color: var(--gold);">❋</span>
+                                    <span class="text-xs sm:text-sm font-medium" style="color: var(--text-secondary);">八角花纹样示意</span>
+                                </div>
                                 <div class="flex justify-center py-2">
                                     <svg class="w-24 h-24 sm:w-32 sm:h-32 octagon-rotate" viewBox="0 0 200 200">
                                         <defs>
@@ -3001,11 +2351,11 @@
                                         <circle cx="10" cy="100" r="4" fill="#c9a66b"/>
                                     </svg>
                                 </div>
-                                <p>这是我们瑶家的八角花，象征着太阳和祖先的保佑</p>
+                                <p class="text-xs text-center" style="color: var(--text-tertiary);">鼠标悬停暂停旋转 · 象征太阳与生命</p>
                             </div>
                             
                             <!-- 轮询预设问题 -->
-                            <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                            <div id="presetQuestions" class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
                                 <!-- 动态生成的预设问题 -->
                             </div>
                             
@@ -3034,9 +2384,9 @@
             </div>
 
             <!-- Input Area -->
-            <div id="inputArea" class="glass border-t px-3 sm:px-6 py-3 sm:py-4 mobile-input-area" style="border-color: var(--border-color);">
-                <div class="max-w-4xl mx-auto">
-                    <!-- 已选图片预览（支持多图） -->
+            <div id="inputArea" class="glass border-t px-4 sm:px-6 py-3 sm:py-4 mobile-input-area" style="border-color: var(--border-color);">
+                <div class="max-w-3xl mx-auto">
+                    <!-- 已选图片预览 -->
                     <div id="imagePreviewContainer" class="hidden mb-3">
                         <div class="flex items-start gap-3 p-3 rounded-xl border" style="background: var(--bg-tertiary); border-color: var(--border-color);">
                             <div id="imagePreviewList" class="flex gap-2 overflow-x-auto flex-1">
@@ -3052,7 +2402,7 @@
                     </div>
                     
                     <div class="flex items-end gap-2">
-                        <button onclick="openImagePicker()" id="imageUploadBtn" class="image-upload-btn p-2.5 rounded-xl transition-colors flex-shrink-0" style="color: var(--text-secondary);" title="上传图片">
+                        <button onclick="openImagePicker()" class="image-upload-btn p-2.5 rounded-xl transition-colors flex-shrink-0" style="color: var(--text-secondary);" title="上传图片">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
@@ -3072,16 +2422,16 @@
                     <!-- 模型选择 -->
                     <div class="flex items-center justify-between mt-2">
                         <div class="flex items-center gap-2 relative">
-                            <button onclick="toggleModelDropdown()" id="modelToggleBtn" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color);">
+                            <button id="modelToggleBtn" onclick="toggleModelDropdown()" class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors" style="background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color);">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                 </svg>
-                                <span id="currentModelLabel">DeepSeek-V3</span>
+                                <span id="currentModelLabel">DS-V3</span>
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                 </svg>
                             </button>
-                            <div id="modelDropdown" class="hidden absolute bottom-full left-0 mb-2 rounded-xl border shadow-xl py-1 min-w-[140px]" style="background: var(--bg-secondary); border-color: var(--border-color);">
+                            <div id="modelDropdown" class="hidden absolute bottom-full left-0 mb-2 w-52 rounded-xl border shadow-xl overflow-hidden z-50" style="background: var(--bg-secondary); border-color: var(--border-color);">
                                 <div class="p-2 space-y-1">
                                     <div class="px-2 py-1 text-[10px] font-medium" style="color: var(--text-tertiary);">DeepSeek</div>
                                     <button onclick="setModelMode('ds-fast')" id="dropdownDsFast" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left" style="background: var(--accent); color: white;">
@@ -3092,9 +2442,7 @@
                                             <div class="font-medium">DeepSeek-V3</div>
                                             <div class="opacity-70 text-[10px]">快速 · 通用对话</div>
                                         </div>
-                                        <svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
+                                        <svg class="w-4 h-4 check-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                     <button onclick="setModelMode('ds-deep')" id="dropdownDsDeep" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left" style="color: var(--text-secondary);">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3104,9 +2452,7 @@
                                             <div class="font-medium">DeepSeek-R1</div>
                                             <div class="opacity-70 text-[10px]">深度思考 · 显示思维链</div>
                                         </div>
-                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
+                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                     
                                     <div class="border-t my-1" style="border-color: var(--border-color);"></div>
@@ -3119,9 +2465,7 @@
                                             <div class="font-medium">Qwen-Turbo</div>
                                             <div class="opacity-70 text-[10px]">快速 · cheapest</div>
                                         </div>
-                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
+                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                     <button onclick="setModelMode('qwen-plus')" id="dropdownQwenPlus" class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all text-left" style="color: var(--text-secondary);">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -3131,9 +2475,7 @@
                                             <div class="font-medium">Qwen-Plus</div>
                                             <div class="opacity-70 text-[10px]">均衡 · 质量更好</div>
                                         </div>
-                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                        </svg>
+                                        <svg class="w-4 h-4 check-icon hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     </button>
                                 </div>
                             </div>
@@ -3146,11 +2488,12 @@
     </div>
     
     <!-- 移动端悬浮小瑶 -->
-    <div class="yao-avatar-float" onclick="toggleYaoMenu()">
+    <div class="yao-float" onclick="toggleGrowthMenu(event)">
         <img src="art/立绘/小瑶初级版本立绘.png" alt="小瑶">
     </div>
     
     <!-- 以下保留所有原有的面板/弹窗结构，id 不变 -->
+
     <!-- Image Picker Modal -->
     <div id="imagePickerModal" class="image-picker-modal" onclick="if(event.target===this)closeImagePicker()">
         <div class="image-picker-content" style="background: var(--bg-secondary);">
@@ -3188,8 +2531,6 @@
         </div>
     </div>
 
-    <!-- Hidden file input -->
-    <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)" class="hidden">
     
     <!-- Hidden canvas for image processing -->
     <canvas id="processCanvas" style="display: none;"></canvas>
@@ -3219,9 +2560,9 @@
                 </h3>
                 <div class="grid grid-cols-2 gap-2 sm:gap-3">
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="red" onclick="setTheme('red')">
-                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fdfcfa] to-[#c45c5c]"></div>
-                        <div class="text-sm font-medium" style="color: var(--text-primary);">暖调素白</div>
-                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">默认温柔</div>
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0a0b] to-[#c41e3a]"></div>
+                        <div class="text-sm font-medium" style="color: var(--text-primary);">黑底红彩</div>
+                        <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">经典传统</div>
                     </div>
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="blue" onclick="setTheme('blue')">
                         <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#0a0f1a] to-[#3b82f6]"></div>
@@ -3229,7 +2570,7 @@
                         <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">蓝靛支系</div>
                     </div>
                     <div class="theme-card relative rounded-xl p-3 sm:p-4" data-theme-value="light" onclick="setTheme('light')">
-                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fdfcfa] to-[#c45c5c]"></div>
+                        <div class="w-full h-10 sm:h-12 rounded-lg mb-2 sm:mb-3 bg-gradient-to-br from-[#fafaf9] to-[#c41e3a]"></div>
                         <div class="text-sm font-medium" style="color: var(--text-primary);">素雅白底</div>
                         <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">护眼模式</div>
                     </div>
@@ -3535,9 +2876,9 @@
             <div class="p-6 border-b" style="border-color: var(--border-color);">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="text-2xl">🪡</span>
+                        <span class="text-3xl">🎁</span>
                         <div>
-                            <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">小瑶的绣囊</h2>
+                            <h2 class="text-xl font-serif font-bold" style="color: var(--text-primary);">纹样盲盒</h2>
                             <p class="text-xs" style="color: var(--text-tertiary);">抽取稀有纹样，解锁专属故事</p>
                         </div>
                     </div>
@@ -3658,7 +2999,6 @@
         <span id="toastMsg"></span>
     </div>
 
-    <script>
     <script>
         // ========== 安全工具函数（精简版） ==========
         const SecurityUtils = {
@@ -6991,8 +6331,8 @@
             
             wrapper.innerHTML = `
                 <div class="message-bubble user-message-container" id="${messageId}">
-                    <div class="rounded-2xl rounded-tr-sm px-4 sm:px-5 py-3 border chat-content user-message-bubble" style="background: var(--accent); border-color: transparent; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                        <p class="leading-relaxed text-sm sm:text-base" style="color: #fff;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
+                    <div class="rounded-2xl rounded-tr-sm px-4 sm:px-5 py-3 border chat-content user-message-bubble" style="background: #f5f5f5; border-color: #e0e0e0; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <p class="leading-relaxed text-sm sm:text-base" style="color: #333;">${escapeHtml(content).replace(/\n/g, '<br>')}</p>
                     </div>
                     <div class="user-message-actions-bottom">
                         <button class="user-action-btn-bottom edit-btn" title="编辑" style="display: none;">
