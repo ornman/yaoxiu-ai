@@ -5,23 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>瑶绣 · 瑶族刺绣知识问答</title>
     <meta name="version" content="2.1">
-    <!-- CSP：基础安全防护，允许必要的外部资源 -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' *.tailwindcss.com *.jsdelivr.net *.cloudflare.com *.googleapis.com *.gstatic.com; img-src 'self' data: blob: *; connect-src *; object-src 'none';">
+    <!-- CSP：安全防护策略（收紧版） -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' cdn.tailwindcss.com cdn.jsdelivr.net cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.tailwindcss.com cdnjs.cloudflare.com; font-src fonts.googleapis.com fonts.gstatic.com; img-src 'self' data: blob: cdn.jsdelivr.net cdn.cloudflare.com; connect-src https://api.yaoxiumax.top https://api.deepseek.com https://dashscope.aliyuncs.com http://localhost:8080 http://localhost:3000 http://127.0.0.1:8080 http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none';">
     <!-- 安全加固：禁用 IE 兼容模式 -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- 安全加固：禁用格式检测（防止手机号/邮箱自动识别） -->
     <meta name="format-detection" content="telephone=no,email=no,address=no">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
+    <!-- DOMPurify: XSS 防护，净化 AI 输出中的 HTML -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.4/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
+    <script src="https://cdn.tailwindcss.com" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" integrity="sha384-948ahk4ZmxYVYOc+rxN1H2gM1EJ2Duhp7uHtZ4WSLkV4Vtx5MUqnV+l7u9B+jFv+" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js" integrity="sha384-MTDrIlFOzEqpmOxY6UIA/1Zkh0a64UlmJ6R0UrZXqXCPx99siPGi8EmtQjIeCcTH" crossorigin="anonymous"></script>
     <script src="assets/context-manager.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -3000,7 +3002,7 @@
     </div>
 
     <script>
-        // ========== 安全工具函数（精简版） ==========
+        // ========== 安全工具函数 ==========
         const SecurityUtils = {
             // XSS 防护：转义 HTML 特殊字符
             escapeHtml(text) {
@@ -3012,7 +3014,18 @@
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#39;');
             },
-            
+
+            // 属性值转义：防止 onclick 等内联属性中的 XSS
+            escapeAttr(str) {
+                return String(str || '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/\\/g, '&#92;');
+            },
+
             // 简单的输入验证
             validateInput(text, maxLength = 2000) {
                 if (!text || typeof text !== 'string') {
@@ -3024,6 +3037,16 @@
                 return { valid: true, text: text.trim() };
             }
         };
+
+        // 安全 Markdown 渲染：防止 AI 输出中的恶意 HTML/JS 执行
+        function safeMarkdownRender(text) {
+            const rawHtml = marked.parse(text);
+            return DOMPurify.sanitize(rawHtml, {
+                ALLOWED_TAGS: ['p','br','strong','em','u','s','code','pre','blockquote','ul','ol','li','h1','h2','h3','h4','h5','h6','a','img','table','thead','tbody','tr','th','td','hr','span','div','sub','sup','details','summary','del','mark','ruby','rt','dl','dt','dd'],
+                ALLOWED_ATTR: ['href','src','alt','title','class','id','target','rel','loading','width','height','colspan','rowspan'],
+                ADD_ATTR: ['target']
+            });
+        }
         
         // ========== 配置与状态 ==========
         // ✅ Worker 地址已内置，无需手动配置
@@ -4095,7 +4118,7 @@
             container.innerHTML = presets.map(p => `
                 <div class="rounded-lg p-2.5 sm:p-3 border cursor-pointer transition-all hover:-translate-y-0.5" 
                      style="background: var(--bg-tertiary); border-color: var(--border-color);" 
-                     onclick="quickAsk('${p.query}')">
+                     onclick="quickAsk('${SecurityUtils.escapeAttr(p.query)}')">
                     <div class="mb-1" style="color: ${p.color};">${p.icon}</div>
                     <div class="text-sm font-medium" style="color: var(--text-primary);">${p.title}</div>
                     <div class="text-xs mt-0.5" style="color: var(--text-tertiary);">${p.desc}</div>
@@ -4359,7 +4382,9 @@
         }
 
         function saveConfig() {
-            localStorage.setItem('yao-config', JSON.stringify(config));
+            // 安全：不持久化存储 API Key，仅在当前会话内存中保留
+            const { apiKey, ...safeConfig } = config;
+            localStorage.setItem('yao-config', JSON.stringify(safeConfig));
         }
 
         function applyConfig() {
@@ -4719,7 +4744,7 @@
                     <div class="group relative p-3 sm:p-4 rounded-xl border cursor-pointer transition-all ${isActive ? 'active' : ''}" 
                          style="background: ${isActive ? 'var(--accent)' : 'var(--bg-secondary)'}; 
                                 border-color: ${isActive ? 'var(--accent)' : 'var(--border-color)'};"
-                         onclick="loadConversation('${conv.id}')">
+                         onclick="loadConversation('${SecurityUtils.escapeAttr(conv.id)}')">
                         <div class="flex items-start justify-between gap-2">
                             <div class="flex-1 min-w-0">
                                 <h3 class="font-medium text-sm mb-1 truncate" 
@@ -4733,7 +4758,7 @@
                                     <span>${conv.messageCount} 条消息</span>
                                 </div>
                             </div>
-                            <button onclick="event.stopPropagation(); deleteConversation('${conv.id}')" 
+                            <button onclick="event.stopPropagation(); deleteConversation('${SecurityUtils.escapeAttr(conv.id)}')" 
                                     class="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all"
                                     style="color: ${isActive ? 'rgba(255,255,255,0.8)' : 'var(--text-tertiary)'};">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -5709,7 +5734,7 @@
                             
                             if (content) {
                                 fullText += content;
-                                streamingDiv.innerHTML = marked.parse(fullText);
+                                streamingDiv.innerHTML = safeMarkdownRender(fullText);
                                 streamingDiv.querySelectorAll('pre code').forEach((block) => {
                                     hljs.highlightElement(block);
                                 });
@@ -6095,20 +6120,20 @@
                                     displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>深度思考中...</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
                                 }
                                 if (fullText) {
-                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + safeMarkdownRender(fullText) + '</div>';
                                 }
                                 streamingDiv.innerHTML = displayText;
                             }
-                            
+
                             // 处理正式回复内容
                             if (delta?.content) {
                                 fullText += delta.content;
                                 let displayText = '';
                                 if (reasoningText) {
                                     displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
-                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + safeMarkdownRender(fullText) + '</div>';
                                 } else {
-                                    displayText = marked.parse(fullText);
+                                    displayText = safeMarkdownRender(fullText);
                                 }
                                 streamingDiv.innerHTML = displayText;
                                 streamingDiv.querySelectorAll('pre code').forEach((block) => {
@@ -6121,7 +6146,7 @@
                 }
 
                 streamingDiv.classList.remove('cursor-blink');
-                
+
                 // 保存AI回复到对话历史和上下文管理器
                 if (fullText) {
                     chatHistory.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
@@ -6131,13 +6156,13 @@
                     }
                     saveCurrentConversation();
                 }
-                
+
                 // 添加操作按钮 - 找到 message-bubble 元素
                 const messageBubble = streamingDiv.closest('.message-bubble');
                 if (messageBubble) {
                     addMessageActions(messageBubble, content, fullText);
                 }
-                
+
                 // 显示用户消息的编辑和分享按钮（AI回复生成后）
                 const userWrapper = messageBubble?.closest('.flex')?.previousElementSibling;
                 if (userWrapper) {
@@ -6151,10 +6176,10 @@
             } catch (err) {
                 console.error('发送消息出错:', err);
                 clearTimeout(timeoutId); // 确保清除超时
-                
+
                 // 移除光标闪烁
                 streamingDiv.classList.remove('cursor-blink');
-                
+
                 if (err.name === 'AbortError') {
                     if (streamingDiv.innerHTML.includes('正在思考')) {
                         streamingDiv.innerHTML = '<span style="color: var(--text-tertiary);">[已取消]</span>';
@@ -6642,19 +6667,19 @@
                                     displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>深度思考中...</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
                                 }
                                 if (fullText) {
-                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + safeMarkdownRender(fullText) + '</div>';
                                 }
                                 streamingDiv.innerHTML = displayText;
                             }
-                            
+
                             if (delta?.content) {
                                 fullText += delta.content;
                                 let displayText = '';
                                 if (reasoningText) {
                                     displayText = '<div class="reasoning-process" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); border-left: 3px solid var(--gold); padding: 0.75rem 1rem; margin-bottom: 0.75rem; border-radius: 0 0.5rem 0.5rem 0;"><div style="font-size: 0.75rem; color: var(--gold); margin-bottom: 0.5rem; font-weight: 500; display: flex; align-items: center; gap: 0.375rem;"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>思考过程</div><div style="font-size: 0.8125rem; color: var(--text-secondary); line-height: 1.5; white-space: pre-wrap;">' + escapeHtml(reasoningText) + '</div></div>';
-                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + marked.parse(fullText) + '</div>';
+                                    displayText += '<div class="final-answer" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-color);">' + safeMarkdownRender(fullText) + '</div>';
                                 } else {
-                                    displayText = marked.parse(fullText);
+                                    displayText = safeMarkdownRender(fullText);
                                 }
                                 streamingDiv.innerHTML = displayText;
                                 streamingDiv.querySelectorAll('pre code').forEach((block) => {

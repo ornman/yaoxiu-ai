@@ -103,7 +103,7 @@ git stash pop
 #### 方式一：使用 Wrangler 命令行
 ```powershell
 # 设置环境变量（已保存到 .env 文件）
-$env:CLOUDFLARE_API_TOKEN="cfut_EgZRwdtXs1zxVvfUixPShNtTvOrOrIQwU44H68OVc9ef079c"
+$env:CLOUDFLARE_API_TOKEN="<在此填入你的 Cloudflare API Token>"
 
 # 部署 Worker
 wrangler deploy
@@ -143,7 +143,7 @@ git commit -m "deploy: 上线 v2.0.0 版本"
 git push origin master
 
 # 步骤 4: 部署 Cloudflare Worker
-$env:CLOUDFLARE_API_TOKEN="cfut_EgZRwdtXs1zxVvfUixPShNtTvOrOrIQwU44H68OVc9ef079c"
+$env:CLOUDFLARE_API_TOKEN="<在此填入你的 Cloudflare API Token>"
 wrangler deploy
 
 # 步骤 5: 验证部署
@@ -316,7 +316,7 @@ Agent({
 
 ```powershell
 # 快速部署 Worker
-$env:CLOUDFLARE_API_TOKEN="cfut_EgZRwdtXs1zxVvfUixPShNtTvOrOrIQwU44H68OVc9ef079c"; wrangler deploy
+$env:CLOUDFLARE_API_TOKEN="<在此填入你的 Cloudflare API Token>"; wrangler deploy
 
 # 快速提交并推送
 git add -A; git commit -m "update: 更新内容"; git push origin master

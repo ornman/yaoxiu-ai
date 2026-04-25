@@ -10,9 +10,10 @@ import json
 import urllib.request
 import urllib.error
 import ssl
+import os
 
 PORT = 8080
-DEEPSEEK_API_KEY = "sk-3144bf0982b34c758559f05e340cc0bf"  # 修改为你的 Key
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
 
 class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):

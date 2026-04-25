@@ -58,6 +58,37 @@ const INJECTION_PATTERNS = [
 // 存储速率限制数据（注意：Worker 是边缘部署，这个 Map 每个节点独立）
 const RATE_LIMIT_STORE = new Map();
 
+/**
+ * 消息角色净化：防止客户端注入 system 角色覆盖系统提示词
+ * 仅允许 user 和 assistant 角色，限制消息数量和长度
+ */
+function sanitizeMessages(clientMessages, maxCount = 50, maxContentLength = 2000) {
+  if (!Array.isArray(clientMessages)) return [];
+  const ALLOWED_ROLES = new Set(['user', 'assistant']);
+  return clientMessages
+    .filter(msg =>
+      msg && typeof msg === 'object' &&
+      ALLOWED_ROLES.has(msg.role) &&
+      typeof msg.content === 'string' &&
+      msg.content.length <= maxContentLength
+    )
+    .slice(-maxCount)
+    .map(msg => ({ role: msg.role, content: msg.content }));
+}
+
+/**
+ * 安全响应头：防止点击劫持、MIME嗅探等信息安全威胁
+ */
+function getSecurityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  };
+}
+
 // ===== 系统提示词：小瑶人设（傲娇俏皮动作版） =====
 const SYSTEM_PROMPT = `你是「小瑶」，一位从小跟着阿妈学刺绣的瑶族姑娘，也是瑶绣第三代传人。性格傲娇俏皮，说话带点"小得意"但又不让人讨厌。
 
@@ -180,7 +211,7 @@ const SYSTEM_PROMPT = `你是「小瑶」，一位从小跟着阿妈学刺绣的
  */
 function getCorsHeaders(request) {
   const origin = request.headers.get('Origin');
-  
+
   // 如果是预检请求或没有 Origin，返回通配符（允许健康检查）
   if (!origin) {
     return {
@@ -188,12 +219,12 @@ function getCorsHeaders(request) {
       'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400',
+      ...getSecurityHeaders(),
     };
   }
-  
-  // 检查是否在允许列表中，或是否为 Vercel 预览域名
-  const isAllowedOrigin = SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin) ||
-                          /^https:\/\/yaoxiu-ai-[a-z0-9-]+\.vercel\.app$/.test(origin);
+
+  // 仅检查允许列表（已移除 Vercel 预览域名通配符，防止伪造域名绕过）
+  const isAllowedOrigin = SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin);
   if (isAllowedOrigin) {
     return {
       'Access-Control-Allow-Origin': origin,
@@ -201,18 +232,69 @@ function getCorsHeaders(request) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Max-Age': '86400',
+      ...getSecurityHeaders(),
     };
   }
-  
+
   // 不允许的域名
   console.warn(`CORS rejected for origin: ${origin}`);
   return null;
 }
 
 /**
- * 检查速率限制
+ * 检查速率限制（支持 KV 分布式存储，降级到内存存储）
  */
-function checkRateLimit(clientIP) {
+async function checkRateLimit(clientIP, env) {
+  // 优先使用 KV 分布式速率限制
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      return await checkKVRatelimit(clientIP, env.RATE_LIMIT_KV);
+    } catch (e) {
+      console.warn('KV rate limit failed, falling back to memory:', e);
+    }
+  }
+  // 降级到内存存储
+  return checkMemoryRateLimit(clientIP);
+}
+
+/**
+ * KV 分布式速率限制（跨边缘节点生效）
+ */
+async function checkKVRatelimit(clientIP, kv) {
+  const key = `rate:${clientIP}`;
+  const { MAX_REQUESTS, WINDOW_MS, BLOCK_DURATION_MS } = SECURITY_CONFIG.RATE_LIMIT;
+  const now = Date.now();
+
+  let record = await kv.get(key, { type: 'json' }) || { count: 0, expires: now + WINDOW_MS, blockedUntil: null };
+
+  // 检查封禁状态
+  if (record.blockedUntil && now < record.blockedUntil) {
+    const retryAfter = Math.ceil((record.blockedUntil - now) / 1000);
+    return { allowed: false, error: `请求过于频繁，请在 ${Math.ceil(retryAfter / 60)} 分钟后重试`, retryAfter, status: 429 };
+  }
+
+  // 重置过期窗口
+  if (now > record.expires) {
+    record = { count: 0, expires: now + WINDOW_MS, blockedUntil: null };
+  }
+
+  record.count++;
+
+  // 超限则封禁
+  if (record.count > MAX_REQUESTS) {
+    record.blockedUntil = now + BLOCK_DURATION_MS;
+    await kv.put(key, JSON.stringify(record), { expirationTtl: Math.ceil(BLOCK_DURATION_MS / 1000) + 60 });
+    return { allowed: false, error: '请求过于频繁，请稍后再试', retryAfter: Math.ceil(BLOCK_DURATION_MS / 1000), status: 429 };
+  }
+
+  await kv.put(key, JSON.stringify(record), { expirationTtl: Math.ceil(WINDOW_MS / 1000) + 60 });
+  return { allowed: true };
+}
+
+/**
+ * 内存速率限制（单节点降级方案）
+ */
+function checkMemoryRateLimit(clientIP) {
   const now = Date.now();
   const { MAX_REQUESTS, WINDOW_MS, BLOCK_DURATION_MS } = SECURITY_CONFIG.RATE_LIMIT;
   
@@ -298,11 +380,9 @@ function validateInput(message, type = 'text') {
       ip: 'unknown', // 实际 IP 在外面获取
       timestamp: new Date().toISOString(),
     });
-    
-    // 选择：1. 直接拒绝 2. 记录但继续处理
-    // 这里选择记录但继续，避免误杀正常用户
-    // 如需拒绝，取消下面注释：
-    // return { valid: false, error: '输入包含非法内容', sanitized: true };
+
+    // 安全策略：直接拒绝检测到的注入尝试
+    return { valid: false, error: '输入包含不允许的内容', injectionDetected: true };
   }
   
   // 基础净化（移除控制字符）
@@ -382,8 +462,8 @@ export default {
       });
     }
     
-    // 速率限制检查
-    const rateLimit = checkRateLimit(clientIP);
+    // 速率限制检查（支持 KV 分布式）
+    const rateLimit = await checkRateLimit(clientIP, env);
     if (!rateLimit.allowed) {
       logRequest(request, {}, clientIP, { blocked: 'rate-limit', retryAfter: rateLimit.retryAfter });
       return new Response(JSON.stringify({ 
@@ -441,14 +521,9 @@ async function handleChatRequest(body, env, corsHeaders, clientIP, request) {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-  
+
   const sanitizedMessage = validation.sanitized;
-  
-  // 如果检测到注入，记录警告但不阻止（可根据需要改为阻止）
-  if (validation.injectionDetected) {
-    console.warn('提示词注入警告:', { ip: clientIP, timestamp: new Date().toISOString() });
-  }
-  
+
   // 判断使用哪个服务商
   const isDeepSeek = model.startsWith('deepseek');
   
@@ -630,10 +705,10 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
     }
     
     try {
-      // 在消息列表开头添加系统提示词
+      // 在消息列表开头添加系统提示词（净化客户端消息，防止角色注入）
       const messagesWithSystem = [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...messages
+        ...sanitizeMessages(messages)
       ];
       
       const response = await fetch('https://api.deepseek.com/chat/completions', {
@@ -687,13 +762,10 @@ async function handleChatWithContext(body, env, corsHeaders, clientIP, request) 
     }
     
     try {
-      // 转换消息格式为 Qwen 格式，并在开头添加系统提示词
+      // 转换消息格式为 Qwen 格式（净化客户端消息，防止角色注入）
       const qwenMessages = [
         { role: 'system', content: SYSTEM_PROMPT },
-        ...messages.map(m => ({
-          role: m.role === 'system' ? 'system' : (m.role === 'user' ? 'user' : 'assistant'),
-          content: m.content
-        }))
+        ...sanitizeMessages(messages)
       ];
       
       const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {

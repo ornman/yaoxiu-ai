@@ -5,6 +5,13 @@
 .env*
 !.env.example
 
+# Node.js
+node_modules/
+
+# Secrets
+*.secret
+secrets.json
+
 # 备份与临时文件
 *.bak
 *.tmp
