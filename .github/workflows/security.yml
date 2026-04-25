@@ -1,0 +1,225 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [master, redesign-ui]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Secret Leak Detection (most critical)
+  # ──────────────────────────────────────────────
+  secret-leak-detection:
+    name: Secret Leak Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for hardcoded secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ──────────────────────────────────────────────
+  # Job 2: Security Headers Check
+  # ──────────────────────────────────────────────
+  security-headers:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - name: Verify security headers on production API
+        run: |
+          URL="https://api.yaoxiumax.top/"
+          RESPONSE=$(curl -sI "$URL")
+
+          echo "=== Response Headers ==="
+          echo "$RESPONSE"
+          echo ""
+
+          ERRORS=0
+
+          check_header() {
+            local header_name="$1"
+            local expected="$2"
+
+            if echo "$RESPONSE" | grep -qi "^${header_name}:"; then
+              VALUE=$(echo "$RESPONSE" | grep -i "^${header_name}:" | head -1 | sed "s/^${header_name}: *//i" | tr -d '\r')
+              echo "[PASS] $header_name: $VALUE"
+            else
+              echo "[FAIL] $header_name header is MISSING"
+              ERRORS=$((ERRORS + 1))
+            fi
+          }
+
+          check_header "X-Content-Type-Options" "nosniff"
+          check_header "X-Frame-Options" "DENY"
+          check_header "Strict-Transport-Security" ""
+          check_header "Referrer-Policy" ""
+
+          echo ""
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::$ERRORS security header(s) missing or misconfigured"
+            exit 1
+          else
+            echo "All security headers present."
+          fi
+
+  # ──────────────────────────────────────────────
+  # Job 3: CSP Validation
+  # ──────────────────────────────────────────────
+  csp-validation:
+    name: CSP Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+      - name: Fetch and validate CSP meta tag
+        run: |
+          URL="https://api.yaoxiumax.top/"
+          HTML=$(curl -s "$URL")
+
+          echo "=== Checking for CSP meta tag ==="
+
+          CSP=$(echo "$HTML" | grep -oP 'content="[^"]*"' | head -1 || true)
+
+          if echo "$HTML" | grep -q 'http-equiv="Content-Security-Policy"'; then
+            echo "[PASS] CSP meta tag found."
+          else
+            echo "::error::CSP meta tag is MISSING from the page"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Checking for dangerous misconfigurations ==="
+
+          ERRORS=0
+
+          # Check connect-src does not use wildcard
+          if echo "$HTML" | grep -qP 'connect-src\s+\*'; then
+            echo "[FAIL] connect-src uses wildcard (*) - this allows connections to any origin"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "[PASS] connect-src does not use wildcard"
+          fi
+
+          # Check default-src does not use 'unsafe-inline' or *
+          if echo "$HTML" | grep -oP 'default-src[^;]+' | grep -q "'unsafe-inline'"; then
+            echo "[FAIL] default-src contains 'unsafe-inline'"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "[PASS] default-src does not contain 'unsafe-inline'"
+          fi
+
+          if echo "$HTML" | grep -oP 'default-src[^;]+' | grep -q "'none'"; then
+            echo "[PASS] default-src is set to 'none' (recommended)"
+          else
+            echo "[WARN] default-src is not set to 'none'"
+          fi
+
+          # Check script-src does not use wildcard origin
+          if echo "$HTML" | grep -oP 'script-src[^;]+' | grep -qP "https://\*"; then
+            echo "[FAIL] script-src contains wildcard origin"
+            ERRORS=$((ERRORS + 1))
+          else
+            echo "[PASS] script-src does not contain wildcard origin"
+          fi
+
+          # Check object-src is restrictive
+          if echo "$HTML" | grep -oP 'object-src[^;]+' | grep -q "'none'"; then
+            echo "[PASS] object-src is set to 'none'"
+          else
+            echo "[WARN] object-src is not set to 'none'"
+          fi
+
+          echo ""
+          if [ "$ERRORS" -gt 0 ]; then
+            echo "::error::$ERRORS CSP misconfiguration(s) detected"
+            exit 1
+          else
+            echo "CSP validation passed."
+          fi
+
+  # ──────────────────────────────────────────────
+  # Job 4: Dependency Audit (SRI Check)
+  # ──────────────────────────────────────────────
+  dependency-audit:
+    name: Dependency Audit (SRI)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check Subresource Integrity on external scripts
+        run: |
+          HTML_FILE="index.html"
+
+          if [ ! -f "$HTML_FILE" ]; then
+            echo "::error::index.html not found in repository root"
+            exit 1
+          fi
+
+          echo "=== Scanning external <script> tags for SRI attributes ==="
+          echo ""
+
+          # Extract all script tags with external src (https://)
+          EXTERNAL_SCRIPTS=$(grep -nP '<script\s+[^>]*src="https://' "$HTML_FILE" || true)
+
+          if [ -z "$EXTERNAL_SCRIPTS" ]; then
+            echo "No external script tags found. Nothing to check."
+            exit 0
+          fi
+
+          # Use process substitution to avoid subshell variable scope issue
+          ERROR_COUNT=0
+          CHECK_COUNT=0
+
+          while IFS= read -r line; do
+            LINE_NUM=$(echo "$line" | cut -d: -f1)
+            CONTENT=$(echo "$line" | cut -d: -f2-)
+
+            # Extract src URL
+            SRC=$(echo "$CONTENT" | grep -oP 'src="[^"]*"' | head -1 | sed 's/src="//;s/"//')
+
+            # Check for integrity attribute
+            HAS_INTEGRITY=0
+            if echo "$CONTENT" | grep -qP 'integrity="sha384-[^"]+"'; then
+              HAS_INTEGRITY=1
+            fi
+
+            # Check for crossorigin attribute
+            HAS_CROSSORIGIN=0
+            if echo "$CONTENT" | grep -qP 'crossorigin="anonymous"'; then
+              HAS_CROSSORIGIN=1
+            fi
+
+            CHECK_COUNT=$((CHECK_COUNT + 1))
+            echo "Line $LINE_NUM: $SRC"
+
+            if [ "$HAS_INTEGRITY" -eq 1 ] && [ "$HAS_CROSSORIGIN" -eq 1 ]; then
+              echo "  [PASS] integrity + crossorigin present"
+            else
+              if [ "$HAS_INTEGRITY" -eq 0 ]; then
+                echo "  [FAIL] Missing integrity attribute (sha384 hash)"
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+              fi
+              if [ "$HAS_CROSSORIGIN" -eq 0 ]; then
+                echo "  [FAIL] Missing crossorigin=\"anonymous\" attribute"
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+              fi
+            fi
+            echo ""
+          done <<< "$EXTERNAL_SCRIPTS"
+
+          echo "=== Summary ==="
+          echo "External scripts checked: $CHECK_COUNT"
+          echo ""
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "::error::$ERROR_COUNT SRI issue(s) found - external scripts missing integrity or crossorigin"
+            exit 1
+          else
+            echo "All external scripts have proper SRI attributes."
+          fi

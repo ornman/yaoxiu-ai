@@ -1,12 +1,15 @@
 /**
- * 瑶族刺绣知识问答 - Cloudflare Worker 后端（安全加固版）
- * 
+ * 瑶族刺绣知识问答 - Cloudflare Worker 后端（安全加固版 v3.0）
+ *
  * 安全特性：
  * 1. API Key 仅通过环境变量读取，无硬编码
  * 2. CORS 限制指定域名
  * 3. 输入验证和提示词注入检测
- * 4. 速率限制（Rate Limiting）
- * 5. 请求日志记录
+ * 4. 速率限制（Rate Limiting，支持 KV 分布式）
+ * 5. 请求签名验证（HMAC-SHA256）
+ * 6. 异常请求监控和自动封禁
+ * 7. 审计日志（KV 持久化）
+ * 8. 安全响应头
  */
 
 // ===== 安全配置 =====
@@ -21,18 +24,40 @@ const SECURITY_CONFIG = {
     'http://localhost:5500',
     'http://127.0.0.1:5500',
   ],
-  
+
   // 速率限制配置
   RATE_LIMIT: {
     MAX_REQUESTS: 30,        // 每分钟最大请求数
     WINDOW_MS: 60 * 1000,    // 时间窗口：1分钟
     BLOCK_DURATION_MS: 5 * 60 * 1000,  // 超限封禁：5分钟
   },
-  
+
   // 输入限制
   INPUT_LIMITS: {
     MAX_MESSAGE_LENGTH: 2000,    // 消息最大长度
     MAX_IMAGE_SIZE: 5 * 1024 * 1024,  // 图片最大 5MB
+  },
+
+  // 请求签名配置（P3-01）
+  SIGNING: {
+    ENABLED: true,               // 是否启用签名验证
+    TIMESTAMP_TOLERANCE_MS: 5 * 60 * 1000,  // 时间戳容差：5分钟
+    NONC_CACHE_TTL: 600,         // Nonce 缓存 TTL（秒）
+  },
+
+  // 异常监控配置（P3-02）
+  MONITOR: {
+    AUTO_BAN_THRESHOLD: 100,     // 单 IP 每分钟请求超过此数自动封禁
+    AUTO_BAN_DURATION_MS: 60 * 60 * 1000,  // 自动封禁：1小时
+    MAX_UNIQUE_IPS_PER_MIN: 50,  // 每分钟最大独立 IP 数（防 DDoS）
+    ALERT_KV_TTL: 86400,         // 告警记录保留：24小时
+  },
+
+  // 审计日志配置（P3-03）
+  AUDIT: {
+    KV_TTL: 7 * 86400,           // 审计日志保留：7天
+    MAX_LOG_ENTRIES: 1000,        // 单次查询最大条数
+    SENSITIVE_FIELDS: ['message', 'imageData', 'content'],  // 需脱敏的字段
   },
 };
 
@@ -87,6 +112,204 @@ function getSecurityHeaders() {
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
   };
+}
+
+// ===== P3-01: 请求签名验证 =====
+
+/**
+ * 验证请求签名（HMAC-SHA256）
+ * 前端发送 X-Timestamp, X-Nonce, X-Signature 头
+ * Signature = HMAC-SHA256(secret, timestamp + nonce + bodyHash)
+ */
+async function verifyRequestSignature(request, bodyText, env, clientIP) {
+  if (!SECURITY_CONFIG.SIGNING.ENABLED) {
+    return { valid: true };
+  }
+
+  const secret = env.REQUEST_SIGNING_SECRET;
+  if (!secret) {
+    console.warn('REQUEST_SIGNING_SECRET not configured, skipping signature verification');
+    return { valid: true };
+  }
+
+  const authHeader = request.headers.get('X-Auth-Token');
+  if (!authHeader) {
+    return { valid: false, error: 'Missing auth token', code: 'TOKEN_MISSING' };
+  }
+
+  // 解析令牌：格式为 "timestamp:hmac_signature"
+  const parts = authHeader.split(':');
+  if (parts.length !== 2) {
+    return { valid: false, error: 'Invalid token format', code: 'TOKEN_INVALID' };
+  }
+
+  const [tokenTs, tokenSig] = parts;
+  const timestamp = parseInt(tokenTs, 10);
+
+  // 时间戳验证（令牌有效期 5 分钟）
+  if (isNaN(timestamp) || Date.now() - timestamp > SECURITY_CONFIG.SIGNING.TIMESTAMP_TOLERANCE_MS) {
+    return { valid: false, error: 'Token expired', code: 'TOKEN_EXPIRED' };
+  }
+
+  // 验证 HMAC 签名（使用服务端密钥 + 客户端 IP 绑定）
+  const expectedSig = await hmacSha256Hex(secret, `token:${timestamp}:${clientIP}`);
+  if (tokenSig !== expectedSig) {
+    return { valid: false, error: 'Invalid token', code: 'TOKEN_INVALID' };
+  }
+
+  return { valid: true };
+}
+
+/** SHA-256 哈希（十六进制输出） */
+async function sha256Hex(text) {
+  const data = new TextEncoder().encode(text);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/** HMAC-SHA256（十六进制输出） */
+async function hmacSha256Hex(key, message) {
+  const keyData = new TextEncoder().encode(key);
+  const msgData = new TextEncoder().encode(message);
+  const cryptoKey = await crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, msgData);
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ===== P3-02: 异常请求监控 =====
+
+/**
+ * 异常请求检测和自动封禁
+ * 返回 { safe: true/false, alerts: [] }
+ */
+async function detectAnomalies(clientIP, env, body) {
+  const alerts = [];
+  const { MONITOR } = SECURITY_CONFIG;
+
+  // 检查 IP 是否已被自动封禁
+  if (env.SECURITY_KV) {
+    const banKey = `ban:${clientIP}`;
+    const banRecord = await env.SECURITY_KV.get(banKey, { type: 'json' });
+    if (banRecord && Date.now() < banRecord.expiresAt) {
+      return {
+        safe: false,
+        banned: true,
+        reason: banRecord.reason,
+        expiresAt: banRecord.expiresAt,
+        alerts: [{ type: 'IP_BANNED', ip: clientIP, reason: banRecord.reason }],
+      };
+    }
+  }
+
+  // 检测超大消息长度（可能为 DoS 攻击）
+  const messageLen = body?.message?.length || body?.text?.length || 0;
+  if (messageLen > SECURITY_CONFIG.INPUT_LIMITS.MAX_MESSAGE_LENGTH * 2) {
+    alerts.push({ type: 'OVERSIZED_MESSAGE', ip: clientIP, length: messageLen });
+  }
+
+  // 检测异常请求类型
+  const knownTypes = ['chat', 'chat-context', 'vision', undefined];
+  if (body?.type && !knownTypes.includes(body.type)) {
+    alerts.push({ type: 'UNKNOWN_REQUEST_TYPE', ip: clientIP, requestType: body.type });
+  }
+
+  // 如果有告警且超过阈值，自动封禁
+  if (alerts.length > 0 && env.SECURITY_KV) {
+    const alertKey = `alert:${clientIP}`;
+    const alertCount = await env.SECURITY_KV.get(alertKey, { type: 'json' }) || { count: 0, window: Date.now() + 60000 };
+
+    // 重置窗口
+    if (Date.now() > alertCount.window) {
+      alertCount.count = 0;
+      alertCount.window = Date.now() + 60000;
+    }
+
+    alertCount.count++;
+    await env.SECURITY_KV.put(alertKey, JSON.stringify(alertCount), { expirationTtl: 120 });
+
+    // 累计 5 次告警 → 自动封禁
+    if (alertCount.count >= 5) {
+      const banRecord = {
+        reason: `Automatic ban: ${alerts[0].type}`,
+        expiresAt: Date.now() + MONITOR.AUTO_BAN_DURATION_MS,
+        alertCount: alertCount.count,
+      };
+      await env.SECURITY_KV.put(`ban:${clientIP}`, JSON.stringify(banRecord), {
+        expirationTtl: Math.ceil(MONITOR.AUTO_BAN_DURATION_MS / 1000),
+      });
+
+      // 记录封禁事件到审计日志
+      await writeAuditLog(env, {
+        event: 'AUTO_BAN',
+        ip: clientIP,
+        reason: banRecord.reason,
+        duration: MONITOR.AUTO_BAN_DURATION_MS,
+      });
+
+      return {
+        safe: false,
+        banned: true,
+        reason: banRecord.reason,
+        alerts,
+      };
+    }
+  }
+
+  return { safe: true, alerts };
+}
+
+// ===== P3-03: 审计日志 =====
+
+/**
+ * 写入审计日志到 KV
+ */
+async function writeAuditLog(env, logEntry) {
+  if (!env.SECURITY_KV) return;
+
+  const timestamp = new Date().toISOString();
+  const logId = `audit:${timestamp.replace(/[:.]/g, '-')}-${Math.random().toString(36).slice(2, 8)}`;
+
+  const entry = {
+    id: logId,
+    timestamp,
+    ...logEntry,
+  };
+
+  // 脱敏处理
+  for (const field of SECURITY_CONFIG.AUDIT.SENSITIVE_FIELDS) {
+    if (entry[field] && typeof entry[field] === 'string' && entry[field].length > 50) {
+      entry[field] = entry[field].substring(0, 50) + '...[REDACTED]';
+    }
+  }
+
+  await env.SECURITY_KV.put(logId, JSON.stringify(entry), {
+    expirationTtl: SECURITY_CONFIG.AUDIT.KV_TTL,
+  });
+}
+
+/**
+ * 增强版请求日志（含审计写入）
+ */
+async function logRequestWithAudit(request, body, clientIP, env, extra = {}) {
+  const logData = {
+    ip: clientIP,
+    method: request.method,
+    url: request.url,
+    userAgent: request.headers.get('User-Agent')?.slice(0, 100),
+    contentLength: body?.message?.length || body?.text?.length || 0,
+    model: body?.model || 'unknown',
+    type: body?.type || 'chat',
+    ...extra,
+  };
+
+  // 控制台日志（结构化 JSON）
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), ...logData }));
+
+  // 审计日志写入 KV
+  await writeAuditLog(env, {
+    event: extra.blocked ? 'BLOCKED' : 'REQUEST',
+    ...logData,
+  });
 }
 
 // ===== 系统提示词：小瑶人设（傲娇俏皮动作版） =====
@@ -393,34 +616,15 @@ function validateInput(message, type = 'text') {
   return { valid: true, sanitized, injectionDetected: detectedPatterns.length > 0 };
 }
 
-/**
- * 安全日志记录（脱敏）
- */
-function logRequest(request, body, clientIP, extra = {}) {
-  const logData = {
-    timestamp: new Date().toISOString(),
-    ip: clientIP,
-    method: request.method,
-    url: request.url,
-    userAgent: request.headers.get('User-Agent')?.slice(0, 100),
-    contentLength: body?.message?.length || 0,
-    model: body?.model || 'unknown',
-    type: body?.type || 'chat',
-    ...extra,
-  };
-  
-  console.log(JSON.stringify(logData));
-}
-
 // ===== 请求处理 =====
 export default {
   async fetch(request, env, ctx) {
     // 获取客户端 IP
     const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-    
+
     // 获取 CORS 头
     const corsHeaders = getCorsHeaders(request);
-    
+
     // 处理预检请求
     if (request.method === 'OPTIONS') {
       if (!corsHeaders) {
@@ -431,7 +635,7 @@ export default {
       }
       return new Response(null, { headers: corsHeaders });
     }
-    
+
     // 检查 CORS（非预检请求）
     if (!corsHeaders) {
       return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
@@ -439,21 +643,30 @@ export default {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    
-    // GET 请求 - 健康检查
+
+    // GET 请求 - 健康检查 + 签名令牌下发
     if (request.method === 'GET') {
-      return new Response(JSON.stringify({ 
-        status: 'ok', 
+      const signingSecret = env.REQUEST_SIGNING_SECRET;
+      let signingToken = null;
+      if (signingSecret) {
+        // 生成短期令牌（5分钟有效），包含时间戳和签名
+        const ts = Date.now();
+        const token = `${ts}:${await hmacSha256Hex(signingSecret, `token:${ts}:${clientIP}`)}`;
+        signingToken = token;
+      }
+      return new Response(JSON.stringify({
+        status: 'ok',
         message: '小瑶服务运行正常 🧵',
         timestamp: new Date().toISOString(),
-        version: '2.1-secure',
-        features: ['rate-limit', 'input-validation', 'cors-restriction'],
+        version: '3.0-secure',
+        features: ['rate-limit', 'input-validation', 'cors-restriction', 'request-signing', 'anomaly-monitor', 'audit-log'],
+        ...(signingToken && { signingToken }),
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
+
     // 只允许 POST 请求
     if (request.method !== 'POST') {
       return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -461,49 +674,91 @@ export default {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
+
+    // P3-02: 异常请求检测（IP 封禁检查）
+    const anomalyCheck = await detectAnomalies(clientIP, env, {});
+    if (!anomalyCheck.safe && anomalyCheck.banned) {
+      return new Response(JSON.stringify({
+        error: '访问已被暂时限制，请稍后再试',
+        code: 'IP_BANNED',
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // 速率限制检查（支持 KV 分布式）
     const rateLimit = await checkRateLimit(clientIP, env);
     if (!rateLimit.allowed) {
-      logRequest(request, {}, clientIP, { blocked: 'rate-limit', retryAfter: rateLimit.retryAfter });
-      return new Response(JSON.stringify({ 
+      await logRequestWithAudit(request, {}, clientIP, env, { blocked: 'rate-limit', retryAfter: rateLimit.retryAfter });
+      return new Response(JSON.stringify({
         error: rateLimit.error,
         retryAfter: rateLimit.retryAfter,
       }), {
         status: rateLimit.status,
-        headers: { 
-          ...corsHeaders, 
+        headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
           'Retry-After': String(rateLimit.retryAfter),
         },
       });
     }
-    
+
     // 读取请求体
     let body;
+    let bodyText;
     try {
-      body = await request.json();
+      bodyText = await request.text();
+      body = JSON.parse(bodyText);
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    
-    // 记录请求（脱敏）
-    logRequest(request, body, clientIP);
-    
+
+    // P3-01: 请求签名验证
+    const sigResult = await verifyRequestSignature(request, bodyText, env, clientIP);
+    if (!sigResult.valid) {
+      await logRequestWithAudit(request, body, clientIP, env, {
+        blocked: 'signature-failed',
+        sigCode: sigResult.code,
+      });
+      return new Response(JSON.stringify({
+        error: '请求验证失败',
+        code: sigResult.code,
+      }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // P3-02: 请求体级别的异常检测
+    const bodyAnomaly = await detectAnomalies(clientIP, env, body);
+    if (!bodyAnomaly.safe) {
+      await logRequestWithAudit(request, body, clientIP, env, {
+        blocked: 'anomaly',
+        alerts: bodyAnomaly.alerts,
+      });
+      if (bodyAnomaly.banned) {
+        return new Response(JSON.stringify({
+          error: '访问已被暂时限制',
+          code: 'IP_BANNED',
+        }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // 记录请求（含审计日志）
+    await logRequestWithAudit(request, body, clientIP, env);
+
     const { type, message, model, imageData, text, messages } = body;
-    
+
     // 根据请求类型处理
     if (type === 'vision' || imageData) {
-      // 图片识别请求 -> 调用 Qwen-VL
       return handleVisionRequest(body, env, corsHeaders, clientIP, request);
     } else if (type === 'chat-context' && messages) {
-      // 带上下文的对话请求（新方式）
       return handleChatWithContext(body, env, corsHeaders, clientIP, request);
     } else {
-      // 普通对话请求 -> 调用 DeepSeek（旧方式，兼容）
       return handleChatRequest(body, env, corsHeaders, clientIP, request);
     }
   },

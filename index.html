@@ -3047,6 +3047,59 @@
                 ADD_ATTR: ['target']
             });
         }
+
+        // ===== P3-01: 请求签名系统（令牌模式） =====
+        const RequestSigner = {
+            _token: null,
+            _tokenExpiry: 0,
+            _apiUrl: null,
+            _initialized: false,
+
+            /** 初始化：设置 API 地址 */
+            init(apiUrl) {
+                this._apiUrl = apiUrl;
+                this._initialized = true;
+            },
+
+            /** 获取短期令牌（5分钟有效） */
+            async _getToken() {
+                const now = Date.now();
+                // 令牌未过期时复用
+                if (this._token && now < this._tokenExpiry) {
+                    return this._token;
+                }
+
+                try {
+                    const resp = await fetch(this._apiUrl, { method: 'GET' });
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.signingToken) {
+                            this._token = data.signingToken;
+                            this._tokenExpiry = now + 4 * 60 * 1000; // 4分钟刷新（5分钟有效期）
+                            return this._token;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('令牌获取失败，将以无签名模式运行:', e.message);
+                }
+                return null;
+            },
+
+            /** 为请求添加签名头 */
+            async signRequest(bodyObj) {
+                const token = await this._getToken();
+                if (!token) {
+                    return { headers: {}, body: JSON.stringify(bodyObj) };
+                }
+
+                return {
+                    headers: {
+                        'X-Auth-Token': token,
+                    },
+                    body: JSON.stringify(bodyObj),
+                };
+            }
+        };
         
         // ========== 配置与状态 ==========
         // ✅ Worker 地址已内置，无需手动配置
@@ -4096,6 +4149,7 @@
             initChatContext();  // 初始化上下文管理器
             loadConfig();
             applyConfig();
+            RequestSigner.init(config.apiUrl || DEFAULT_API_URL);  // P3-01: 初始化请求签名
             loadFavorites();
             loadConversations();
             updateUI();
@@ -5619,25 +5673,29 @@
         async function callQwenVL(images, text) {
             // 通过 Worker 代理发送请求，避免 CORS 问题
             const apiUrl = config.apiUrl || DEFAULT_API_URL;
-            
+
             if (apiUrl.includes('your-worker-name')) {
                 throw new Error('请先配置 Worker 代理地址（点击右上角设置）');
             }
-            
+
             console.log('通过 Worker 代理发送图片识别请求...', { worker: apiUrl });
-            
+
+            const requestBody = {
+                type: 'vision',
+                imageData: images,
+                text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。',
+                model: 'qwen-vl-plus'
+            };
+            const signed = await RequestSigner.signRequest(requestBody);
+
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                    ...(config.apiKey && { 'X-API-Key': config.apiKey }),
+                    ...signed.headers
                 },
-                body: JSON.stringify({
-                    type: 'vision',
-                    imageData: images,
-                    text: text || '请识别这张图片中的瑶族刺绣元素，包括纹样类型、针法特点、配色方案等，用中文详细描述。',
-                    model: 'qwen-vl-plus'
-                }),
+                body: signed.body,
                 signal: controller.signal
             });
             
@@ -6043,7 +6101,7 @@
                     // Worker 模式：通过 Cloudflare Worker 调用
                     const apiUrl = config.apiUrl || DEFAULT_API_URL;
                     console.log('📡 请求地址:', apiUrl); // 调试用
-                    
+
                     // 使用上下文管理器构建消息数组（包含历史对话）
                     let messages;
                     if (chatContext) {
@@ -6061,18 +6119,23 @@
                             { role: 'user', content: content }
                         ];
                     }
-                    
+
+                    // P3-01: 请求签名
+                    const requestBody = {
+                        type: 'chat-context',
+                        messages: messages,
+                        model: document.getElementById('modelSelect').value
+                    };
+                    const signed = await RequestSigner.signRequest(requestBody);
+
                     response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 
+                        headers: {
                             'Content-Type': 'application/json',
-                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey }),
+                            ...signed.headers
                         },
-                        body: JSON.stringify({
-                            type: 'chat-context',
-                            messages: messages,
-                            model: document.getElementById('modelSelect').value
-                        }),
+                        body: signed.body,
                         signal: controller.signal
                     });
                 }
@@ -6612,18 +6675,22 @@
                         { role: 'system', content: chatContext?.systemPrompt || '' },
                         { role: 'user', content: content }
                     ];
-                    
+
+                    const reqBody2 = {
+                        type: 'chat-context',
+                        messages: messages,
+                        model: document.getElementById('modelSelect').value
+                    };
+                    const signed2 = await RequestSigner.signRequest(reqBody2);
+
                     response = await fetch(apiUrl, {
                         method: 'POST',
-                        headers: { 
+                        headers: {
                             'Content-Type': 'application/json',
-                            ...(config.apiKey && { 'X-API-Key': config.apiKey })
+                            ...(config.apiKey && { 'X-API-Key': config.apiKey }),
+                            ...signed2.headers
                         },
-                        body: JSON.stringify({
-                            type: 'chat-context',
-                            messages: messages,
-                            model: document.getElementById('modelSelect').value
-                        }),
+                        body: signed2.body,
                         signal: controller.signal
                     });
                 }
