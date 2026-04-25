@@ -469,9 +469,9 @@ function getCorsHeaders(request) {
  */
 async function checkRateLimit(clientIP, env) {
   // 优先使用 KV 分布式速率限制
-  if (env && env.RATE_LIMIT_KV) {
+  if (env && env.SECURITY_KV) {
     try {
-      return await checkKVRatelimit(clientIP, env.RATE_LIMIT_KV);
+      return await checkKVRatelimit(clientIP, env.SECURITY_KV);
     } catch (e) {
       console.warn('KV rate limit failed, falling back to memory:', e);
     }

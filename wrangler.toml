@@ -7,5 +7,12 @@ compatibility_flags = ["nodejs_compat"]
 [observability]
 enabled = true
 
+# KV 命名空间：速率限制、审计日志、异常监控
+[[kv_namespaces]]
+binding = "SECURITY_KV"
+id = "14d4250adc5e4e2385193fcc5695ef33"
+
 # 环境变量需要在 Cloudflare Dashboard 中设置：
-# - MOONSHOT_API_KEY
+# - DEEPSEEK_API_KEY
+# - QWEN_API_KEY
+# - REQUEST_SIGNING_SECRET（可选，启用请求签名）
